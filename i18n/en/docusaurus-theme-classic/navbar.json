@@ -1,0 +1,18 @@
+{
+  "title": {
+    "message": "Vine",
+    "description": "The title in the navbar"
+  },
+  "item.label.文档": {
+    "message": "Documentation",
+    "description": "Navbar item for Vine documentation"
+  },
+  "item.label.Skel": {
+    "message": "Skel",
+    "description": "Navbar link to the Skel site"
+  },
+  "item.label.GitHub": {
+    "message": "GitHub",
+    "description": "Navbar item with label GitHub"
+  }
+}
