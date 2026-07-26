@@ -42,7 +42,8 @@
     "@types/react-dom": "^19.2.3",
     "postcss": "^8.5.23",
     "tailwindcss": "^4.3.2",
-    "typescript": "~7.0.2"
+    "typescript": "~7.0.2",
+    "wrangler": "4.114.0"
   },
   "engines": {
     "node": ">=20.0"

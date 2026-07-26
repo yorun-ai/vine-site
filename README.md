@@ -22,6 +22,19 @@ pnpm typecheck
 pnpm build
 ```
 
+## Deployment
+
+Cloudflare Workers Builds deploys the generated Docusaurus site as static
+assets. Configure the connected Git repository with:
+
+```text
+Build command: pnpm run build
+Deploy command: pnpm exec wrangler deploy
+```
+
+The production branch is `main`. The Wrangler configuration publishes `build`
+and serves Docusaurus's generated `404.html` for unmatched routes.
+
 ## Versioning
 
 Vine documentation versions follow Vine releases:
