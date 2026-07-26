@@ -10,6 +10,19 @@ const config: Config = {
   organizationName: 'yorun-ai',
   projectName: 'vine-site',
   onBrokenLinks: 'throw',
+  future: {
+    faster: {
+      swcJsLoader: true,
+      swcJsMinimizer: true,
+      swcHtmlMinimizer: true,
+      lightningCssMinimizer: true,
+      mdxCrossCompilerCache: true,
+      rspackBundler: true,
+      rspackPersistentCache: true,
+      ssgWorkerThreads: false,
+      gitEagerVcs: true,
+    },
+  },
   markdown: {
     mermaid: true,
     hooks: {
@@ -112,12 +125,11 @@ const config: Config = {
       },
       options: {
         look: 'classic',
-        layout: 'elk',
+        layout: 'dagre',
         htmlLabels: true,
         fontFamily:
           "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
         flowchart: {
-          defaultRenderer: 'elk',
           curve: 'rounded',
           diagramPadding: 16,
           nodeSpacing: 48,
