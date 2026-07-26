@@ -2,9 +2,9 @@
 slug: /guide/rdb
 ---
 
-# 使用关系型数据库
+# Using a Relational Database
 
-RDB 组件负责连接 PostgreSQL 或 SQLite，并把类型安全的 DAO 注入业务对象。每个数据库组件声明一个连接和一组 DAO。
+The RDB component connects to PostgreSQL or SQLite and injects type-safe DAOs into business objects. Each database component declares one connection and a set of DAOs.
 
 ```go title="database.go"
 type MainDatabase struct {
@@ -27,7 +27,7 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 }
 ```
 
-模型嵌入 `rdb.Model`（软删除）或 `rdb.DeletableModel`（物理删除）；DAO 使用模型指针作为泛型参数：
+Embed `rdb.Model` for soft deletion or `rdb.DeletableModel` for physical deletion. A DAO uses a pointer to its model as the generic argument:
 
 ```go title="user.go"
 type User struct {
@@ -48,4 +48,4 @@ func (s *UserService) Create(name string) *User {
 }
 ```
 
-连接在组件启动时建立，在应用停止后释放。使用同一 `ConnURL` 的组件共享底层连接池。Model、Query、Patch 和删除语义见 [RDB 参考](/docs/rdb)。
+The connection is established when the component starts and released after the application stops. Components with the same `ConnURL` share the underlying connection pool. See the [RDB Reference](/docs/rdb) for Model, Query, Patch, and deletion semantics.

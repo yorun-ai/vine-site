@@ -2,28 +2,28 @@
 slug: /ex
 ---
 
-# 错误处理（EX）
+# Error Handling (EX)
 
-Vine 使用 `core/ex` 在 Rpc、Web、Event、Task 和业务代码之间传递稳定的错误码。调用方可以按 `Code` 处理错误，日志仍能保留 message、reason、detail 和原始 cause。
+Vine uses `core/ex` to carry stable error codes across Rpc, Web, Event, Task, and business code. Callers can branch on `Code`, while logs retain the message, reason, detail, and original cause.
 
-## 1. 适用场景
+## 1. Use cases
 
-`core/ex` 适合这类场景：
+Use `core/ex` when you need to:
 
-- 希望用统一的错误码表达系统错误和业务错误
-- 希望错误对象同时保留机器可读的 `Code` 与面向日志/排障的 message
-- 希望在 panic / recover 流程中区分“业务异常”与“系统异常”
-- 希望为不同错误码附带稳定的元信息，例如分类、默认文案、是否可直接抛出
+- Express system and business failures with consistent error codes.
+- Keep both a machine-readable `Code` and a message useful for logs and troubleshooting.
+- Distinguish business exceptions from system exceptions in panic/recover flows.
+- Attach stable metadata to each error code, including category, default message, and whether it can be raised directly.
 
-整体模型可以概括为：
+The overall model is:
 
-1. 用 `Code` 描述错误语义
-2. 用 `New(...)` 等函数构造 `ex.Error`
-3. 需要中断流程时直接 `panic`
-4. 在边界层用 `Recover(...)` 或 `RecoverApplication(...)` 恢复
-5. 再根据 `Type` / `Category` / `Code` 做统一处理
+1. Describe error semantics with a `Code`.
+2. Construct an `ex.Error` with `New(...)` or a related function.
+3. Use `panic` when execution must be interrupted.
+4. Recover at a boundary with `Recover(...)` or `RecoverApplication(...)`.
+5. Handle the error according to its `Type`, `Category`, or `Code`.
 
-## 2. 核心类型
+## 2. Core types
 
 ### 2.1 `Type`
 
@@ -31,18 +31,18 @@ Vine 使用 `core/ex` 在 Rpc、Web、Event、Task 和业务代码之间传递�
 type Type string
 ```
 
-错误分为 4 种类型：
+Four types are defined:
 
 - `InvalidType`
 - `NoError`
 - `SystemError`
 - `ApplicationError`
 
-含义上：
+Their meanings are:
 
-- `NoError` 表示成功态
-- `SystemError` 表示框架、调用链、兜底类系统错误
-- `ApplicationError` 表示业务语义上的可预期错误
+- `NoError` represents success.
+- `SystemError` represents framework, call-chain, and fallback system failures.
+- `ApplicationError` represents expected business failures.
 
 ### 2.2 `Category`
 
@@ -50,7 +50,7 @@ type Type string
 type Category string
 ```
 
-分类包括：
+The categories are:
 
 - `InvalidCategory`
 - `SuccessCategory`
@@ -59,7 +59,7 @@ type Category string
 - `FallbackCategory`
 - `ApplicationCategory`
 
-`Category` 比 `Type` 更细一层，主要用于给 `Code` 做稳定分组。
+A `Category` is more specific than a `Type` and provides a stable grouping for `Code` values.
 
 ### 2.3 `Code`
 
@@ -67,7 +67,7 @@ type Category string
 type Code string
 ```
 
-`Code` 是整个错误体系的核心枚举。公开错误码包括：
+`Code` is the central error enumeration. The exported codes are:
 
 ```go
 const (
@@ -110,17 +110,17 @@ type Error interface {
 }
 ```
 
-其中：
+The methods return:
 
-- `Type()` 由 `Code` 派生
-- `Code()` 返回当前错误码
-- `Message()` 返回业务传入的错误消息
-- `Reason()` 返回细分原因，格式不限，用于前端或调用点在某些情况下区分同一个 `Code` 下的不同场景
-- `Detail()` 返回更细节的错误说明，主要用于内部诊断；Portal 对外返回错误时会保留 `detail` 字段但清空字段内容
+- `Type()`: the type derived from `Code`.
+- `Code()`: the error code.
+- `Message()`: the supplied error message.
+- `Reason()`: a more specific reason, in an application-defined format, that clients can use to distinguish cases under the same `Code`.
+- `Detail()`: diagnostic detail. Portal preserves the `detail` field in external responses but clears its content.
 
-## 3. Code 元数据
+## 3. Code metadata
 
-每个 `Code` 都绑定了一组稳定元信息，可通过方法读取。
+Each `Code` has stable metadata exposed through methods.
 
 ### 3.1 `Type()`
 
@@ -129,7 +129,7 @@ code := ex.NotFound
 kind := code.Type() // ApplicationError
 ```
 
-`Type` 不需要单独存储，而是由 `Code` 自动推导。
+`Type` is derived from `Code` and does not need to be stored separately.
 
 ### 3.2 `Category()`
 
@@ -137,33 +137,33 @@ kind := code.Type() // ApplicationError
 category := ex.InvocationTimeout.Category() // InvocationCategory
 ```
 
-错误码分组如下：
+Codes are grouped as follows:
 
-- `OK` 属于 `SuccessCategory`
-- `ServiceUnavailable`、`GatewayTimeout`、`ClientForbidden`、`InvalidRequest` 属于 `FrameworkCategory`
-- `ServerUnreachable`、`InvocationCancelled`、`InvocationTimeout`、`InvocationFailed`、`UnexpectedResponse` 属于 `InvocationCategory`
-- `Internal`、`Unknown` 属于 `FallbackCategory`
-- `Unauthorized`、`PermissionDenied`、`ElevationRequired`、`ValidationFailed`、`OperationFailed`、`NotFound` 属于 `ApplicationCategory`
+- `OK` belongs to `SuccessCategory`.
+- `ServiceUnavailable`, `GatewayTimeout`, `ClientForbidden`, and `InvalidRequest` belong to `FrameworkCategory`.
+- `ServerUnreachable`, `InvocationCancelled`, `InvocationTimeout`, `InvocationFailed`, and `UnexpectedResponse` belong to `InvocationCategory`.
+- `Internal` and `Unknown` belong to `FallbackCategory`.
+- `Unauthorized`, `PermissionDenied`, `ElevationRequired`, `ValidationFailed`, `OperationFailed`, and `NotFound` belong to `ApplicationCategory`.
 
 ### 3.3 `IsValid()`
 
 ```go
 if !code.IsValid() {
-    // 非法错误码
+    // Invalid error code
 }
 ```
 
-只有框架内预定义的 `Code` 才是合法值。
+Only codes predefined by the framework are valid.
 
 ### 3.4 `IsUnresponsive()`
 
 ```go
 if ex.InvocationTimeout.IsUnresponsive() {
-    // 可视为下游无响应类问题
+    // Treat this as an unresponsive downstream dependency
 }
 ```
 
-以下调用链错误被标记为“无响应”：
+These invocation errors are classified as unresponsive:
 
 - `ServerUnreachable`
 - `InvocationCancelled`
@@ -178,10 +178,7 @@ ex.NotFound.CanRaiseDirectly() // true
 ex.Internal.CanRaiseDirectly() // false
 ```
 
-错误类型如下：
-
-- 大多数公开错误码都允许直接抛出
-- `Internal` 和 `Unknown` 被视为兜底错误，不建议直接作为业务层显式抛出的最终语义
+Most public error codes can be raised directly. `Internal` and `Unknown` are fallback errors and should not normally be used as explicit final business semantics.
 
 ### 3.6 `DefaultMessage()`
 
@@ -190,25 +187,25 @@ ex.Internal.DefaultMessage() // "error occurred, please retry"
 ex.Unknown.DefaultMessage()  // "unknown error"
 ```
 
-只有 `Internal` 和 `Unknown` 预置了默认文案，其他错误码默认返回空字符串。
+Only `Internal` and `Unknown` have predefined default messages; the other codes return an empty default message.
 
-## 4. 构造错误
+## 4. Constructing errors
 
-### 4.1 最基础的写法
+### 4.1 Basic form
 
 ```go
 err := ex.New(ex.NotFound, "missing user")
 ```
 
-这会创建一个实现了 `ex.Error` 的错误对象。
+This creates an error object implementing `ex.Error`.
 
-### 4.2 带格式化消息
+### 4.2 Formatted message
 
 ```go
 err := ex.New(ex.ValidationFailed, ex.F("field %s is invalid", "email"))
 ```
 
-### 4.3 带细分原因
+### 4.3 Specific reason
 
 ```go
 err := ex.New(
@@ -218,9 +215,9 @@ err := ex.New(
 )
 ```
 
-`reason` 适合承载可判断的细分场景，格式不限，由错误产生方和消费方约定。通常 `Code` 表示错误大类，`Reason` 表示同一个错误码下的具体原因，前端可以在某些情况下根据它做更细的展示或交互处理。
+Use `reason` for a distinguishable subcase in any format agreed upon by producer and consumer. Typically, `Code` identifies the broad failure and `Reason` identifies a specific case that a frontend may present or handle differently.
 
-### 4.4 带细节说明
+### 4.4 Detail
 
 ```go
 err := ex.New(
@@ -230,9 +227,9 @@ err := ex.New(
 )
 ```
 
-适合需要对外带出更细节说明，但不需要保留原始 `error` 对象时使用。
+Use detail when you need additional explanation without retaining the original `error` object.
 
-### 4.5 包装原始 `error`
+### 4.5 Wrapping an original `error`
 
 ```go
 err := ex.New(
@@ -242,53 +239,49 @@ err := ex.New(
 )
 ```
 
-行为上：
+This preserves these behaviors:
 
-- 通过 `errors.Is(...)` 可以继续判断被包装的原始错误
-- `causeError` 不会参与跨进程序列化
+- `errors.Is(...)` can still identify the wrapped error.
+- `causeError` is not serialized across processes.
 
-### 4.6 成功态与兜底错误
+### 4.6 Success and fallback errors
 
 ```go
 ok := ex.NewOK()
 internalErr := ex.NewInternal()
 ```
 
-其中：
+- `NewOK()` creates an error object whose `Code == OK`.
+- `NewInternal()` is equivalent to `New(ex.Internal, ex.Internal.DefaultMessage())`.
 
-- `NewOK()` 等价于创建 `Code == OK` 的错误对象
-- `NewInternal()` 等价于 `New(ex.Internal, ex.Internal.DefaultMessage())`
+## 5. Error-object behavior
 
-## 5. 错误对象行为
-
-### 5.1 `Type()` 由 `Code` 自动派生
+### 5.1 `Type()` is derived from `Code`
 
 ```go
 err := ex.New(ex.NotFound, "missing user")
 err.Type() // ApplicationError
 ```
 
-因此通常不需要单独判断“这是哪种 error 实现”，直接围绕 `Code` 和 `Type` 即可。
+You normally do not need to inspect the concrete error implementation; use `Code` and `Type` instead.
 
-### 5.2 `Error()` 字符串格式
+### 5.2 `Error()` string format
 
-`ex.Error` 同时实现了标准 `error` 接口，字符串格式大致是：
+`ex.Error` also implements the standard `error` interface. Its string resembles:
 
 ```text
 missing user type=APPLICATION code=NOT_FOUND
 ```
 
-也就是说：
+When `message` is empty, only the type, code, and related information are included.
 
-- `message` 为空时，只输出类型和错误码等信息
+### 5.3 Invalid codes panic
 
-### 5.3 非法 `Code` 会触发 panic
+All constructors call `Code.IsValid()`. Passing an unknown code causes a panic.
 
-所有构造函数都会检查 `Code.IsValid()`。如果传入未知错误码，会直接 panic。
+Do not construct an unregistered `Code` string manually and pass it to `New(...)`.
 
-因此自定义逻辑里不要手工拼接一个未注册的 `Code` 字符串再传给 `New(...)`。
-
-## 6. 解析与判断
+## 6. Parsing and checking
 
 ### 6.1 `ParseCode(...)`
 
@@ -296,34 +289,32 @@ missing user type=APPLICATION code=NOT_FOUND
 code, err := ex.ParseCode("NOT_FOUND")
 ```
 
-行为：
+- A valid string returns the corresponding `Code`.
+- An invalid string returns a standard `error`.
 
-- 字符串合法时返回对应 `Code`
-- 非法时返回普通 `error`
+This is useful when restoring a `Code` from configuration, protocol fields, or log replay.
 
-适合在配置、协议字段、日志回放等字符串场景中恢复 `Code`。
-
-### 6.2 常见判断方式
+### 6.2 Common checks
 
 ```go
 if err.Code() == ex.NotFound {
-    // 处理资源不存在
+    // Handle a missing resource
 }
 
 if err.Type() == ex.ApplicationError {
-    // 处理业务错误
+    // Handle a business error
 }
 
 if err.Code().Category() == ex.InvocationCategory {
-    // 处理下游调用问题
+    // Handle a downstream invocation failure
 }
 ```
 
-## 7. Panic 与 Recover
+## 7. Panic and recover
 
-`core/ex` 明确支持“用 panic 传播 ex.Error，再在边界统一 recover”这一模式。
+`core/ex` explicitly supports propagating an `ex.Error` through panic and recovering it at a boundary.
 
-### 7.1 主动 panic
+### 7.1 Raising an error
 
 ```go
 ex.PanicIfError(err)
@@ -334,49 +325,46 @@ ex.PanicNewIfNot(user != nil, ex.NotFound, "missing user")
 ex.PanicNewIfNot(name != "", ex.ValidationFailed, ex.F("field %s is required", "name"))
 ```
 
-其中：
-
-- `PanicIfError(err)` 只有在 `err != nil` 时才会 panic
-- `PanicNew(...)` 会直接构造并 panic
-- `PanicNewIfError(...)` 会把普通 `error` 映射成指定 `Code`
-- `PanicNewIfNot(...)` 适合把条件检查写在原始调用点，方便保留更准确的 panic 栈
+- `PanicIfError(err)` panics only when `err != nil`.
+- `PanicNew(...)` constructs an error and panics immediately.
+- `PanicNewIfError(...)` maps a standard `error` to a given `Code`.
+- `PanicNewIfNot(...)` keeps the condition check at its original call site, preserving a more accurate panic stack.
 
 ### 7.2 `Recover(...)`
 
 ```go
 defer func() {
     if err := ex.Recover(recover()); err != nil {
-        // err 可能是 ApplicationError，也可能是 SystemError
+        // err may be either an ApplicationError or a SystemError
     }
 }()
 ```
 
-行为：
+It behaves as follows:
 
-- `recover()` 结果为 `nil` 时返回 `nil`
-- 如果 panic 值是 `ex.Error`，则直接返回
-- 无论它是 `ApplicationError` 还是 `SystemError` 都会被接住
-- 如果 panic 值不是 `ex.Error`，会重新 panic
+- A `nil` recovered value returns `nil`.
+- An `ex.Error` is returned directly, whether it is an `ApplicationError` or `SystemError`.
+- A panic value that is not an `ex.Error` is rethrown.
 
 ### 7.3 `RecoverApplication(...)`
 
 ```go
 defer func() {
     if err := ex.RecoverApplication(recover()); err != nil {
-        // 这里只会拿到 ApplicationError
+        // Only ApplicationError values are returned here
     }
 }()
 ```
 
-它更严格：
+This function is stricter:
 
-- 只接住 `Type() == ApplicationError` 的 `ex.Error`
-- 如果 panic 值是 `SystemError`，会继续 panic
-- 如果 panic 值不是 `ex.Error`，也会继续 panic
+- It recovers only an `ex.Error` whose `Type() == ApplicationError`.
+- A `SystemError` is rethrown.
+- A value that is not an `ex.Error` is also rethrown.
 
-适合在只想拦业务异常、不想吞系统故障的边界层使用。
+Use it at boundaries that should catch only business exceptions without swallowing system failures.
 
-## 8. 一个典型用法
+## 8. Typical patterns
 
 ```go
 func FindUser(id string) (*User, ex.Error) {
@@ -391,7 +379,7 @@ func FindUser(id string) (*User, ex.Error) {
 }
 ```
 
-如果你更偏向 panic / recover 风格，也可以写成：
+With a panic/recover style, the same logic can be written as:
 
 ```go
 func MustFindUser(id string) *User {
@@ -406,7 +394,7 @@ func MustFindUser(id string) *User {
 }
 ```
 
-边界层统一恢复：
+Recover at the boundary:
 
 ```go
 func Handle() (err ex.Error) {
@@ -419,10 +407,10 @@ func Handle() (err ex.Error) {
 }
 ```
 
-## 9. 使用建议
+## 9. Recommendations
 
-- 业务可预期失败优先使用 `ApplicationError`
-- 框架层、调用链、兜底异常优先使用已有系统级 `Code`
-- `Internal` 和 `Unknown` 更适合做兜底映射，不要滥用为通用业务错误
-- 如果需要保留底层错误链，优先使用 `New(..., ex.WithCause(...))`
-- 如果边界层不希望吞掉系统故障，优先使用 `RecoverApplication(...)`
+- Use `ApplicationError` for expected business failures.
+- Use existing system-level codes for framework, call-chain, and fallback failures.
+- Reserve `Internal` and `Unknown` for fallback mapping rather than generic business failures.
+- Use `New(..., ex.WithCause(...))` when the underlying error chain must be preserved.
+- Use `RecoverApplication(...)` when a boundary must not swallow system failures.

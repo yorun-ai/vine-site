@@ -2,37 +2,37 @@
 slug: /rpc
 ---
 
-# Rpc API 参考
+# Rpc API Reference
 
-日常使用请先阅读 [使用 Rpc](/docs/guide/rpc)。HTTP 线协议见 [vRPC over HTTP](/docs/vrpc-http)。本页列出 `core/rpc` 的 client、server、executor 和服务元信息 API，适合调整底层调用选项或构建自定义接入层时查阅。
+For day-to-day use, start with [Using Rpc](/docs/guide/rpc). See [vRPC over HTTP](/docs/vrpc-http) for the wire protocol. This page documents the client, server, executor, and service metadata APIs provided by `core/rpc`. Use it when you need to tune low-level invocation options or build a custom integration layer.
 
-`core/rpc` 提供统一的 Rpc 抽象，负责：
+`core/rpc` provides a unified Rpc abstraction. It is responsible for:
 
-- 注册服务与方法元信息
-- 创建 client 发起调用
-- 创建 server 接收请求
-- 在上下文里传递 trace / initiator / actor / client
-- 选择直接反射执行，或经由 `ctr/di` 容器执行
+- Registering service and method metadata.
+- Creating clients that make calls.
+- Creating servers that receive requests.
+- Carrying trace, initiator, actor, and client metadata in context.
+- Executing methods either through direct reflection or through the `ctr/di` container.
 
-它默认和生成代码配套使用。
+It is designed to be used with generated code.
 
-## 1. 和生成代码的关系
+## 1. Relationship to Generated Code
 
-典型流程：
+A typical workflow is:
 
-1. 用 `.skel` 定义 service
-2. 生成 Go 代码
-3. 生成代码中的 `init()` 自动调用 `rpc.Register(...)`
-4. 业务实现生成出的 server 接口
-5. 用 `rpc.NewClient(...)` 或 `rpc.NewServer(...)` 运行
+1. Define a service in a `.skel` file.
+2. Generate Go code.
+3. The generated code calls `rpc.Register(...)` automatically from `init()`.
+4. Business code implements the generated server interface.
+5. Run it with `rpc.NewClient(...)` or `rpc.NewServer(...)`.
 
-通常不建议手写完整 `ServiceSpec`。
+You generally should not write a complete `ServiceSpec` by hand.
 
 ## 2. Client
 
 ### 2.1 `ClientOption`
 
-`ClientOption` 的字段如下：
+The client configuration is:
 
 ```go
 type Option struct {
@@ -44,14 +44,14 @@ type Option struct {
 }
 ```
 
-注意：
+Notes:
 
-- 字段名是 `ServerEndpoint`
-- `Context` 不能为空
-- `Logger` 不能为空
-- `ReturnIfSystemError == false` 时，system error 默认会直接 panic
+- The field is named `ServerEndpoint`.
+- `Context` cannot be nil.
+- `Logger` cannot be nil.
+- When `ReturnIfSystemError == false`, system errors panic by default.
 
-### 2.2 创建与调用
+### 2.2 Creating and Invoking a Client
 
 ```go
 client := rpc.NewClient(rpc.ClientOption{
@@ -62,37 +62,37 @@ client := rpc.NewClient(rpc.ClientOption{
 })
 ```
 
-调用入口：
+Invoke a method with:
 
 ```go
 result, err := client.Invoke(methodInfo, arguments, options...)
 ```
 
-返回值：
+The return values are:
 
-- 第一个返回值是业务结果
-- 第二个返回值是 `ex.Error`
+- The business result.
+- An `ex.Error`.
 
-### 2.3 Invoke 选项
+### 2.3 Invoke Options
 
-调用选项包括：
+The supported options are:
 
 - `rpc.WithContext(ctx)`
 - `rpc.WithTimeout(duration)`
 
-规则：
+Rules:
 
-- `WithTimeout(...)` 必须大于 0
-- `WithContext(...)` 只覆盖底层请求生命周期使用的父 `context.Context`
-- `WithContext(...)` 不会覆盖 Rpc 元数据，trace / initiator / actor 仍来自 client 自己的 `meta.Context`
-- `WithContext(...)` 与 `WithTimeout(...)` 不能同时使用
-- 不传 `WithContext(...)` 时，默认请求超时是 `30s`
+- `WithTimeout(...)` must be greater than zero.
+- `WithContext(...)` only replaces the parent `context.Context` used for the underlying request lifecycle.
+- `WithContext(...)` does not replace Rpc metadata. Trace, initiator, and actor still come from the client's own `meta.Context`.
+- `WithContext(...)` and `WithTimeout(...)` cannot be used together.
+- When `WithContext(...)` is omitted, the default request timeout is `30s`.
 
 ### 2.4 `ReturnIfSystemError`
 
-当 `ReturnIfSystemError == true` 时，客户端会把 system error 作为返回值交给调用方处理，而不是直接 panic。
+When `ReturnIfSystemError == true`, the client returns a system error to the caller instead of panicking.
 
-默认值是 `false`。
+The default value is `false`.
 
 ## 3. Server
 
@@ -107,11 +107,9 @@ type Option struct {
 }
 ```
 
-注意：
+`HandlerTypes` is a `[]reflect.Type`.
 
-- `HandlerTypes` 是 `[]reflect.Type`
-
-创建方式：
+Create a server like this:
 
 ```go
 server := rpc.NewServer(rpc.ServerOption{
@@ -120,15 +118,15 @@ server := rpc.NewServer(rpc.ServerOption{
 })
 ```
 
-### 3.2 暴露能力
+### 3.2 Exposed Capabilities
 
-`Server` 提供：
+`Server` mainly provides:
 
 - `GetServiceInfos()`
 - `RpcHandler()`
 - `HTTPHandler()`
 
-其中 `HTTPHandler()` 返回标准 `http.Handler`。
+`HTTPHandler()` returns a standard `http.Handler`.
 
 ## 4. Executor
 
@@ -139,13 +137,13 @@ type Executor interface {
 }
 ```
 
-框架内置两种实现。
+The framework includes two implementations.
 
 ### 4.1 `NewDefaultExecutor()`
 
-直接反射创建实现对象并调用方法。
+The default executor creates the implementation object through reflection and calls its method directly.
 
-如果 handler struct 中有且只有一个 `spec.Context` 类型字段，默认 executor 会自动把当前 Rpc 上下文注入进去。
+If a handler struct contains exactly one field of type `spec.Context`, the default executor automatically injects the current Rpc context into it.
 
 ### 4.2 `NewContainerExecutor(...)`
 
@@ -153,16 +151,16 @@ type Executor interface {
 rpc.NewContainerExecutor(filterTypes, bindAppliers)
 ```
 
-它会接入 `core/ctr` 与 `core/di`，并额外把这些依赖以 `ExecutionScope` 注入：
+This executor integrates `core/ctr` and `core/di` and additionally injects these dependencies with `ExecutionScope`:
 
 - `spec.Context`
 - `spec.MethodInfo`
 
-适合需要 filter、DI、上下文扩展的服务端执行链。
+Use it for server execution chains that need filters, DI, or context extensions.
 
 ## 5. `rpc.Context`
 
-`rpc.Context` 在 `meta.Context` 基础上补充了 `Client()`：
+`rpc.Context` extends `meta.Context` with `Client()`:
 
 ```go
 type Context interface {
@@ -171,24 +169,24 @@ type Context interface {
 }
 ```
 
-创建方式：
+Create one with:
 
 ```go
 rpcCtx := rpc.NewContext(ctx, trace, clientApp, initiator, actor)
 ```
 
-它表示：
+It represents:
 
-- 当前 trace
-- 当前 initiator
-- 当前 actor
-- 本次 Rpc 调用的 client app
+- The current trace.
+- The current initiator.
+- The current actor.
+- The client application for the current Rpc call.
 
-## 6. 服务元信息
+## 6. Service Metadata
 
 ### 6.1 `ServiceSpec`
 
-`ServiceSpec` 是注册输入结构，常由生成代码提供：
+`ServiceSpec` is the registration input and is usually provided by generated code:
 
 ```go
 type ServiceSpec struct {
@@ -229,7 +227,7 @@ type MethodSpec struct {
 
 ### 6.3 `ServiceInfo`
 
-注册完成后，对外暴露的是 `ServiceInfo`：
+After registration, service metadata is exposed as `ServiceInfo`:
 
 ```go
 type ServiceInfo interface {
@@ -271,26 +269,26 @@ type MethodInfo interface {
 }
 ```
 
-其中：
+In particular:
 
-- `FullURLPath()` 格式是 `/{serviceSkelName}/{methodSkelName}`
-- `PositionArguments(...)` 把 arguments struct 展成位置参数
-- `ValidateArguments(...)` 会检查参数是否满足生成的 Skeleton 约束
-- `ValidateResult(...)` 会检查返回值是否满足生成的 Skeleton 约束
+- `FullURLPath()` has the form `/{serviceSkelName}/{methodSkelName}`.
+- `PositionArguments(...)` expands an arguments struct into positional arguments.
+- `ValidateArguments(...)` verifies that arguments satisfy the generated Skeleton constraints.
+- `ValidateResult(...)` verifies that a result satisfies the generated Skeleton constraints.
 
-## 7. 服务注册
+## 7. Service Registration
 
-注册入口：
+Register a service with:
 
 ```go
 rpc.Register(serviceSpec)
 ```
 
-## 8. 普通接口与 ER 接口
+## 8. Normal and ER Interfaces
 
-框架同时支持两套服务签名风格。
+The framework supports two styles of service signature.
 
-普通 server：
+A normal server:
 
 ```go
 type UserServiceServer interface {
@@ -298,7 +296,7 @@ type UserServiceServer interface {
 }
 ```
 
-ER server：
+An ER server:
 
 ```go
 type UserServiceServerER interface {
@@ -306,15 +304,15 @@ type UserServiceServerER interface {
 }
 ```
 
-规则：
+Rules:
 
-- 普通 server 的业务错误通常通过 panic / recover 链路处理
-- ER server 的最后一个返回值固定是 `ex.Error`
-- 普通 server 可以通过 `WrapperERServerCtor` 包成 ER server
+- Business errors from a normal server usually flow through the panic and recover path.
+- The final return value of an ER server is always `ex.Error`.
+- A normal server can be wrapped as an ER server through `WrapperERServerCtor`.
 
-## 9. 使用建议
+## 9. Recommendations
 
-- 优先使用生成的元信息，不要手写完整 spec
-- client 一定显式传入 `Logger`
-- server 端如果需要上下文注入和 filter，优先用 `NewContainerExecutor(...)`
-- 如果你希望自己接住并处理 system error，再显式开启 `ReturnIfSystemError`
+- Prefer generated metadata to handwritten specs.
+- Always provide a `Logger` explicitly when creating a client.
+- On the server, prefer `NewContainerExecutor(...)` when you need context injection or filters.
+- Enable `ReturnIfSystemError` explicitly only when you want to catch and handle system errors yourself.

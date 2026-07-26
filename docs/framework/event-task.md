@@ -2,11 +2,11 @@
 slug: /events-and-tasks
 ---
 
-# Event 与 Task
+# Events and Tasks
 
-Event 适合发布已经发生的事实，Task 适合请求某个应用执行工作。两者都由 `.skel` 定义类型安全契约，并由 Link 通过消息系统投递。
+Use an Event to publish a fact that has already happened. Use a Task to ask an application to perform work. Both use type-safe contracts defined in `.skel`, and Link delivers them through the messaging system.
 
-需要消费 Event 或执行 Task 的应用先启用对应能力：
+An application that consumes Events or runs Tasks first enables the corresponding capabilities:
 
 ```go title="app.go"
 type DemoApp struct {
@@ -26,7 +26,7 @@ pub event UserCreatedEvent {
 }
 ```
 
-生成代码会提供 emitter 和 listener 接口。应用通过 `EventerInitListeners` 注册监听器，并可设置超时、并发和失败重试策略。
+Generated code provides emitter and listener interfaces. An application registers listeners through `EventerInitListeners` and can configure timeout, concurrency, and failure retry policies.
 
 ```go title="event.go"
 type UserCreatedListener struct {
@@ -34,7 +34,7 @@ type UserCreatedListener struct {
 }
 
 func (*UserCreatedListener) OnUserCreated(event *skeled.UserCreatedEvent) {
-    // 更新读模型或发送通知
+    // Update a read model or send a notification
 }
 
 func (*DemoApp) EventerInitListeners(add app.ListenerTypeAdder) {
@@ -45,7 +45,7 @@ func (*DemoApp) EventerInitListeners(add app.ListenerTypeAdder) {
 }
 ```
 
-发送方可注入生成的 emitter，并调用类型安全的方法：
+The sender can inject the generated emitter and call its type-safe method:
 
 ```go title="service.go"
 type UserService struct {
@@ -59,7 +59,7 @@ func (s *UserService) Publish(userId skel.UUID) {
 
 ```mermaid
 flowchart LR
-  Emitter["业务代码发送事件"] --> LinkA["发送方 Link"] --> NATS["NATS"] --> LinkB["接收方 Link"] --> Listener["Event listener"]
+  Emitter["Business code emits an event"] --> LinkA["Sender Link"] --> NATS["NATS"] --> LinkB["Receiver Link"] --> Listener["Event listener"]
 ```
 
 ## Task
@@ -71,7 +71,7 @@ task RebuildIndexTask {
 }
 ```
 
-生成代码会提供 launcher 和 runner 接口。应用通过 `TaskerInitRunners` 注册 runner；使用 `WithRunnerCronScheduler` 可为 trigger 增加 Cron 调度。
+Generated code provides launcher and runner interfaces. An application registers runners through `TaskerInitRunners`; use `WithRunnerCronScheduler` to add a Cron schedule for a trigger.
 
 ```go title="task.go"
 type RebuildIndexRunner struct {
@@ -79,11 +79,11 @@ type RebuildIndexRunner struct {
 }
 
 func (*RebuildIndexRunner) RunManually() {
-    // 重建索引
+    // Rebuild the index
 }
 
 func (*RebuildIndexRunner) RunNightly() {
-    // 重建索引
+    // Rebuild the index
 }
 
 func (*DemoApp) TaskerInitRunners(add app.RunnerTypeAdder) {
@@ -94,7 +94,7 @@ func (*DemoApp) TaskerInitRunners(add app.RunnerTypeAdder) {
 }
 ```
 
-需要即时触发时，注入生成的 launcher：
+Inject the generated launcher when a Task must be triggered immediately:
 
 ```go title="service.go"
 type MaintenanceService struct {
@@ -108,9 +108,9 @@ func (s *MaintenanceService) RebuildNow() {
 
 ```mermaid
 flowchart LR
-  Launcher["业务代码或调度器"] --> LinkA["发送方 Link"] --> NATS["NATS"] --> LinkB["执行方 Link"] --> Runner["Task runner"]
+  Launcher["Business code or scheduler"] --> LinkA["Sender Link"] --> NATS["NATS"] --> LinkB["Worker Link"] --> Runner["Task runner"]
 ```
 
-Event 与 Task 都携带 trace、发起应用和 Actor 上下文。监听器或 runner 抛出错误时，是否重试由注册选项决定；对非幂等操作应谨慎启用重试。
+Events and Tasks both carry trace, initiating application, and Actor context. Whether an error thrown by a listener or runner is retried depends on its registration options. Enable retries cautiously for non-idempotent operations.
 
-完整语法见 [Skel 语法](https://skel.yorun.ai/docs/syntax)，Link 的投递职责见 [Link](/docs/link)。
+See [Skel Syntax](https://skel.yorun.ai/docs/syntax) for the complete syntax and [Link](/docs/link) for Link's delivery responsibilities.

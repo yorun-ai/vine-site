@@ -6,8 +6,8 @@
   "packageManager": "pnpm@11.15.1",
   "scripts": {
     "start": "docusaurus serve --build --no-open",
-    "dev": "docusaurus start --locale zh-Hans",
-    "dev:zh": "docusaurus start --locale zh-Hans",
+    "dev": "docusaurus start --locale en",
+    "dev:zh": "docusaurus start --locale zh-CN",
     "dev:en": "docusaurus start --locale en",
     "build": "docusaurus build",
     "typecheck": "tsc --noEmit",

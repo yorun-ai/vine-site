@@ -31,24 +31,25 @@ source; do not present planned APIs as available.
 - Node.js 20 or later
 - pnpm 11.15.1
 
-Install dependencies and start the Chinese site:
+Install dependencies and start the default English site:
 
 ```bash
 pnpm install
-pnpm dev:zh
+pnpm dev
 ```
 
-Use `pnpm dev:en` to preview the English site.
+Use `pnpm dev:zh` to preview the Simplified Chinese site.
 
 ## Documentation Layout
 
-- Chinese source documents: `docs`
-- English translations:
-  `i18n/en/docusaurus-plugin-content-docs/current`
+- English source documents: `docs`
+- Simplified Chinese translations:
+  `i18n/zh-CN/docusaurus-plugin-content-docs/current`
 - Site and navigation configuration: `docusaurus.config.ts` and `sidebars.ts`
 - Shared site components and styles: `src`
 
-Update the Chinese source and its English translation in the same pull request.
+Update the English source and its Simplified Chinese translation in the same
+pull request.
 Keep filenames, document IDs, headings, examples, diagrams, and internal links
 aligned between locales.
 

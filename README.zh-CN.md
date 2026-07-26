@@ -15,7 +15,7 @@ pnpm install
 pnpm dev:zh
 ```
 
-使用 `pnpm dev:en` 启动英文站点。验证两个语言版本：
+使用 `pnpm dev` 或 `pnpm dev:en` 启动默认的英文站点。验证两个语言版本：
 
 ```bash
 pnpm typecheck

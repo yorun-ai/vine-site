@@ -2,24 +2,25 @@
 slug: /logging-and-testing
 ---
 
-# 日志与测试
+# Logging and Testing
 
-Vine 使用 `core/logger` 记录结构化日志。每条记录都包含 `logger` 字段，用冒号分隔的名称标识日志来源，例如 `app:demo.user:rpc:server`。
+Vine uses `core/logger` for structured logging. Every record contains a `logger` field whose colon-separated name identifies its source, such as `app:demo.user:rpc:server`.
 
-## 写入日志
+## Writing logs
 
-业务代码可以直接使用包级默认 logger。它的名称是 `vine:default`。
+Application code can use the package-level default logger directly. Its name is `vine:default`.
 
-Vine 自身使用稳定的分层名称：`vine:core:link`、`vine:core:rpc` 和
-`vine:core:redact` 表示框架核心能力，`vine:infra:rdb` 表示基础设施适配；
-Go 标准库日志使用 `vine:stdlog`。这些名称可以直接用于日志级别规则。
+Vine itself uses stable hierarchical names: `vine:core:link`, `vine:core:rpc`,
+and `vine:core:redact` identify framework capabilities, while `vine:infra:rdb`
+identifies the infrastructure adapter. Go standard-library logs use
+`vine:stdlog`. These names can be used directly in level rules.
 
 ```go title="service.go"
 logger.Info("user created", "userId", user.ID)
 logger.Error("payment failed", "orderId", order.ID, "error", err)
 ```
 
-需要区分日志来源时，创建带名称的 logger。传入 `New` 的多个名称片段会用 `:` 拼接；片段本身也可以包含 `:`。`Child` 可以在已有名称后继续追加片段，并继承父 logger 的配置和属性。
+Create a named logger when you need to distinguish log sources. Multiple name arguments passed to `New` are joined with `:`, and an argument may itself contain `:`. `Child` appends segments to an existing name while inheriting the parent's options and attributes.
 
 ```go title="service.go"
 appLog := logger.New("app", "demo.user")
@@ -29,16 +30,16 @@ rpcLog.Info("request completed", "method", "GetUser", "elapsedMs", 12)
 // logger=app:demo.user:rpc:server
 ```
 
-`logger` 是保留字段，不能作为顶层日志属性传入。可以通过 `With` 为派生 logger 添加固定的结构化属性：
+`logger` is reserved and cannot be supplied as a top-level log attribute. Use `With` to add fixed structured attributes to a derived logger:
 
 ```go title="service.go"
 tenantLog := appLog.With(slog.String("tenantId", tenantID))
 tenantLog.Info("tenant initialized")
 ```
 
-## 按名称配置日志级别
+## Configuring levels by name
 
-未显式指定级别的 logger 使用 `LevelAuto`。它会动态匹配进程内的名称规则；没有规则命中时，再使用全局级别。修改规则或全局级别后，已经创建的 auto-level logger 也会立即采用新配置。
+A logger without an explicit level uses `LevelAuto`. It dynamically resolves process-wide name rules and falls back to the global level when no rule matches. Existing auto-level loggers immediately observe later rule and global-level changes.
 
 ```go title="main.go"
 logger.SetGlobalLevel(logger.LevelInfo)
@@ -49,36 +50,36 @@ logger.SetLevel("app:demo.user:*", logger.LevelInfo)
 logger.SetLevel("app:demo.user:rpc:server", logger.LevelDebug)
 ```
 
-规则和 logger 名称都按 `:` 分段：
+Rules and logger names are split into `:`-separated segments:
 
-- 普通片段只匹配相同文本。
-- `*` 严格匹配一个片段。
-- `**` 匹配零个或多个连续片段。
-- 一条规则也会匹配其后代名称。例如，`app:*:rpc` 能匹配 `app:demo.order:rpc:client`。
-- `*` 和 `**` 不能单独作为完整规则；`rpc*`、`*rpc`、`***` 等片段内通配形式也不受支持。
+- A literal segment matches only the same text.
+- `*` matches exactly one segment.
+- `**` matches zero or more consecutive segments.
+- A rule also matches descendant names. For example, `app:*:rpc` matches `app:demo.order:rpc:client`.
+- `*` and `**` cannot be complete rules by themselves. In-segment wildcard forms such as `rpc*`, `*rpc`, and `***` are not supported.
 
-多条规则同时命中时，按以下顺序选择：
+When several rules match, Vine selects one in this order:
 
-1. 从左到右逐段比较，普通片段的优先级高于 `*`，`*` 高于 `**`。
-2. 最先出现差异的位置决定优先级，后续片段不再参与比较。
-3. 如果较短规则的所有片段与较长规则具有相同的匹配类型，则更长的规则优先。
-4. 没有规则命中时，使用 `SetGlobalLevel` 设置的全局级别。
+1. Compare segments from left to right. A literal outranks `*`, and `*` outranks `**`.
+2. The first position with a different match type decides the priority; later segments are not considered.
+3. If every segment of a shorter rule has the same match type as the corresponding segment of a longer rule, the longer rule wins.
+4. If no rule matches, Vine uses the global level configured by `SetGlobalLevel`.
 
-以上面的规则为例：
+With the rules above:
 
-| logger 名称 | 生效规则 | 级别 | 原因 |
+| Logger name | Effective rule | Level | Reason |
 | --- | --- | --- | --- |
-| `app:demo.user:rpc:server` | `app:demo.user:rpc:server` | `DEBUG` | 全字面量的精确规则最具体 |
-| `app:demo.user:event` | `app:demo.user:*` | `INFO` | 左侧的字面量片段优先于 `app:**` |
-| `app:demo.order:rpc:client` | `app:*:rpc` | `ERROR` | `*` 在第二段的优先级高于 `**` |
-| `app:demo.order:event` | `app:**` | `WARN` | 只有通用应用规则命中 |
-| `vine:default` | 无 | 全局 `INFO` | 没有规则命中，回退到全局级别 |
+| `app:demo.user:rpc:server` | `app:demo.user:rpc:server` | `DEBUG` | The all-literal exact rule is the most specific |
+| `app:demo.user:event` | `app:demo.user:*` | `INFO` | Its left-side literals outrank `app:**` |
+| `app:demo.order:rpc:client` | `app:*:rpc` | `ERROR` | `*` in the second segment outranks `**` |
+| `app:demo.order:event` | `app:**` | `WARN` | Only the general application rule matches |
+| `vine:default` | None | Global `INFO` | No rule matches, so the global level applies |
 
-`ClearLevel(pattern)` 用于删除一条规则，`Levels()` 返回当前规则的副本。规则是进程级配置；如果在 `WithOption` 中设置具体的 `LevelDebug`、`LevelInfo`、`LevelWarn` 或 `LevelError`，该 logger 的级别会固定，不再跟随规则或全局级别。
+Use `ClearLevel(pattern)` to remove a rule. `Levels()` returns a copy of the current rules. Rules are process-wide. If `WithOption` specifies a concrete `LevelDebug`, `LevelInfo`, `LevelWarn`, or `LevelError`, that logger's level is fixed and no longer follows rules or the global level.
 
-## 格式与输出
+## Format and output
 
-全局格式、级别和输出路径可以分别配置：
+Configure the global format, level, and output path independently:
 
 ```go title="main.go"
 logger.SetGlobalFormat(logger.FormatJSON)
@@ -86,11 +87,11 @@ logger.SetGlobalLevel(logger.LevelInfo)
 logger.SetGlobalOutputPath("/var/log/demo/app.log")
 ```
 
-`FormatText` 每条记录输出一行便于阅读的 `key=value` 文本；`FormatJSON` 以 JSON Lines 形式输出，每条记录是一个 JSON 对象。未设置格式时，Vine 在 Kubernetes 环境中默认使用 JSON，其他环境默认使用文本。
+`FormatText` emits one human-readable `key=value` line per record. `FormatJSON` uses JSON Lines, with one JSON object per record. When no format is configured, Vine defaults to JSON in Kubernetes and text in other environments.
 
-输出始终写入 stderr。设置非空输出路径后，日志还会追加写入该文件，并自动创建父目录；传入空路径可恢复为只写 stderr。
+Logs are always written to stderr. A non-empty output path additionally appends them to that file and creates its parent directories automatically. Pass an empty path to return to stderr-only output.
 
-`New` 的最后一个参数可以是 `WithOption`。每个字段独立生效：空的 `Format` 和 `OutputPath` 会动态跟随全局配置，空的 `Level` 是 `LevelAuto`；非空字段则固定在该 logger 上。
+The final argument to `New` may be `WithOption`. Each field behaves independently: an empty `Format` or `OutputPath` dynamically follows its global setting, while an empty `Level` means `LevelAuto`; non-empty fields are fixed on that logger.
 
 ```go title="audit.go"
 auditLog := logger.New("app:demo.user:audit", logger.WithOption{
@@ -100,11 +101,15 @@ auditLog := logger.New("app:demo.user:audit", logger.WithOption{
 })
 ```
 
-标准库 `log` 的输出会由名称为 `vine:stdlog` 的 logger 接管。需要替换包级默认 logger 时，可以调用 `logger.SetDefault(customLogger)`。
+Output from the standard library `log` package is bridged through a logger named `vine:stdlog`. Call `logger.SetDefault(customLogger)` when you need to replace the package-level default logger.
 
-## 敏感字段与二进制
+## Sensitive fields and binary values
 
-Skel 字段可以使用 `@sensitive` 标记。skelc 会在对应的 Go 字段上生成 `skel:"sensitive"`，Rpc、Event 和 Task payload 日志会通过 `core/redact` 将其替换为 `<redacted>`。字段名称本身不会触发隐式遮蔽；动态 map 或 JSON 中的敏感内容需要由调用方使用 `RootSensitive` 或 `Sanitizer` 显式处理。
+Skel fields can be marked with `@sensitive`. skelc adds `skel:"sensitive"`
+to the corresponding Go field, and Rpc, Event, and Task payload logging uses
+`core/redact` to replace it with `<redacted>`. Field names alone never trigger
+implicit masking; callers must explicitly handle sensitive content in dynamic
+maps or JSON with `RootSensitive` or `Sanitizer`.
 
 ```skel
 data LoginRequest {
@@ -115,9 +120,10 @@ data LoginRequest {
 }
 ```
 
-`@sensitive` 也可以标记整个 data / config、event 的 `payload` block，以及 actor 的 `credential` / `info` block。对应生成类型会实现 `skel.Sensitive` interface 的 `SkelSensitive()` marker method，不增加数据字段，也不改变 JSON / CBOR；`core/redact` 会把该类型的值整体替换为 `<redacted>`。event 和 auth 容器本身不能标记。标记整个 Rpc method input / output 或 resource check input 时，skelc 会写入 `MethodSpec`，对应 payload 日志同样整体遮蔽；标记整个 task trigger input 时，则会写入 Task `TriggerSpec`，供处理 Task 参数的代码识别。
+`@sensitive` can also mark an entire data or config declaration, an Event `payload` block, and Actor `credential` or `info` blocks. The corresponding generated type implements the `SkelSensitive()` marker method from the `skel.Sensitive` interface, adding no data field and changing neither JSON nor CBOR; `core/redact` replaces values of that type with `<redacted>` as a whole. Event declarations and Actor `auth` containers cannot be marked. When an entire Rpc method input/output or Resource check input is marked, skelc records the metadata in `MethodSpec`, and the corresponding payload log is masked as a whole. Whole Task trigger input metadata is recorded in Task `TriggerSpec` for code that processes Task arguments.
 
-`core/redact` 不依赖 Rpc、Event 或 Task 的具体架构，也可以直接处理普通 Go 值：
+`core/redact` is independent of the concrete Rpc, Event, and Task architecture,
+so it can render ordinary Go values directly:
 
 ```go
 rendered, err := redact.Render(value)
@@ -130,18 +136,25 @@ logger.Info("diagnostic value",
 )
 ```
 
-`Render` 失败时会通过 `vine:core:redact` 额外记录一条 `ERROR` 日志，其中只包含安全的
-`failureKind` 分类，不包含可能携带敏感数据的原始错误文本；调用方仍会收到原始错误。
+When `Render` fails, it also emits an `ERROR` record through
+`vine:core:redact`. The record contains only a safe `failureKind` category,
+not the original error text that may contain sensitive data; the caller still
+receives the original error.
 
-调用方已知整个值敏感时，可以传入 `redact.Option{RootSensitive: true}`，无需依赖具体 Go 类型或字段 tag。
+When the caller already knows that the entire value is sensitive, pass
+`redact.Option{RootSensitive: true}` without relying on a particular Go type
+or field tag.
 
-`redact.Option{RevealSensitive: true}` 可以显式保留普通敏感字段，适合受严格控制的临时诊断。二进制值不受该选项影响：始终只输出字节数，不输出原始内容。
+`redact.Option{RevealSensitive: true}` explicitly preserves ordinary sensitive
+fields and should only be used for tightly controlled temporary diagnostics.
+It does not affect binary values: they are always replaced with their byte
+length, never their raw contents.
 
-框架的 Rpc、Event 和 Task 日志在记录 payload 时始终调用 `core/redact`，不提供关闭脱敏或输出敏感原文的全局开关。`core/redact` 同时限制遍历深度、节点数、集合大小、字符串长度和最终 JSON 大小；发生裁剪时，`Result.Truncated` 为 `true`。
+Framework Rpc, Event, and Task logs always call `core/redact` when they record payloads; there is no global switch that disables masking or emits sensitive values in full. `core/redact` also bounds traversal depth, node count, collection size, string length, and final JSON size. `Result.Truncated` is `true` when a value is truncated.
 
-## 应用测试
+## Application testing
 
-`app/testkit` 用于在测试中启动 standalone runtime、覆盖配置并创建类型安全客户端。它适合覆盖依赖注入、Rpc handler、Event listener 和 Task runner 的集成行为。
+`app/testkit` starts a standalone runtime in tests, overrides configuration, and creates type-safe clients. It is suitable for integration tests that cover dependency injection, Rpc handlers, Event listeners, and Task runners.
 
 ```go title="greeting_test.go"
 func TestGreeting(t *testing.T) {
@@ -156,17 +169,17 @@ func TestGreeting(t *testing.T) {
 }
 ```
 
-Vine App 在同一测试进程中是单例。一个测试 package 只启动一次 standalone runtime；有多组用例时，在同一个顶层测试中用 `t.Run(...)` 组织子用例并共享 runtime，不要在多个测试里重复创建 App。
+A Vine App is a singleton within a test process. Start a standalone runtime only once per test package. When you have multiple cases, organize them with `t.Run(...)` under the same top-level test and share the runtime; do not create the App repeatedly in separate tests.
 
-测试应关注可观察行为：返回值、状态变化、配置覆盖以及错误码。只有在验证真实租约、断网或 TLS 入口时，才需要启动独立 Hub、Link 和 Portal 进程。
+Tests should focus on observable behavior: return values, state changes, configuration overrides, and error codes. Start separate Hub, Link, and Portal processes only when you need to test real leases, network loss, or TLS ingress.
 
-运行全部 Go 测试：
+Run all Go tests:
 
 ```bash
 go test ./...
 ```
 
-运行指定包：
+Run a specific test in a package:
 
 ```bash
 go test ./path/to/package -run TestName

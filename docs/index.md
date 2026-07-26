@@ -3,50 +3,50 @@ sidebar_position: 1
 slug: /
 ---
 
-# Vine 文档
+# Vine Documentation
 
-Vine 是面向 Go 应用的框架。本文档帮助你从创建应用开始，逐步使用配置、服务调用、异步任务和外部访问能力。
+Vine is a framework for Go applications. This documentation takes you from creating an application through using configuration, service calls, asynchronous tasks, and external access.
 
-## 开始使用
+## Get Started
 
-- [了解 Vine](/docs/getting-started)：认识 App、Hub、Link、Portal 和 skelc。
-- [启动第一个应用](/docs/tutorial-first-app)：在一个进程中启动完整 Vine runtime。
-- [创建第一个 Skel 契约](/docs/first-skel-contract)：校验契约并生成类型安全代码。
-- [运行模式与部署拓扑](/docs/deployment-modes)：选择 standalone、linked 或完全分开部署。
-- [命令行](/docs/cli)：安装 `vine`、查看版本并启动运行时服务。
-- [项目目录结构](/docs/filetree)：了解 Vine 应用和模块的推荐结构。
+- [Learn about Vine](/docs/getting-started): Meet App, Hub, Link, Portal, and skelc.
+- [Start your first application](/docs/tutorial-first-app): Start the complete Vine runtime in a single process.
+- [Create your first Skel contract](/docs/first-skel-contract): Validate a contract and generate type-safe code.
+- [Runtime modes and deployment topologies](/docs/deployment-modes): Choose standalone, linked, or fully separated deployment.
+- [Command line](/docs/cli): Install `vine`, inspect its version, and start runtime services.
+- [Project structure](/docs/filetree): Learn the recommended structure for Vine applications and modules.
 
-## 核心概念
+## Core Concepts
 
-- [应用模型](/docs/application-model)：理解 App、Module、Portal、Link 和 Hub 如何组成一个应用。
-- [组件与模块](/docs/components)：组织业务能力和生命周期资源。
-- [依赖注入](/docs/di)：scope、binding 与 execution。
-- [上下文元信息](/docs/meta)：trace、initiator 与 actor。
-- [错误处理](/docs/ex)：统一错误码和 recover 约定。
-- [执行容器](/docs/ctr)：filter 链和方法执行。
+- [Application model](/docs/application-model): Understand how App, Module, Portal, Link, and Hub form an application.
+- [Components and modules](/docs/components): Organize business capabilities and lifecycle resources.
+- [Dependency injection](/docs/di): Scopes, bindings, and executions.
+- [Context metadata](/docs/meta): Trace, initiator, and actor metadata.
+- [Error handling](/docs/ex): Unified error codes and recovery conventions.
+- [Execution container](/docs/ctr): Filter chains and method execution.
 
-## 应用能力
+## Application Capabilities
 
-- [应用配置](/docs/configuration)：从 Skel 声明到运行时注入。
-- [Rpc](/docs/guide/rpc)：声明服务、实现方法并完成一次调用。
-- [Web](/docs/web)：注册路由、静态资源和外部入口。
-- [Event 与 Task](/docs/events-and-tasks)：异步消息、任务和调度。
-- [Redis](/docs/guide/redis)：配置连接并注入类型安全的 Redis 能力。
-- [关系型数据库](/docs/guide/rdb)：配置数据源、事务和数据库访问。
-- [日志与测试](/docs/logging-and-testing)：结构化日志和 standalone 集成测试。
+- [Application configuration](/docs/configuration): Move from Skel declarations to runtime injection.
+- [Rpc](/docs/guide/rpc): Declare a service, implement its methods, and make a call.
+- [Web](/docs/web): Register routes, static resources, and external entry points.
+- [Event and Task](/docs/events-and-tasks): Asynchronous messages, tasks, and scheduling.
+- [Redis](/docs/guide/redis): Configure a connection and inject type-safe Redis capabilities.
+- [Relational databases](/docs/guide/rdb): Configure data sources, transactions, and database access.
+- [Logging and testing](/docs/logging-and-testing): Structured logging and standalone integration tests.
 
-## 运行时与部署
+## Runtime and Deployment
 
-- [组件运行机制](/docs/runtime-mechanisms)：启动、注册、发现、配置、消息投递和优雅停止。
-- [Hub](/docs/hub)：配置、服务注册与运行时分发。
-- [Link](/docs/link)：应用接入、服务发现与本地能力运行。
-- [Portal](/docs/portal)：外部 HTTP / HTTPS、Rpc 与 Web 网关。
-- [运行模式与部署拓扑](/docs/deployment-modes)：选择 standalone、linked 或完全分开部署。
+- [Component runtime mechanisms](/docs/runtime-mechanisms): Startup, registration, discovery, configuration, message delivery, and graceful shutdown.
+- [Hub](/docs/hub): Configuration, service registration, and runtime dispatch.
+- [Link](/docs/link): Application connectivity, service discovery, and local capability execution.
+- [Portal](/docs/portal): External HTTP/HTTPS, Rpc, and Web gateway.
+- [Runtime modes and deployment topologies](/docs/deployment-modes): Choose standalone, linked, or fully separated deployment.
 
-## Skel 与代码生成
+## Skel and Code Generation
 
-- [skelc 文档](https://skel.yorun.ai/docs/)：安装、语言参考、CLI、代码生成与运行时类型。
+- [skelc documentation](https://skel.yorun.ai/docs/): Installation, language reference, CLI, code generation, and runtime types.
 
-## API 与实现参考
+## Reference
 
-完成入门教程后，可继续查阅 [App](/docs/app)、[Rpc](/docs/rpc)、[Redis](/docs/redis)、[RDB](/docs/rdb) 和 [框架包索引](/docs/core-packages) 的完整参考。
+After completing the introductory tutorials, continue with the full references for [App](/docs/app), [Rpc](/docs/rpc), [Redis](/docs/redis), [RDB](/docs/rdb), and the [framework package index](/docs/core-packages).

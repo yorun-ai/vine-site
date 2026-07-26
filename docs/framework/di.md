@@ -2,9 +2,9 @@
 slug: /di
 ---
 
-# 依赖注入（DI）
+# Dependency Injection (DI)
 
-Vine 使用依赖注入创建模块、handler、listener 和 runner，并管理它们依赖对象的生命周期。日常开发从字段上的 `inject:""` 开始；需要替换接口实现或控制 scope 时，再添加显式绑定。
+Vine uses dependency injection to create modules, handlers, listeners, and runners, and to manage the lifetimes of their dependencies. Everyday development starts with `inject:""` on fields; add explicit bindings only when you need to replace an interface implementation or control a scope.
 
 ```go
 type UserService struct {
@@ -17,14 +17,14 @@ func (*DemoApp) BindCommon(b *di.Binder) {
 }
 ```
 
-应用会负责创建根容器。只有编写独立工具或测试 DI 行为时，才需要直接调用 `di.NewInjector(...)`。容器负责：
+The application creates the root container for you. You only need to call `di.NewInjector(...)` directly when writing a standalone tool or testing DI behavior. The container:
 
-- 注册类型与构造方式
-- 按字段自动注入依赖
-- 管理对象生命周期
-- 区分根容器与执行期容器
+- Registers types and construction methods.
+- Injects dependencies into fields automatically.
+- Manages object lifetimes.
+- Distinguishes root containers from execution containers.
 
-## 1. 核心接口
+## 1. Core interfaces
 
 ### 1.1 `Injector`
 
@@ -36,7 +36,7 @@ type Injector interface {
 }
 ```
 
-常见用法：
+Typical usage:
 
 ```go
 var svc *UserService
@@ -57,15 +57,15 @@ type PlainInjector interface {
 }
 ```
 
-创建入口：
+Create one with:
 
 ```go
 injector := di.NewInjector(func(b *di.Binder) {
-    // 注册绑定
+    // Register bindings
 })
 ```
 
-根容器的默认 fallback scope 是 `TransientScope`。
+The root container's fallback scope is `TransientScope`.
 
 ### 1.3 `ExecutionInjector`
 
@@ -76,21 +76,21 @@ type ExecutionInjector interface {
 }
 ```
 
-它会：
+It:
 
-- 复用根容器里的单例
-- 持有本次执行的 `ExecutionScope` 实例
-- 在 `CompleteExecution()` 时按逆序回收执行期对象
+- Reuses singleton instances from the root container.
+- Owns `ExecutionScope` instances for the current execution.
+- Disposes execution objects in reverse order when `CompleteExecution()` runs.
 
-## 2. Scope
+## 2. Scopes
 
-Vine 提供 3 种生命周期：
+Vine provides three lifetimes:
 
 - `SingletonScope`
 - `ExecutionScope`
 - `TransientScope`
 
-显式指定方式：
+Specify one explicitly with:
 
 ```go
 b.Bind(di.T[*A]()).In(di.SingletonScope)
@@ -98,7 +98,7 @@ b.Bind(di.T[*B]()).In(di.ExecutionScope)
 b.Bind(di.T[*C]()).In(di.TransientScope)
 ```
 
-也可以在类型上声明默认 scope：
+You can also declare a default scope on a type:
 
 ```go
 type Config struct {
@@ -114,13 +114,13 @@ type TempValue struct {
 }
 ```
 
-如果一个可构造类型既没有显式 `In(...)`，也没有 marker scope，会使用所在容器的 fallback scope；根容器和子容器的 fallback 都是 `TransientScope`。
+If a constructible type has neither an explicit `In(...)` call nor a scope marker, it uses the fallback scope of the container it belongs to. The fallback for root and child containers is `TransientScope`.
 
-Scope 绑定在“请求的 target type”上，而不是绑定在最终创建出的 concrete instance 上。也就是说，`ToImplementation(...)`、`ToFactory(...)`、`ToInstance(...)` 这类转发或工厂式绑定，其 scope 只描述当前这条 binding 的生命周期。
+A scope belongs to the requested target type, not to the concrete instance eventually created. For forwarding and factory bindings such as `ToImplementation(...)`, `ToFactory(...)`, and `ToInstance(...)`, the scope describes only the current binding.
 
-如果同一个 concrete implementation 既会通过接口请求，又会被直接请求，它们会分别走各自的 binding，生命周期可能不同。需要共享生命周期时，应显式绑定两边并保持 scope 一致，或者让它们转发到同一个已有实例/工厂来源。
+If the same concrete implementation is requested both through an interface and directly, those requests use separate bindings and may have different lifetimes. To share a lifetime, bind both explicitly with matching scopes, or forward both to the same existing instance or factory source.
 
-示例：
+For example:
 
 ```go
 b.Bind(di.T[MailGateway]()).
@@ -131,48 +131,48 @@ b.Bind(di.T[*SMTPGateway]()).
     In(di.TransientScope)
 ```
 
-此时：
+Then:
 
 ```go
 var gateway MailGateway
-injector.Resolve(&gateway) // 使用 MailGateway 这条 SingletonScope binding
+injector.Resolve(&gateway) // Uses the SingletonScope binding for MailGateway
 
 var smtp *SMTPGateway
-injector.Resolve(&smtp) // 使用 *SMTPGateway 这条 TransientScope binding
+injector.Resolve(&smtp) // Uses the TransientScope binding for *SMTPGateway
 ```
 
-如果结构体实现了 `DIInit()`，实例构造并完成字段注入后会自动调用；如果实现了 `DIDispose()`，则可在执行期释放时参与清理。
+If a struct implements `DIInit()`, the container calls it automatically after construction and field injection. If it implements `DIDispose()`, it can participate in disposal at the end of an execution.
 
-注意：`PlainInjector` 不拥有应用停止流程，也不会自动释放 `SingletonScope` 实例。单例资源的关闭应由创建该 injector 的 app、component 或 module 生命周期负责，例如在 `BeforeAppStop()` / `AfterAppStop()` 中关闭数据库连接、Redis client 或其他外部资源。
+Note: `PlainInjector` does not own the application shutdown sequence and does not automatically dispose `SingletonScope` instances. The application, component, or module that created the injector should close singleton resources in a lifecycle hook such as `BeforeAppStop()` or `AfterAppStop()`.
 
-## 3. 类型辅助函数
+## 3. Type helper
 
-`di.T[T]()` 用于获取 `reflect.Type`：
+Use `di.T[T]()` to obtain a `reflect.Type`:
 
 ```go
 di.T[*UserService]()
 di.T[MailGateway]()
 ```
 
-允许绑定的目标类型主要包括：
+Supported binding target types primarily include:
 
-- interface
-- struct pointer
-- map
-- slice
-- func
+- Interfaces.
+- Struct pointers.
+- Maps.
+- Slices.
+- Functions.
 
-## 4. 绑定方式
+## 4. Binding methods
 
-### 4.1 绑定结构体类型
+### 4.1 Binding a struct type
 
 ```go
 b.Bind(di.T[*UserService]()).In(di.SingletonScope)
 ```
 
-这表示让容器自己构造 `*UserService`，并继续解析它的字段依赖。
+This tells the container to construct `*UserService` and continue resolving its field dependencies.
 
-### 4.2 接口绑定到实现
+### 4.2 Binding an interface to an implementation
 
 ```go
 b.Bind(di.T[MailGateway]()).
@@ -180,15 +180,15 @@ b.Bind(di.T[MailGateway]()).
     In(di.SingletonScope)
 ```
 
-约束：
+The following constraints apply:
 
-- 目标类型必须是 interface
-- 实现类型必须是 struct pointer
-- 实现类型必须实现该接口
+- The target type must be an interface.
+- The implementation type must be a struct pointer.
+- The implementation type must implement the interface.
 
-这里的 `In(...)` 作用于 `MailGateway` 这条 binding。若代码也直接解析 `*SMTPGateway`，则会使用 `*SMTPGateway` 自己的显式或隐式 binding。
+Here, `In(...)` applies to the `MailGateway` binding. If code also resolves `*SMTPGateway` directly, that request uses `*SMTPGateway`'s own explicit or implicit binding.
 
-### 4.3 工厂函数绑定
+### 4.3 Binding a factory function
 
 ```go
 b.Bind(di.T[*Repo]()).
@@ -198,16 +198,16 @@ b.Bind(di.T[*Repo]()).
     In(di.SingletonScope)
 ```
 
-工厂参数会继续从容器解析。
+Factory arguments are resolved from the container.
 
-支持：
+Supported signatures are:
 
 - `func(...) T`
 - `func(...) (T, error)`
 
-如果最后一个返回值是 `error` 且不为 `nil`，会 panic。
+If the last return value is an `error` and is not `nil`, the container panics.
 
-快捷写法：
+The shorthand form is:
 
 ```go
 b.BindFactory(func(db *gorm.DB) *Repo {
@@ -215,27 +215,27 @@ b.BindFactory(func(db *gorm.DB) *Repo {
 }).In(di.SingletonScope)
 ```
 
-`BindFactory(...)` 会自动用工厂的第一个返回值类型作为 target type。
+`BindFactory(...)` uses the factory's first return type as the target type automatically.
 
-### 4.4 绑定已有实例
+### 4.4 Binding an existing instance
 
 ```go
 b.BindInstance(existingClient)
 ```
 
-特点：
+This binding:
 
-- target type 取 `reflect.TypeOf(instance)`
-- 实际上等价于 `ToInstance(instance)`
-- scope 会被固定成 `SingletonScope`
+- Uses `reflect.TypeOf(instance)` as its target type.
+- Is equivalent to `ToInstance(instance)`.
+- Always uses `SingletonScope`.
 
-### 4.5 抽象工厂
+### 4.5 Abstract factories
 
-如果目标是 interface，也可以使用 `ToAbstractFactory(...)` 绑定抽象工厂。它适合做“同一个接口，根据运行时再决定给哪个实现”的场景。
+For an interface target, you can also use `ToAbstractFactory(...)`. It is useful when the concrete implementation of an interface must be selected at runtime.
 
-## 5. 字段注入
+## 5. Field injection
 
-通过 `inject:""` 标记字段：
+Mark fields with `inject:""`:
 
 ```go
 type UserService struct {
@@ -246,13 +246,13 @@ type UserService struct {
 }
 ```
 
-特点：
+Field injection:
 
-- 按字段类型解析依赖
-- 支持导出字段
-- 支持匿名嵌入字段
+- Resolves dependencies by field type.
+- Supports exported fields.
+- Supports anonymous embedded fields.
 
-## 6. Resolve / Invoke / Get
+## 6. Resolve, Invoke, and Get
 
 ### 6.1 `Resolve`
 
@@ -269,7 +269,7 @@ results := injector.Invoke(func(repo *UserRepo, svc *UserService) string {
 })
 ```
 
-`Invoke(...)` 的返回值是 `[]reflect.Value`。
+`Invoke(...)` returns `[]reflect.Value`.
 
 ### 6.3 `Get`
 
@@ -278,24 +278,24 @@ value := injector.Get(di.T[*UserService]())
 service := value.Interface().(*UserService)
 ```
 
-## 7. 执行期容器
+## 7. Execution containers
 
 ```go
 execution := injector.StartExecution()
 defer execution.CompleteExecution()
 ```
 
-解析规则：
+Resolution follows these rules:
 
-- `SingletonScope`：复用根容器单例
-- `ExecutionScope`：在当前 execution 内缓存
-- `TransientScope`：每次都新建
+- `SingletonScope`: reuse the root-container singleton.
+- `ExecutionScope`: cache the instance for the current execution.
+- `TransientScope`: create a new instance on every request.
 
-根 `PlainInjector` 不能直接解析 `ExecutionScope` 类型。
+A root `PlainInjector` cannot resolve an `ExecutionScope` type directly.
 
 ## 8. Seeding
 
-执行期对象通常只能在运行现场拿到，可以在 `StartExecution(...)` 时 seed：
+Objects available only at runtime can be seeded when calling `StartExecution(...)`:
 
 ```go
 execution := injector.StartExecution(func(s *di.Seeder) {
@@ -305,7 +305,7 @@ execution := injector.StartExecution(func(s *di.Seeder) {
 defer execution.CompleteExecution()
 ```
 
-也可以显式指定类型：
+You can also specify a type explicitly:
 
 ```go
 execution := injector.StartExecution(func(s *di.Seeder) {
@@ -313,15 +313,15 @@ execution := injector.StartExecution(func(s *di.Seeder) {
 })
 ```
 
-约束：
+The following constraints apply:
 
-- 被 seed 的目标类型必须解析成 `ExecutionScope`
-- seed 只能在 `StartExecution(...)` 的 `SeedApplier` 回调中执行；该方法返回后继续使用保留的 `Seeder` 会 panic
-- `SeedInstance(...)` 的实例类型必须和目标类型兼容
+- A seeded target type must resolve to `ExecutionScope`.
+- Seeding is only allowed inside a `SeedApplier` passed to `StartExecution(...)`; retaining and using the `Seeder` after that method returns causes a panic.
+- The value passed to `SeedInstance(...)` must be compatible with the target type.
 
-## 9. 子容器
+## 9. Child containers
 
-可以在根容器之上继续扩展：
+Extend a root container with:
 
 ```go
 sub := injector.SubInjector(func(b *di.Binder) {
@@ -329,31 +329,31 @@ sub := injector.SubInjector(func(b *di.Binder) {
 })
 ```
 
-特点：
+A child container:
 
-- 子容器可以看到父容器的绑定
-- 子容器可以追加自己的绑定
-- 子容器自己的 fallback scope 仍然是 `TransientScope`
+- Can see bindings from its parent.
+- Can add its own bindings.
+- Still uses `TransientScope` as its fallback scope.
 
-## 10. 释放逻辑
+## 10. Disposal
 
-对象可以通过两种方式参与释放：
+Objects can participate in disposal in two ways:
 
-- 类型自己实现框架约定的 dispose 能力
-- 绑定时通过 `WithDisposer(...)` 声明销毁函数
+- The type implements the framework's disposal convention.
+- The binding declares a disposer through `WithDisposer(...)`.
 
-`ExecutionInjector.CompleteExecution()` 会统一触发执行期对象的清理。执行期清理覆盖：
+`ExecutionInjector.CompleteExecution()` cleans up execution objects, including:
 
-- `ExecutionScope` 实例
-- execution 内创建且被跟踪到的 `TransientScope` 实例
+- `ExecutionScope` instances.
+- Tracked `TransientScope` instances created during the execution.
 
-`SingletonScope` 的生命周期不由 `PlainInjector` 自动结束。Vine 的 RDB、Redis 等资源组件会在 App 停止阶段关闭共享连接；业务代码自行绑定的资源也应采用同样方式。
+`PlainInjector` does not end the lifetime of `SingletonScope` instances automatically. Vine resource components such as RDB and Redis close shared connections while the App is stopping; resources bound by business code should follow the same pattern.
 
-因此，如果业务代码通过 DI 绑定了数据库、Redis、MQ client、文件句柄等单例资源，也应该在 app/component/module 的停止钩子中明确释放，而不是依赖 `PlainInjector` 自动调用 `DIDispose()`。
+Therefore, if business code binds databases, Redis or MQ clients, file handles, or other singleton resources through DI, it should release them explicitly in an application, component, or module shutdown hook rather than relying on `PlainInjector` to call `DIDispose()`.
 
-## 11. 使用建议
+## 11. Recommendations
 
-- 全局配置、客户端、缓存优先用 `SingletonScope`
-- 请求上下文、trace、调用元数据优先用 `ExecutionScope`
-- 无状态临时对象才用 `TransientScope`
-- 能用显式绑定就用显式绑定，不要过度依赖隐式补全
+- Prefer `SingletonScope` for global configuration, clients, and caches.
+- Prefer `ExecutionScope` for request contexts, traces, and invocation metadata.
+- Use `TransientScope` for stateless temporary objects.
+- Prefer explicit bindings over excessive reliance on implicit completion.

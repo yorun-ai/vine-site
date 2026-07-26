@@ -2,27 +2,27 @@
 slug: /deployment-modes
 ---
 
-# 运行模式与部署拓扑
+# Runtime Modes and Deployment Topologies
 
-Vine 可按开发和生产需求选择不同的运行拓扑。区别不在业务应用的写法，而在 Hub、Portal、Link 和业务应用是否位于同一进程，以及组件之间使用 inproc 还是网络连接。
+Vine supports different runtime topologies for development and production. The business application code remains the same; the difference is whether Hub, Portal, Link, and the business application run in the same process, and whether components communicate through inproc or network connections.
 
-## 模式对比
+## Mode Comparison
 
-| 模式 | Hub / Portal / Link | 业务应用 | 适用场景 |
+| Mode | Hub / Portal / Link | Business application | Recommended for |
 | --- | --- | --- | --- |
-| standalone | 同一进程 | 同一进程 | 快速开始、测试、本地单体开发 |
-| linked | Hub、Portal 独立；Link 与应用同进程 | 与 Link 同进程 | 本地开发、少量服务、简化应用部署 |
-| 分开部署 | Hub、Portal、Link 均独立 | 独立进程 | 生产环境、独立扩缩容、故障验证 |
+| standalone | Same process | Same process | Quick starts, tests, and local monolith development |
+| linked | Hub and Portal are separate; Link runs with the application | Same process as Link | Local development, a small number of services, and simpler application deployment |
+| Separated deployment | Hub, Portal, and Link all run separately | Independent process | Production, independent scaling, and failure testing |
 
-无论选择哪种模式，业务应用的 `ApplicationSpec`、Rpc、Web、Event 和 Task 定义保持不变；改变的是启动入口和 endpoint 配置。
+Regardless of the selected mode, the business application keeps the same `ApplicationSpec`, Rpc, Web, Event, and Task definitions. Only the startup entry point and endpoint configuration change.
 
 ## 1. Standalone
 
-standalone 将 Hub、Portal、Link 和一个业务应用装配到同一进程：
+Standalone assembles Hub, Portal, Link, and one business application in the same process:
 
 ```mermaid
 flowchart LR
-  subgraph Process["一个进程"]
+  subgraph Process["One process"]
     Hub["Hub"] -->|"inproc"| Portal["Portal"]
     Hub -->|"inproc"| Link["Link"] -->|"inproc"| App["App"]
   end
@@ -34,30 +34,30 @@ standalone.NewWithOption[*HelloApp](standalone.Option{
 }).StartAndWait()
 ```
 
-启动顺序为 Hub → Portal → Link → 业务应用；停止时按相反顺序执行。Hub 使用进程内 Redis，Link 与 Portal 使用 inproc endpoint，因此不需要提前启动任何 runtime 服务。
+The startup order is Hub → Portal → Link → business application. Shutdown runs in the reverse order. Hub uses in-process Redis, while Link and Portal use inproc endpoints, so no runtime service needs to be started in advance.
 
-### 特点与限制
+### Characteristics and Limitations
 
-- 只需启动一个业务 binary，最适合 [第一个应用教程](/docs/tutorial-first-app)。
-- 使用 `standalone.Option` 配置 SQLite / PostgreSQL、seed YAML 和 Dashboard URL。
-- Hub 与 Link 不启动 heartbeat、TTL 续租和 registry sweeper；应用停止时靠显式注销清理注册。
-- Hub 和 Link 不开放独立管理端口；Portal 仍可按入口规则监听业务 HTTP/HTTPS 端口。
-- 不覆盖跨进程网络、服务单独重启等场景。
+- You only need to start one business binary, which makes this the best mode for the [first application tutorial](/docs/tutorial-first-app).
+- Use `standalone.Option` to configure SQLite/PostgreSQL, a seed YAML file, and the Dashboard URL.
+- Hub and Link do not start heartbeat, TTL lease renewal, or the registry sweeper. Registrations are removed explicitly when the application stops.
+- Hub and Link do not expose separate management ports. Portal can still listen on business HTTP/HTTPS ports according to its entry rules.
+- This mode does not cover cross-process networking or independent service restarts.
 
-## 2. Linked：Hub 与应用分开
+## 2. Linked: Separate Hub and Application
 
-linked 模式将 Hub 与 Portal 作为独立 runtime 服务运行，而每个业务应用在自己的进程中携带一个 inproc Link：
+Linked mode runs Hub and Portal as independent runtime services, while each business application carries an inproc Link in its own process:
 
 ```mermaid
 flowchart LR
-  Hub["Hub"] -->|"网络"| Portal["Portal"]
-  Hub -->|"网络"| Link
-  subgraph AppProcess["应用进程"]
+  Hub["Hub"] -->|"Network"| Portal["Portal"]
+  Hub -->|"Network"| Link
+  subgraph AppProcess["Application process"]
     Link["Link"] -->|"inproc"| App["App"]
   end
 ```
 
-先启动 Hub；Portal 需要外部入口时再启动：
+Start Hub first, then start Portal when you need an external entry point:
 
 ```bash
 vine hub serve \
@@ -68,7 +68,7 @@ vine portal serve \
   --hub-endpoint http://127.0.0.1:7071
 ```
 
-业务应用导入 `go.yorun.ai/vine/app/linked` 并使用：
+The business application imports `go.yorun.ai/vine/app/linked` and uses:
 
 ```go title="main.go"
 linked.NewWithOption[*HelloApp](linked.Option{
@@ -77,41 +77,41 @@ linked.NewWithOption[*HelloApp](linked.Option{
 }).StartAndWait()
 ```
 
-`HubEndpoint` 和 `IngressListen` 也可由 `VINE_HUB_ENDPOINT`、`VINE_INGRESS_LISTEN` 提供。
+`HubEndpoint` and `IngressListen` can also be supplied through `VINE_HUB_ENDPOINT` and `VINE_INGRESS_LISTEN`.
 
-这种模式保留了独立 Hub 的配置、注册和租约语义，但 Link 与业务应用仍同时发布、同时停止。它适合不想额外维护 Link sidecar 的开发和部署环境。
+This mode preserves the configuration, registration, and lease semantics of an independent Hub, but Link and the business application are still released and stopped together. It is suitable for development and deployment environments where maintaining a separate Link sidecar is undesirable.
 
-## 3. 分开部署：独立 runtime 与应用
+## 3. Separated Deployment: Independent Runtime and Application
 
-在生产环境中，可将控制面、外部入口、应用侧接入层和业务应用完全拆开：
+In production, you can separate the control plane, external entry point, application-side connectivity layer, and business application into independent processes:
 
 ```mermaid
 flowchart LR
-  Client["外部客户端"] --> Portal["Portal"] --> Link["Link"] <--> App["业务 App"]
+  Client["External client"] --> Portal["Portal"] --> Link["Link"] <--> App["Business App"]
   Link <--> Hub["Hub"]
   Hub --> Infra["PostgreSQL / Redis / NATS"]
 ```
 
-一个最小的本地进程启动顺序如下：
+A minimal local process startup sequence is:
 
 ```bash
-# 1. 控制面
+# 1. Control plane
 vine hub serve \
   --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite
 
-# 2. 对外网关（需要外部 HTTP / HTTPS 入口时）
+# 2. External gateway (when an external HTTP/HTTPS entry point is required)
 vine portal serve \
   --hub-endpoint http://127.0.0.1:7071
 
-# 3. 应用侧 Link
+# 3. Application-side Link
 vine link serve \
   --api-listen 127.0.0.1:7079 \
   --ingress-listen 127.0.0.1:7082 \
   --hub-endpoint http://127.0.0.1:7071
 ```
 
-业务应用不再用 `standalone.New` 或 `linked.New`，而是直接创建：
+The business application no longer uses `standalone.New` or `linked.New`. Create it directly instead:
 
 ```go title="main.go"
 app.NewWithOption[*HelloApp](app.Option{
@@ -119,27 +119,27 @@ app.NewWithOption[*HelloApp](app.Option{
 }).StartAndWait()
 ```
 
-也可不在代码中指定 endpoint，转而设置环境变量：
+You can omit the endpoint from the code and set an environment variable instead:
 
 ```bash
 VINE_LINK_ENDPOINT=http://127.0.0.1:7079 ./hello-app
 ```
 
-此模式下，Link 负责向 Hub 注册应用并维持 heartbeat；应用、Link、Portal 与 Hub 可以独立发布、重启和扩缩容。Portal 的外部监听、站点规则和 TLS 证书均由 Hub 配置管理。
+In this mode, Link registers applications with Hub and maintains heartbeats. The application, Link, Portal, and Hub can be released, restarted, and scaled independently. External Portal listeners, site rules, and TLS certificates are managed through Hub configuration.
 
-## 如何选择
+## How to Choose
 
-从 standalone 开始；当需要共享配置、多个应用相互发现或对外暴露入口时，迁移到 linked；当需要独立伸缩、故障隔离或验证完整分布式语义时，使用完全分开部署。
+Start with standalone. Move to linked when you need shared configuration, discovery between multiple applications, or an external entry point. Use fully separated deployment when you need independent scaling, failure isolation, or complete distributed-system semantics.
 
-| 需求 | 推荐模式 |
+| Requirement | Recommended mode |
 | --- | --- |
-| 学习框架或编写单应用测试 | standalone |
-| 本地调试多个应用、但不想单独维护 Link | linked |
-| 容器化部署、多实例、独立发布与真实故障演练 | 分开部署 |
+| Learn the framework or test a single application | standalone |
+| Debug multiple applications locally without maintaining a separate Link | linked |
+| Containerized deployment, multiple instances, independent releases, and realistic failure exercises | Separated deployment |
 
-## 相关文档
+## Related Documentation
 
-- [Hub](/docs/hub)：配置、注册与租约管理。
-- [Link](/docs/link)：应用注册、发现和请求转发。
-- [Portal](/docs/portal)：外部访问入口与网关规则。
-- [应用模型](/docs/application-model)：应用构造入口与生命周期。
+- [Hub](/docs/hub): Configuration, registration, and lease management.
+- [Link](/docs/link): Application registration, discovery, and request forwarding.
+- [Portal](/docs/portal): External entry points and gateway rules.
+- [Application model](/docs/application-model): Application construction and lifecycle.

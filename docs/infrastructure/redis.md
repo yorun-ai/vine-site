@@ -2,22 +2,22 @@
 slug: /redis
 ---
 
-# Redis API 参考
+# Redis API Reference
 
-日常接入请先阅读 [使用 Redis](/docs/guide/redis)。本页说明 `infra/redis` 的完整配置、依赖注入、Cache 和 Locker API。
+For day-to-day integration, start with [Using Redis](/docs/guide/redis). This page documents the complete configuration, dependency injection, Cache, and Locker APIs provided by `infra/redis`.
 
-顶层 `infra/redis` 暴露 `Option`、`TypeAdder`、`RedisSpec`、`Redis`、`Locker`、`Lock`、`Cache[T]` 和 `NewCache[T](...)` 等公共类型。
+The top-level `infra/redis` package exposes public types including `Option`, `TypeAdder`, `RedisSpec`, `Redis`, `Locker`, `Lock`, `Cache[T]`, and `NewCache[T](...)`.
 
-`redis` 的定位不是重新封装 `go-redis` 命令集，而是提供一层统一接入：
+`redis` does not rewrap the `go-redis` command set. It provides a consistent integration layer that:
 
-- 打开 Redis 连接
-- 将 `go-redis` 的 `Cmdable` 挂到 app framework component 上
-- 通过 app component 机制接入 DI
-- 提供可注入的 `Locker`
-- 提供一次性 `Lock`
-- 提供可注入的泛型 `Cache[T]`
+- Opens a Redis connection.
+- Attaches the `go-redis` `Cmdable` to an application framework component.
+- Integrates with DI through the application component mechanism.
+- Provides an injectable `Locker`.
+- Provides one-shot `Lock` objects.
+- Provides an injectable generic `Cache[T]`.
 
-## 1. 核心类型
+## 1. Core Types
 
 ### 1.1 `Option`
 
@@ -27,20 +27,20 @@ type Option struct {
 }
 ```
 
-规则：
+Rules:
 
-- `Endpoint` 不能为空
-- 支持完整 Redis URL，例如：
+- `Endpoint` cannot be empty.
+- Full Redis URLs are supported, for example:
   - `redis://127.0.0.1:6379/0`
   - `redis://user:pass@127.0.0.1:6379/2`
-- 也支持裸地址：
+- Plain addresses are also supported:
   - `127.0.0.1:6379`
 
-`redis` 会优先调用 `go-redis` 的 `ParseURL(...)`；解析失败时退回裸地址模式。创建 client 时固定使用 Redis RESP2 协议，并关闭 identity 上报。
+`redis` first calls `go-redis`'s `ParseURL(...)`. If parsing fails, it falls back to plain-address mode. The client always uses the Redis RESP2 protocol and disables identity reporting.
 
 ### 1.2 `RedisSpec`
 
-Redis 组件接口是：
+The Redis component interface is:
 
 ```go
 type RedisSpec interface {
@@ -50,17 +50,17 @@ type RedisSpec interface {
 }
 ```
 
-其中：
+Its methods have these roles:
 
-- `InitOption(...)`：初始化 Redis 连接参数
-- `InitLockers(...)`：声明这个 Redis 组件下可注入的 locker 类型
-- `InitCaches(...)`：声明这个 Redis 组件下可注入的 cache 类型
+- `InitOption(...)`: initializes Redis connection options.
+- `InitLockers(...)`: declares injectable locker types for this Redis component.
+- `InitCaches(...)`: declares injectable cache types for this Redis component.
 
-业务组件通过嵌入 `redis.Redis` 获得该契约的默认实现。
+A business component receives the default implementation of this contract by embedding `redis.Redis`.
 
 ### 1.3 `Redis`
 
-`redis.Redis` 已包含应用生命周期和 `go-redis` 的 `Cmdable`。业务组件只需要嵌入它并提供连接配置：
+`redis.Redis` already includes application lifecycle support and the `go-redis` `Cmdable`. A business component only needs to embed it and supply connection configuration:
 
 ```go
 type CacheRedis struct {
@@ -80,7 +80,7 @@ func (*CacheRedis) InitCaches(add redis.TypeAdder) {
 }
 ```
 
-然后在 app 中声明组件：
+Then declare the component in the application:
 
 ```go
 func (*DemoApp) InitComponents(add app.TypeAdder) {
@@ -88,20 +88,20 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 }
 ```
 
-## 2. 初始化流程
+## 2. Initialization Flow
 
-应用启动时按以下顺序接入 Redis：
+The application integrates Redis in this order during startup:
 
-1. app 创建用户组件 `*CacheRedis`
-2. 调用 `InitOption(...)`、`InitLockers(...)` 和 `InitCaches(...)`
-3. 打开 Redis client，并将 `Cmdable` 提供给用户组件
-4. 为已声明的 Locker 和 Cache 注册依赖注入工厂
+1. The application creates the user component `*CacheRedis`.
+2. It calls `InitOption(...)`, `InitLockers(...)`, and `InitCaches(...)`.
+3. It opens the Redis client and provides `Cmdable` to the user component.
+4. It registers dependency-injection factories for the declared Lockers and Caches.
 
-## 3. DI 语义
+## 3. DI Semantics
 
-Vine 将用户声明的 Redis 组件作为单例提供给应用，并通过 factory 创建 Locker 和 Cache。每个 factory 会自动取得当前 `context.Context`，业务代码只需声明注入字段。
+Vine provides the user-declared Redis component to the application as a singleton and creates Lockers and Caches through factories. Each factory automatically receives the current `context.Context`; business code only needs to declare an injected field.
 
-业务侧如果要直接操作 Redis，直接注入自己定义的 Redis 组件即可：
+To execute Redis commands directly in business code, inject your own Redis component:
 
 ```go
 type UserService struct {
@@ -109,26 +109,26 @@ type UserService struct {
 }
 ```
 
-然后直接调用 `go-redis` 命令：
+Then call `go-redis` commands directly:
 
 ```go
 value, err := s.CacheRedis.Get(ctx, "user:1").Result()
 ```
 
-## 4. 生命周期
+## 4. Lifecycle
 
-Redis client 在组件启动时创建，在应用停止后关闭。Cache、Locker 和用户定义的 Redis 组件共享该 client；无需在业务模块中重复连接或手工关闭。
+The Redis client is created when the component starts and closed after the application stops. Caches, Lockers, and user-defined Redis components share this client; business modules do not need to open duplicate connections or close it manually.
 
 ## 5. Locker
 
-### 5.1 定义 locker
+### 5.1 Defining a Locker
 
-注入式 locker 需要：
+An injectable locker must:
 
-- 嵌入 `redis.Locker`
-- 实现 `KeyPrefix() string`
+- Embed `redis.Locker`.
+- Implement `KeyPrefix() string`.
 
-例如：
+For example:
 
 ```go
 type UserLocker struct {
@@ -140,12 +140,12 @@ func (*UserLocker) KeyPrefix() string {
 }
 ```
 
-`KeyPrefix()` 的规则是：
+`KeyPrefix()` follows these rules:
 
-- 默认情况下，每个 locker 类型都会基于完整类型名拿到唯一前缀
-- 如果需要多个不同 locker 类型操作同一把 Redis 锁，必须显式覆写 `KeyPrefix()` 并返回相同值
+- By default, every locker type receives a unique prefix derived from its fully qualified type name.
+- To let multiple locker types operate on the same Redis lock, explicitly override `KeyPrefix()` and return the same value from each type.
 
-然后在 Redis 组件里声明：
+Declare the locker in the Redis component:
 
 ```go
 func (*CacheRedis) InitLockers(add redis.TypeAdder) {
@@ -153,7 +153,7 @@ func (*CacheRedis) InitLockers(add redis.TypeAdder) {
 }
 ```
 
-这样业务里就可以直接注入：
+Business code can then inject it directly:
 
 ```go
 type UserService struct {
@@ -161,25 +161,25 @@ type UserService struct {
 }
 ```
 
-### 5.2 直接创建 locker
+### 5.2 Creating a Locker Directly
 
-如果不想通过注入声明 locker 类型，也可以直接：
+If you do not want to declare a locker type for injection, create one directly:
 
 ```go
 locker := cacheRedis.NewLocker(ctx, "lock:user")
 ```
 
-如果需要运行时传入具体类型，也可以直接：
+You can also provide a concrete type at runtime:
 
 ```go
 locker := cacheRedis.NewLockerByType(reflect.TypeFor[*UserLocker](), ctx).(*UserLocker)
 ```
 
-### 5.3 完整示例
+### 5.3 Complete Example
 
-下面是一个完整的可注入 locker 示例。
+The following example defines an injectable locker.
 
-先定义 Redis 组件：
+First, define the Redis component:
 
 ```go
 package demo
@@ -204,7 +204,7 @@ func (*CacheRedis) InitLockers(add vineredis.TypeAdder) {
 }
 ```
 
-再定义 locker：
+Then define the locker:
 
 ```go
 package demo
@@ -220,7 +220,7 @@ func (*UserLocker) KeyPrefix() string {
 }
 ```
 
-然后在 app 里注册 Redis 组件：
+Register the Redis component with the application:
 
 ```go
 package demo
@@ -236,7 +236,7 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 }
 ```
 
-最后在业务里注入并使用：
+Finally, inject and use the locker in business code:
 
 ```go
 package demo
@@ -263,7 +263,7 @@ func (s *UserService) RebuildUser(userID string) {
 
 ```
 
-这个示例里，实际 Redis key 会是：
+In this example, the actual Redis key is:
 
 ```text
 vine:lock:user:<userID>
@@ -273,25 +273,25 @@ vine:lock:user:<userID>
 
 ### 6.1 `Locker.Lock(...)`
 
-公共调用方式：
+The public call is:
 
 ```go
 lock, ok := locker.Lock(key)
 ```
 
-返回值语义：
+The return values mean:
 
-- `(*Lock, true)`：成功拿到锁
-- `(*Lock, false)`：锁已被别人持有
+- `(*Lock, true)`: the lock was acquired.
+- `(*Lock, false)`: another holder already owns the lock.
 
-Redis 基础设施错误会直接 panic，不走返回值。
+Redis infrastructure errors panic instead of being returned.
 
-实际 Redis key 规则是：
+Actual Redis keys follow these rules:
 
-- 全局前缀固定为 `vine:lock:`
-- 始终使用 `<KeyPrefix()> + ":" + key`
+- The global prefix is always `vine:lock:`.
+- The remaining key is always `<KeyPrefix()> + ":" + key`.
 
-例如：
+For example:
 
 ```go
 lock, ok := userLocker.Lock("1")
@@ -300,36 +300,36 @@ if !ok {
 }
 ```
 
-对应的 Redis key 是：
+The corresponding Redis key is:
 
 ```text
 vine:lock:lock:user:1
 ```
 
-如果传空 key：
+If you pass an empty key:
 
 ```go
 lock, ok := userLocker.Lock("")
 ```
 
-最终 Redis key 会是：
+The final Redis key is:
 
 ```text
 vine:lock:lock:user:
 ```
 
-### 6.2 默认锁
+### 6.2 Default Lock
 
-默认 `Locker.Lock(...)` 的行为是：
+By default, `Locker.Lock(...)` uses:
 
 - `timeout = 30s`
-- 自动 refresh
+- Automatic refresh.
 
-也就是说，底层始终是**带 TTL 的锁**，只是持有期间会自动续期。
+The underlying lock therefore always has a TTL, but Vine renews it automatically while it is held.
 
 ### 6.3 `Lock.Context()`
 
-每次 `Locker.Lock(...)` 成功后，得到的 `Lock` 都会生成一个锁级 context：
+Every successful `Locker.Lock(...)` call creates a lock-scoped context:
 
 ```go
 lock, ok := userLocker.Lock("1")
@@ -339,62 +339,62 @@ if !ok {
 ctx := lock.Context()
 ```
 
-这个 context 会在下面几种情况被 cancel：
+This context is canceled when:
 
-- 手动 `lock.Unlock()`
-- refresh 连续失败并最终判定失锁
-- 应用或当前执行的父 context 被取消
+- You call `lock.Unlock()` manually.
+- Refresh fails repeatedly and the lock is ultimately considered lost.
+- The application or the current execution's parent context is canceled.
 
-如果业务逻辑需要感知“锁已经失效”，应该监听这个 context。
+Listen to this context when business logic needs to detect that a lock is no longer valid.
 
-### 6.4 refresh 策略
+### 6.4 Refresh Policy
 
-默认 refresh 行为：
+The default refresh policy is:
 
-- 正常 refresh 间隔：`10s`
-- 失败后 retry 间隔：`3s`
-- 最大 retry 次数：`7`
+- Normal refresh interval: `10s`.
+- Retry interval after a failure: `3s`.
+- Maximum retry count: `7`.
 
-也就是说，一次正常 refresh tick 到来后：
+When a normal refresh tick occurs:
 
-1. 先立即尝试 refresh
-2. 失败后按 `3s` 间隔继续重试
-3. 连续失败到阈值，才认定锁失效
+1. Vine attempts a refresh immediately.
+2. If it fails, Vine retries every `3s`.
+3. Vine considers the lock lost only after the retry threshold is reached.
 
-### 6.5 broken 状态
+### 6.5 Broken State
 
-如果 refresh 最终失败，这个 `Lock` 会进入 `broken` 状态。
+If refresh ultimately fails, the `Lock` enters the `broken` state.
 
-此时：
+At that point:
 
-- `IsBroken() == true`
-- 不能再 `Unlock()`
-- 这个 `Lock` 已经不可恢复
+- `IsBroken() == true`.
+- You cannot call `Unlock()` again.
+- The `Lock` cannot recover.
 
-### 6.6 一次性语义
+### 6.6 One-Shot Semantics
 
-`Lock` 是一次性对象：
+A `Lock` is a one-shot object:
 
-- `Locker` 是可复用的
-- `Lock` 不可复用
+- A `Locker` is reusable.
+- A `Lock` is not reusable.
 
-也就是说：
+Therefore:
 
-- 需要新的加锁动作时，重新调用 `Locker.Lock(...)`
-- 不存在对旧 `Lock` 做恢复或重新加锁的流程
+- Call `Locker.Lock(...)` again for each new acquisition.
+- An old `Lock` cannot be recovered or reacquired.
 
 ## 7. Cache
 
-`Cache[T]` 和 `Locker` 一样，也是一个可注入的 Redis 句柄。
+Like `Locker`, `Cache[T]` is an injectable Redis handle.
 
-### 7.1 定义 cache
+### 7.1 Defining a Cache
 
-注入式 cache 需要：
+An injectable cache must:
 
-- 嵌入 `redis.Cache[T]`
-- 可选地覆写 `KeyPrefix() string`
+- Embed `redis.Cache[T]`.
+- Optionally override `KeyPrefix() string`.
 
-例如：
+For example:
 
 ```go
 type UserCache struct {
@@ -406,7 +406,7 @@ func (*UserCache) KeyPrefix() string {
 }
 ```
 
-然后在 Redis 组件里声明：
+Declare it in the Redis component:
 
 ```go
 func (*CacheRedis) InitCaches(add redis.TypeAdder) {
@@ -414,9 +414,9 @@ func (*CacheRedis) InitCaches(add redis.TypeAdder) {
 }
 ```
 
-### 7.2 使用示例
+### 7.2 Usage Example
 
-业务里直接注入：
+Inject the cache into business code:
 
 ```go
 type UserService struct {
@@ -424,7 +424,7 @@ type UserService struct {
 }
 ```
 
-然后直接：
+Then use it directly:
 
 ```go
 user, ok := s.UserCache.Get("1")
@@ -439,43 +439,43 @@ user = s.UserCache.GetOrLoad("1", time.Minute, func() *User {
 })
 ```
 
-### 7.3 直接创建 cache
+### 7.3 Creating a Cache Directly
 
-如果不想通过注入声明 cache 类型，也可以直接：
+If you do not want to declare a cache type for injection, create one directly:
 
 ```go
 cache := redis.NewCache[*User](&cacheRedis.Redis, ctx, "user")
 ```
 
-如果需要运行时传入具体类型，也可以直接：
+You can also provide a concrete type at runtime:
 
 ```go
 cache := cacheRedis.NewCacheByType(reflect.TypeFor[*UserCache](), ctx).(*UserCache)
 ```
 
-### 7.4 key 规则
+### 7.4 Key Rules
 
-实际 Redis key 规则是：
+Actual Redis keys have this form:
 
 ```text
 vine:cache:<keyPrefix>:<key>
 ```
 
-例如：
+For example:
 
 ```text
 vine:cache:user:1
 ```
 
-`KeyPrefix()` 的默认规则和 `Locker` 一样：
+The default `KeyPrefix()` rules match those for `Locker`:
 
-- 默认情况下，每个 cache 类型都会基于完整类型名拿到唯一前缀
-- 如果需要多个不同 cache 类型共享同一组 Redis key，必须显式覆写 `KeyPrefix()` 并返回相同值
+- By default, every cache type receives a unique prefix derived from its fully qualified type name.
+- To let multiple cache types share the same Redis keys, explicitly override `KeyPrefix()` and return the same value from each type.
 
-## 8. 使用建议
+## 8. Recommendations
 
-- Redis 组件统一嵌入 `redis.Redis`
-- 优先把稳定前缀声明成注入式 locker
-- 需要缓存时，通过 `InitCaches(...)` 声明注入式 cache，或用 `NewCache(...)` 直接创建
-- 需要感知锁失效时，监听 `lock.Context()`
-- `Lock` 一旦 broken，就丢弃它并重新走一次新的 `Locker.Lock(...)`
+- Embed `redis.Redis` consistently in Redis components.
+- Prefer injectable lockers for stable key prefixes.
+- Declare injectable caches through `InitCaches(...)`, or create one directly with `NewCache(...)`.
+- Listen to `lock.Context()` when you need to detect lock invalidation.
+- Once a `Lock` is broken, discard it and acquire a new one through `Locker.Lock(...)`.

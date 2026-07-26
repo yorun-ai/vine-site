@@ -2,11 +2,11 @@
 slug: /guide/rpc
 ---
 
-# 使用 Rpc
+# Using Rpc
 
-Vine Rpc 的常规工作流是：在 Skel 中声明服务，由 skelc 生成接口，实现服务端，然后在 App 中注册 handler。业务代码通常不需要手工构造底层 `ServiceSpec`。
+The usual Vine Rpc workflow is to declare a service in Skel, generate its interfaces with skelc, implement the server, and register the handler in an App. Business code normally does not need to construct a low-level `ServiceSpec` manually.
 
-## 1. 定义和生成
+## 1. Define and generate
 
 ```skel title="greeting.skel"
 pub service GreetingService {
@@ -23,9 +23,9 @@ skelc check --skel-in ./skel
 skelc gen go --skel-in ./skel --go-out ./skeled
 ```
 
-## 2. 实现服务
+## 2. Implement the service
 
-生成代码提供 Server 接口和默认实现。业务实现嵌入默认实现，并实现需要的方法：
+Generated code provides a Server interface and default implementation. Embed the default implementation and implement the methods you need:
 
 ```go title="service.go"
 type GreetingService struct {
@@ -37,7 +37,7 @@ func (*GreetingService) Hello(name string) skeled.Greeting {
 }
 ```
 
-## 3. 注册到应用
+## 3. Register it with the application
 
 ```go title="app.go"
 type GreetingApp struct {
@@ -54,9 +54,9 @@ func (*GreetingApp) ServicerInitHandlers(add app.TypeAdder) {
 }
 ```
 
-## 4. 发起第一次调用
+## 4. Make the first call
 
-生成的 client 可以直接注入 handler 或 module。下面的模块会在应用启动完成后调用刚注册的服务：
+Generated clients can be injected directly into a handler or module. The module below calls the service you just registered after the application has finished starting:
 
 ```go title="main.go"
 type GreetingProbe struct {
@@ -80,11 +80,11 @@ func main() {
 }
 ```
 
-运行 `go run .` 后，日志中会出现 `message="Hello, Vine"`。调用时，Vine 自动携带 trace、应用身份和 Actor，并由 Link 完成服务发现和转发；standalone 模式会选择进程内 endpoint。
+After running `go run .`, the logs contain `message="Hello, Vine"`. Vine automatically carries trace, application identity, and Actor information with the call, while Link performs service discovery and forwarding. Standalone mode selects an in-process endpoint.
 
 ```mermaid
 flowchart LR
-  Client["生成的 Client"] --> LinkA["调用方 Link"] --> Discovery["服务发现"] --> LinkB["目标 Link"] --> Server["GreetingService"]
+  Client["Generated Client"] --> LinkA["Caller Link"] --> Discovery["Service discovery"] --> LinkB["Target Link"] --> Server["GreetingService"]
 ```
 
-超时、错误返回和底层 client/server 选项见 [Rpc 参考](/docs/rpc)。
+See the [Rpc Reference](/docs/rpc) for timeout, error-return, and low-level client/server options.

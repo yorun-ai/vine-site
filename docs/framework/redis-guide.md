@@ -2,9 +2,9 @@
 slug: /guide/redis
 ---
 
-# 使用 Redis
+# Using Redis
 
-Redis 组件提供 `go-redis` 命令、类型安全 Cache 和分布式 Locker。应用只需声明 endpoint 以及需要注入的 Cache/Locker 类型。
+The Redis component provides `go-redis` commands, type-safe caches, and distributed lockers. An application only needs to declare the endpoint and the Cache/Locker types it wants to inject.
 
 ```go title="redis.go"
 type User struct {
@@ -47,7 +47,7 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 }
 ```
 
-业务对象可以注入 `*MainRedis` 执行普通 Redis 命令，也可以注入专用 Cache 或 Locker：
+Business objects can inject `*MainRedis` to execute ordinary Redis commands, or inject a dedicated Cache or Locker:
 
 ```go title="service.go"
 type UserService struct {
@@ -66,8 +66,8 @@ func (s *UserService) Rebuild(userID string) {
     }
     defer lock.Unlock()
 
-    // 更新用户数据
+    // Update user data
 }
 ```
 
-默认锁带 TTL 并在持有期间续期；`Lock.Context()` 会在锁失效时取消，长任务应监听该 context。Cache、KeyPrefix、锁状态和直接创建方式见 [Redis 参考](/docs/redis)。
+Locks have a TTL and refresh while held by default. `Lock.Context()` is canceled when the lock becomes invalid, so long-running work should monitor that context. See the [Redis Reference](/docs/redis) for Cache, KeyPrefix, lock states, and direct construction.

@@ -2,35 +2,35 @@
 slug: /cli
 ---
 
-# Vine CLI 使用说明
+# Vine CLI Guide
 
-`vine` 是 Vine 的命令行入口，包含运行时服务和版本信息。
+`vine` is the command-line entry point for Vine. It provides runtime services and version information.
 
-- `hub` / `link` / `portal`：启动 Vine 运行时基础服务
-- `version`：查看当前 CLI 版本
+- `hub` / `link` / `portal`: Start Vine runtime infrastructure services.
+- `version`: Display the current CLI version.
 
-查看版本：
+Display the version:
 
 ```bash
 vine version
 ```
 
-查看帮助：
+Display help:
 
 ```bash
 vine --help
 vine hub serve --help
 ```
 
-## 1. 安装与版本
+## 1. Installation and Version
 
-从已发布版本安装：
+Install a published version:
 
 ```bash
 go install go.yorun.ai/vine/cmd/vine@latest
 ```
 
-确认安装结果：
+Verify the installation:
 
 ```bash
 which vine
@@ -39,9 +39,9 @@ vine version
 
 ## 2. hub
 
-`hub` 是配置、注册和管理中心。
+`hub` is the configuration, registration, and management center.
 
-启动 hub，使用本地 NATS 和 SQLite：
+Start Hub with local NATS and SQLite:
 
 ```bash
 vine hub serve \
@@ -49,7 +49,7 @@ vine hub serve \
   --db-sqlite-file ./hub.sqlite
 ```
 
-指定外部 NATS：
+Use an external NATS server:
 
 ```bash
 vine hub serve \
@@ -57,7 +57,7 @@ vine hub serve \
   --db-sqlite-file ./hub.sqlite
 ```
 
-使用 PostgreSQL：
+Use PostgreSQL:
 
 ```bash
 vine hub serve \
@@ -65,7 +65,7 @@ vine hub serve \
   --db-postgres-url postgres://demo:demo@127.0.0.1:5432/hub
 ```
 
-指定监听地址：
+Specify listen addresses:
 
 ```bash
 vine hub serve \
@@ -75,9 +75,9 @@ vine hub serve \
   --db-sqlite-file ./hub.sqlite
 ```
 
-Hub API 和内嵌 Redis 默认分别监听 `127.0.0.1:7071` 和 `127.0.0.1:7073`。需要跨主机访问时，应显式指定可达的监听地址并通过防火墙限制访问；不要将内嵌 Redis 直接暴露到不可信网络。
+By default, the Hub API and embedded Redis listen on `127.0.0.1:7071` and `127.0.0.1:7073`, respectively. For access from another host, explicitly configure a reachable listen address and restrict it with a firewall; do not expose the embedded Redis server directly to an untrusted network.
 
-从 seed YAML 初始化数据：
+Initialize data from a seed YAML file:
 
 ```bash
 vine hub serve \
@@ -86,7 +86,7 @@ vine hub serve \
   --seed-yaml-file ./seed.yaml
 ```
 
-指定 Hub Dashboard 访问地址：
+Specify the Hub Dashboard URL:
 
 ```bash
 vine hub serve \
@@ -95,9 +95,9 @@ vine hub serve \
   --db-sqlite-file ./hub.sqlite
 ```
 
-`--dashboard-url` 默认值是 `http://:7099/`，用于配置 Hub Dashboard 的 Portal 入口规则。可以指定 host、端口和路径，例如 `https://hub.example.com:8443/admin`。
+The default value of `--dashboard-url` is `http://:7099/`. It configures the Portal entry rule for Hub Dashboard. You can specify a host, port, and path, such as `https://hub.example.com:8443/admin`.
 
-环境变量也可以提供同名配置：
+The same settings can also be supplied through environment variables:
 
 - `VINE_API_LISTEN`
 - `VINE_REDIS_LISTEN`
@@ -108,23 +108,23 @@ vine hub serve \
 - `VINE_DB_SQLITE_FILE`
 - `VINE_DB_POSTGRES_URL`
 
-注意：
+Notes:
 
-- `--db-sqlite-file` 和 `--db-postgres-url` 必须二选一
-- `--mq-external-nats-url` 和 `--mq-embedded-nats` 必须二选一
+- Choose exactly one of `--db-sqlite-file` and `--db-postgres-url`.
+- Choose exactly one of `--mq-external-nats-url` and `--mq-embedded-nats`.
 
 ## 3. link
 
-`link` 是应用侧 sidecar mesh，负责连接 hub、提供 ingress，并注册当前应用能力。
+`link` is the application-side sidecar mesh. It connects to Hub, provides ingress, and registers the capabilities of the current application.
 
-启动 link：
+Start Link:
 
 ```bash
 vine link serve \
   --hub-endpoint http://127.0.0.1:7071
 ```
 
-指定监听地址：
+Specify listen addresses:
 
 ```bash
 vine link serve \
@@ -133,7 +133,7 @@ vine link serve \
   --hub-endpoint http://127.0.0.1:7071
 ```
 
-环境变量：
+Environment variables:
 
 - `VINE_API_LISTEN`
 - `VINE_INGRESS_LISTEN`
@@ -141,22 +141,22 @@ vine link serve \
 
 ## 4. portal
 
-`portal` 是应用网关，从 hub 获取 portal entry / rule / site 配置，然后把外部请求转发到目标应用。
+`portal` is the application gateway. It reads portal entry, rule, and site configuration from Hub, then forwards external requests to the target application.
 
-启动 portal：
+Start Portal:
 
 ```bash
 vine portal serve \
   --hub-endpoint http://127.0.0.1:7071
 ```
 
-环境变量：
+Environment variables:
 
 - `VINE_HUB_ENDPOINT`
 
-## 5. 常见工作流
+## 5. Common Workflows
 
-### 5.1 单独启动运行时基础服务
+### 5.1 Start Runtime Infrastructure Services Separately
 
 ```bash
 vine hub serve --mq-embedded-nats --db-sqlite-file ./hub.sqlite

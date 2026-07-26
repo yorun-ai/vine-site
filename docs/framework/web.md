@@ -4,9 +4,9 @@ slug: /web
 
 # Web
 
-Web 能力用于为应用注册 HTTP 路由、静态资源或反向代理入口。`.skel` 负责声明 Web 名称和允许访问的 Actor，Go handler 负责具体路由。
+The Web capability registers HTTP routes, static assets, or reverse-proxy endpoints for an application. `.skel` declares the Web name and Actors allowed to access it, while Go handlers define the actual routes.
 
-## 声明入口
+## Declare an entry point
 
 ```skel title="web.skel"
 web UserPortalWeb {
@@ -14,7 +14,7 @@ web UserPortalWeb {
 }
 ```
 
-生成代码后，实现对应的 Web server，并在 `Routes` 中注册路由：
+After generating code, implement the corresponding Web server and register routes in `Routes`:
 
 ```go title="web.go"
 type UserPortal struct {
@@ -31,7 +31,7 @@ func (h *UserPortal) Health() {
 }
 ```
 
-在应用中启用 Web 能力并注册 handler：
+Enable the Web capability and register the handler in the application:
 
 ```go title="app.go"
 type DemoApp struct {
@@ -44,15 +44,15 @@ func (*DemoApp) WebberInitHandlers(add app.TypeAdder) {
 }
 ```
 
-Vine 将 Web 能力注册到 Link；Portal 根据站点规则发现 endpoint 并转发外部请求。
+Vine registers the Web capability with Link, and Portal discovers the endpoint from its site rules and forwards external requests.
 
-## 请求路径
+## Request path
 
 ```mermaid
 flowchart LR
-  Client["客户端"] --> Portal["Portal 站点与准入"] --> Link["Link Web proxy"] --> Handler["应用 Web handler"]
+  Client["Client"] --> Portal["Portal site and access control"] --> Link["Link Web proxy"] --> Handler["Application Web handler"]
 ```
 
-standalone 模式仍走相同的匹配与转发逻辑，但 endpoint 使用进程内连接。静态资源可通过 `web.NewAssetsServer` 提供，转发已有后端可使用 `web.NewReverseProxy`。
+Standalone mode uses the same matching and forwarding behavior, but its endpoint is an in-process connection. Use `web.NewAssetsServer` to serve static assets, or `web.NewReverseProxy` to forward to an existing backend.
 
-Portal 配置见 [Portal](/docs/portal)，Actor 与 Web 语法见 [Skel 语法](https://skel.yorun.ai/docs/syntax)。
+See [Portal](/docs/portal) for Portal configuration and [Skel Syntax](https://skel.yorun.ai/docs/syntax) for Actor and Web syntax.
