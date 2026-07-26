@@ -2,147 +2,147 @@
 slug: /trace-timeout
 ---
 
-# Trace 与 Timeout
+# Trace and Timeout
 
-请求进入 Vine 后，trace 会贯穿 Portal、auth/check、Rpc/Web handler 和后续下游调用；timeout 会从入口开始计时，并在每次转发时换算成剩余时间继续传递。业务代码通常不需要手工解析这些 header，只要继续使用当前注入的上下文发起下游调用即可。
+When a request enters Vine, trace context follows it through Portal, auth/check, Rpc/Web handlers, and downstream calls. Timeout starts at the entry point and is converted to the remaining time before each forward. Application code usually does not need to parse these headers manually; it should keep using the injected context for downstream calls.
 
-## 1. 你会看到哪些 Header
+## 1. Headers You Will See
 
-外部请求进入 Portal 时，主要涉及这些 header：
+When an external request enters Portal, these headers are relevant:
 
-| Header | 谁传 | 用途 |
+| Header | Sender | Purpose |
 | --- | --- | --- |
-| `vrpc-trace` | Rpc 客户端 | 传递 Rpc 调用链 |
-| `vweb-trace` | Web 客户端 | 传递 Web 调用链 |
-| `vrpc-options` | Rpc 客户端 | 传递 Rpc 调用选项，目前只有 `timeout` |
-| `vweb-options` | Web 客户端 | 传递 Web 调用选项，目前只有 `timeout` |
-| `portal-trace-id` | Portal 响应 | 返回本次请求的 trace id，方便排查 |
+| `vrpc-trace` | Rpc client | Propagates the Rpc call chain |
+| `vweb-trace` | Web client | Propagates the Web call chain |
+| `vrpc-options` | Rpc client | Carries Rpc call options; currently only `timeout` |
+| `vweb-options` | Web client | Carries Web call options; currently only `timeout` |
+| `portal-trace-id` | Portal response | Returns the trace id for this request |
 
-trace header 使用逗号分隔的 `key=value` 格式：
+Trace headers use comma-delimited `key=value` fields:
 
 ```text
 vrpc-trace: id=123e4567e89b12d3a456426614174000,span=1234567890abcdef
 vweb-trace: id=123e4567e89b12d3a456426614174000,span=1234567890abcdef
 ```
 
-options header 目前只有 timeout：
+Options headers currently only contain timeout:
 
 ```text
 vrpc-options: timeout=30s
 vweb-options: timeout=30s
 ```
 
-timeout 使用 Go duration 格式，例如 `1000ms`、`1s`、`30s`。
+Timeout values use Go duration syntax, such as `1000ms`, `1s`, or `30s`.
 
-## 2. 外部 Rpc 客户端应该怎么传
+## 2. External Rpc Clients
 
-调用 rpcgw 时必须传 `vrpc-trace`。如果客户端有自己的 span，传完整格式：
+Requests to rpcgw must carry `vrpc-trace`. If the client owns a span, send the full form:
 
 ```text
 vrpc-trace: id=<trace_id>,span=<span_id>
 ```
 
-如果客户端只有 request id 或 trace id，也可以只传 `id`：
+If the client only has a request id or trace id, it may send only `id`:
 
 ```text
 vrpc-trace: id=<trace_id>
 ```
 
-这种情况下，Portal 会补一个 span，用作服务端调用树的入口 anchor。这个 span 不对应客户端真实日志，但能让服务端内部 auth/check/target 调用挂在同一棵 trace 树下。
+Portal will create a span and use it as the entry anchor for the server-side call tree. This synthetic span does not correspond to real client-side logs, but it keeps server-side auth/check/target calls under the same trace tree.
 
-可选传入 timeout：
+The client may also send timeout:
 
 ```text
 vrpc-options: timeout=10s
 ```
 
-如果不传，rpcgw 默认使用 `30s`。如果传入超过 `120s`，rpcgw 会返回 invalid request。
+If it is missing, rpcgw uses `30s`. If it is above `120s`, rpcgw returns invalid request.
 
-## 3. 外部 Web 客户端应该怎么传
+## 3. External Web Clients
 
-调用 webgw 时可以传 `vweb-trace`：
+Requests to webgw may carry `vweb-trace`:
 
 ```text
 vweb-trace: id=<trace_id>,span=<span_id>
 ```
 
-也可以只传 `id`，或者完全不传。不传时 webgw 会创建新的 trace。
+The client may send only `id`, or omit `vweb-trace` entirely. If it is missing, webgw creates a new trace.
 
-可选传入 timeout：
+The client may also send timeout:
 
 ```text
 vweb-options: timeout=10s
 ```
 
-对于普通 HTTP 请求，如果不传，webgw 默认使用 `30s`。SSE 和 WebSocket 属于长连接：未显式传入 timeout 时不限制连接总时长，而是在连续 `60s` 没有任何流量后关闭连接。SSE 服务端应定期发送 heartbeat，WebSocket 的 Ping/Pong 或业务帧都会刷新 idle timeout。
+For ordinary HTTP requests, webgw uses `30s` when the header is missing. SSE and WebSocket are long-lived connections: without an explicit timeout, Vine does not limit their total duration and closes them only after `60s` with no traffic. SSE servers should send periodic heartbeats; WebSocket Ping/Pong and application frames both refresh the idle timeout.
 
-如果显式传入 timeout，该 timeout 仍作为整个请求或连接的总时长；超过 `120s` 时，webgw 会返回 bad request。
+An explicit timeout still limits the total duration of the request or connection. If it is above `120s`, webgw returns bad request.
 
-外部客户端不应该依赖 `vweb-actor` 或 `vweb-initiator`。这些 header 由 webgw 写给后端应用，客户端传入的同名值不会作为可信身份使用。
+External clients should not rely on `vweb-actor` or `vweb-initiator`. webgw writes those headers for backend applications, and client-supplied values are not trusted.
 
-## 4. 响应里怎么拿 Trace Id
+## 4. Reading Trace Id From Responses
 
-Portal 会在响应中写：
+Portal writes this response header:
 
 ```text
 portal-trace-id: <trace_id>
 ```
 
-这个值用于客户端记录和后续排查。它只包含 trace id，不包含 span，也不是下一次请求应该继续传播的完整 trace context。
+Clients can log this value and use it for later investigation. It only contains the trace id. It does not contain span data and is not a full trace context for the next request.
 
-如果请求本身带了合法 trace id，`portal-trace-id` 会尽量返回同一个 id。若 trace header 缺失或非法，Portal 会生成新的 trace id 或返回错误，具体取决于入口类型和校验规则。
+If the request carries a valid trace id, `portal-trace-id` usually returns the same id. If the trace header is missing or invalid, Portal may generate a new trace id or reject the request, depending on the gateway and validation rule.
 
-## 5. Timeout 怎么计算
+## 5. How Timeout Is Counted
 
-timeout 从进入 gateway 开始计时，而不是只限制最后一次转发。
+Timeout starts when the request enters the gateway. It is not only applied to the final forward.
 
-例如客户端传：
+For example, if the client sends:
 
 ```text
 vrpc-options: timeout=30s
 ```
 
-rpcgw 会在入口创建一个 30 秒 deadline。之后：
+rpcgw creates a 30-second deadline at entry. Then:
 
 ```text
-rpcgw 入口
-  -> auth/check 使用同一个 deadline
-  -> 转发到目标服务前重新计算剩余时间
-  -> 下游服务继续使用剩余 timeout
+rpcgw entry
+  -> auth/check share the same deadline
+  -> remaining time is recomputed before target forward
+  -> downstream services keep using the remaining timeout
 ```
 
-如果 auth/check 花掉了 2 秒，转发给目标服务时就不会再传 `timeout=30s`，而是传接近 `timeout=28s` 的剩余时间。
+If auth/check uses 2 seconds, the target service will not receive `timeout=30s`; it will receive a value close to `timeout=28s`.
 
-普通 Web 请求的 `vweb-options` 也是同样机制。web auth 会计入总耗时，最终 forward 到后端 Web 应用前也会刷新剩余 timeout。未显式指定 timeout 的 SSE 和 WebSocket 不创建总时长 deadline，而由双向流量的 idle timeout 控制生命周期。
+Ordinary Web requests use the same rule for `vweb-options`. Web auth is included in the same budget, and the remaining timeout is refreshed before forwarding to the backend Web application. SSE and WebSocket requests without an explicit timeout do not receive a total-duration deadline; bidirectional traffic and the idle timeout control their lifecycle instead.
 
-对于普通 Rpc/Web 请求，Portal 会把外部客户端连接断开和内部执行 timeout 分开处理。请求进入 gateway 并创建执行上下文后，移动端断线、浏览器关闭页面这类 client cancel 不会默认取消 auth/check、handler 或下游调用；执行仍由 timeout、Portal 停止等服务端侧信号控制。SSE 和 WebSocket 长连接会响应客户端断开、上游断开、idle timeout 和 Portal 停止。
+For ordinary Rpc/Web requests, Portal separates external client disconnects from internal execution timeout. After a request enters the gateway and its execution context is created, client-side cancellation such as a mobile network drop or a closed browser tab does not cancel auth/check, the handler, or downstream calls by default. Execution is controlled by timeout, Portal shutdown, and other server-side signals. SSE and WebSocket connections respond to client disconnect, upstream disconnect, idle timeout, and Portal shutdown.
 
-如果请求体还没有传完整，Portal 或下游读取 body 时仍会失败。这类情况不会被当作已经开始的完整业务执行。
+If the request body has not been fully received, Portal or the downstream service can still fail while reading the body. That case is not treated as a complete business execution that has already started.
 
-## 6. Handler 里调用下游要注意什么
+## 6. Calling Downstream From Handlers
 
-业务 handler 里继续调用 Rpc 时，通常不用手工设置 timeout。只要使用 Vine 注入的当前上下文，Rpc client 会自动读取 context deadline，并把剩余时间写入 `vrpc-options`。
+When a business handler calls Rpc, it usually does not need to set timeout manually. As long as the call uses the current injected context, the Rpc client reads the context deadline and writes the remaining time to `vrpc-options`.
 
-推荐：
+Recommended:
 
 ```go
-// 使用当前 handler 注入的 client/context，继续发起 Rpc 调用。
+// Use the current injected client/context for downstream Rpc calls.
 result := h.SomeClient.DoSomething(...)
 ```
 
-避免：
+Avoid:
 
 ```go
 ctx := context.Background()
 ```
 
-如果你用没有 deadline 的新 context 覆盖当前上下文，下游调用就拿不到 gateway 传下来的剩余 timeout。
+If a handler replaces the current context with one that has no deadline, downstream calls lose the remaining timeout propagated by the gateway.
 
-普通 Web handler 也是一样。webgw 会把 `vweb-options` 应用到后端 Web handler 的 request context；handler 内再调用 Rpc 时，会继续递减并传播为 `vrpc-options`。未显式指定 timeout 的 SSE/WebSocket handler context 没有总时长 deadline；其中发起的 Rpc 调用仍使用 Rpc 自身的默认 timeout，除非业务代码显式传入 context 或 timeout。
+The same applies to ordinary Web handlers. webgw applies `vweb-options` to the backend Web handler request context. If that handler calls Rpc, the remaining timeout continues as `vrpc-options`. SSE/WebSocket handler contexts without an explicit timeout have no total-duration deadline; Rpc calls made from them still use the Rpc default timeout unless application code supplies a context or timeout explicitly.
 
-## 7. 在 OTel 后台会看到什么
+## 7. What You Will See in an OTel Backend
 
-带 auth/check 的 Rpc 请求大致会形成这样的调用树：
+An Rpc request with auth/check roughly forms this tree:
 
 ```text
 incoming trace
@@ -155,7 +155,7 @@ incoming trace
           -> target rpc server
 ```
 
-Web 请求大致会形成：
+A Web request roughly forms:
 
 ```text
 incoming trace
@@ -166,11 +166,11 @@ incoming trace
           -> backend web handler
 ```
 
-如果客户端只传了 trace id，没有传 span，Portal 会补一个入口 span。这个 span 只是服务端调用树的 parent anchor，不一定能在客户端侧找到对应日志。
+If the client only sends a trace id and no span, Portal creates an entry span. That span is only a parent anchor for the server-side tree and may not have matching client-side logs.
 
-## 8. Vine 内部怎么派生 Span
+## 8. How Vine Derives Spans Internally
 
-Vine 使用 `meta.Trace` 表示 trace context：
+Vine uses `meta.Trace` for trace context:
 
 ```go
 type Trace interface {
@@ -181,17 +181,17 @@ type Trace interface {
 }
 ```
 
-跨进程 header 只传 `id` 和 `span`。接收方把 header 里的 `span` 当作 remote parent，然后在本地创建新的 child trace。
+Cross-process headers only carry `id` and `span`. The receiver treats the header `span` as the remote parent and creates a new child trace locally.
 
-普通 Rpc 调用：
+Normal Rpc call:
 
 ```text
-当前 handler trace
+current handler trace
   -> rpc client trace
       -> rpc server handler trace
 ```
 
-Portal gateway：
+Portal gateway:
 
 ```text
 incoming trace
@@ -199,14 +199,14 @@ incoming trace
       -> auth/check/forward trace
 ```
 
-`ParentSpan()` 只存在于本地 trace 对象中，用于日志或后续 OTel 映射，不会写入 header。
+`ParentSpan()` only exists on the local trace object. It is useful for logs or future OTel mapping, but is not written into headers.
 
-## 9. 与 OTel 的关系
+## 9. Relationship With OTel
 
-`meta.Trace` 不是完整的 OTel span。它只负责生成和传播：
+`meta.Trace` is not a full OTel span. It only creates and propagates:
 
 - trace id
-- 当前 span id
-- 本地 parent span id
+- current span id
+- local parent span id
 
-真正的 span name、attributes、status、events、finish/export 应由日志或 OTel 层负责。这样业务传播模型和具体观测后端可以解耦。
+The log or OTel layer should own span names, attributes, status, events, finish/export. This keeps the business propagation model separate from the concrete observability backend.

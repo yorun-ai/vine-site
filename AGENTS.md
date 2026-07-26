@@ -10,9 +10,11 @@
 
 ## Documentation Ownership
 
-- Chinese source documents live under `docs`.
-- English translations live under `i18n/en/docusaurus-plugin-content-docs/current`.
-- Keep Chinese source documents and their English translations synchronized.
+- English source documents live under `docs`.
+- Simplified Chinese translations live under
+  `i18n/zh-CN/docusaurus-plugin-content-docs/current`.
+- Keep English source documents and their Simplified Chinese translations
+  synchronized.
 - Cross-product tutorials may show the complete workflow, but language rules and skelc command reference remain owned by `skel-site`.
 
 ## Versioning

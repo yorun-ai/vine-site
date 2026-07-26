@@ -12,10 +12,10 @@ Prerequisites: Node.js 20 or later and pnpm.
 
 ```bash
 pnpm install
-pnpm dev:zh
+pnpm dev
 ```
 
-Use `pnpm dev:en` for English. Validate both locales with:
+Use `pnpm dev:zh` for Simplified Chinese. Validate both locales with:
 
 ```bash
 pnpm typecheck

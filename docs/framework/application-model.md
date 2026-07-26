@@ -2,11 +2,11 @@
 slug: /application-model
 ---
 
-# 应用模型
+# Application Model
 
-Vine App 是业务进程的入口。它给应用一个稳定名称，声明需要的组件和模块，并选择 standalone、linked 或分开部署模式。
+A Vine App is the entry point of a business process. It gives the application a stable name, declares the components and modules it needs, and selects standalone, linked, or fully separated deployment.
 
-## 最小应用
+## Minimal application
 
 ```go title="app.go"
 type CheckoutApp struct {
@@ -18,39 +18,39 @@ func (*CheckoutApp) Name() string {
 }
 ```
 
-应用名称用于服务注册和调用链识别，同一进程中必须唯一。
+The application name identifies the application in service registration and call chains, and it must be unique within a process.
 
-## 应用可以声明什么
+## What an application can declare
 
-| 入口 | 用途 |
+| Entry point | Purpose |
 | --- | --- |
-| `InitComponents` | 数据库、Redis 等基础设施组件 |
-| `InitModules` | 跟随应用启停的业务模块 |
-| `BindCommon` | 所有执行场景共享的依赖 |
-| `ServicerInitHandlers` | Rpc 服务实现 |
-| `WebberInitHandlers` | Web 路由实现 |
-| `EventerInitListeners` | Event 监听器 |
-| `TaskerInitRunners` | Task 执行器 |
+| `InitComponents` | Infrastructure components such as databases and Redis |
+| `InitModules` | Business modules that start and stop with the application |
+| `BindCommon` | Dependencies shared by all execution contexts |
+| `ServicerInitHandlers` | Rpc service implementations |
+| `WebberInitHandlers` | Web route implementations |
+| `EventerInitListeners` | Event listeners |
+| `TaskerInitRunners` | Task runners |
 
-只声明应用真正需要的能力。Vine 会根据这些声明创建 endpoint，并通过 Link 注册到运行时。
+Declare only the capabilities the application actually needs. Vine creates endpoints from these declarations and registers them with the runtime through Link.
 
-## 选择启动方式
+## Choose a startup mode
 
 ```go title="main.go"
-// 单进程开发
+// Single-process development
 standalone.NewWithOption[*CheckoutApp](standalone.Option{
     SQLiteFile: "./vine.sqlite",
 }).StartAndWait()
 
-// 连接外部 Hub，Link 与应用同进程
+// Connect to an external Hub with Link in the application process
 linked.NewWithOption[*CheckoutApp](linked.Option{
     HubEndpoint: "http://127.0.0.1:7071",
 }).StartAndWait()
 
-// 连接独立 Link
+// Connect to a standalone Link
 app.NewWithOption[*CheckoutApp](app.Option{
     LinkEndpoint: "http://127.0.0.1:7079",
 }).StartAndWait()
 ```
 
-三种模式的取舍见 [运行模式与部署拓扑](/docs/deployment-modes)。生命周期和能力注册的细节见 [组件运行机制](/docs/runtime-mechanisms)。
+See [Runtime Modes and Deployment Topologies](/docs/deployment-modes) for the tradeoffs among these modes and [Component Runtime Mechanisms](/docs/runtime-mechanisms) for lifecycle and capability registration details.

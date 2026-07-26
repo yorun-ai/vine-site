@@ -2,13 +2,13 @@
 slug: /ctr
 ---
 
-# 执行容器与过滤器（CTR）
+# Execution Containers and Filters (CTR)
 
-Vine 的 Rpc、Web、Event 和 Task handler 都通过执行容器调用。容器为每次调用创建 execution，准备依赖与上下文，按顺序执行 filters，最后调用目标方法。
+Vine invokes Rpc, Web, Event, and Task handlers through an execution container. For each call, the container creates an execution, prepares dependencies and context, runs filters in order, and finally invokes the target method.
 
-业务 handler 会自动使用这套机制。只有要构建自定义执行入口，或为调用链增加通用过滤器时，才需要直接使用 `core/ctr`。
+Business handlers use this mechanism automatically. You only need to use `core/ctr` directly when building a custom execution entry point or adding shared filters to a call chain.
 
-## 1. 核心接口
+## 1. Core interfaces
 
 ### 1.1 `Container`
 
@@ -18,7 +18,7 @@ type Container interface {
 }
 ```
 
-创建方式：
+Create one with:
 
 ```go
 container := ctr.NewContainer(ctr.Option{
@@ -36,10 +36,10 @@ type Execution interface {
 }
 ```
 
-语义：
+The methods mean:
 
-- `Execute(...)`：触发一次完整执行
-- `Results()`：读取目标方法最终返回值
+- `Execute(...)`: runs one complete execution.
+- `Results()`: returns the final values produced by the target method.
 
 ### 1.3 `Filter`
 
@@ -51,13 +51,13 @@ type Filter interface {
 type FilterNext func()
 ```
 
-filter 可以：
+A filter can:
 
-- 在 `next()` 前做前置逻辑
-- 在 `next()` 后做后置逻辑
-- 不调用 `next()`，直接短路后续执行
+- Run logic before `next()`.
+- Run logic after `next()`.
+- Short-circuit the remaining execution by not calling `next()`.
 
-## 2. 初始化方式
+## 2. Initialization
 
 ```go
 type Option struct {
@@ -66,18 +66,18 @@ type Option struct {
 }
 ```
 
-说明：
+The fields are:
 
-- `BindAppliers`：给容器根 injector 注册依赖
-- `FilterTypes`：声明 filter 类型，执行时由 DI 创建实例
+- `BindAppliers`: registers dependencies in the container's root injector.
+- `FilterTypes`: declares filter types, which DI creates during execution.
 
-框架会自动补充：
+The framework automatically adds:
 
-- 所有 filter 的 `ExecutionScope` 绑定
-- `*ctr.Context` 的 `ExecutionScope` 绑定
-- 最后一个“真正调用目标方法”的内置 filter
+- `ExecutionScope` bindings for every filter.
+- An `ExecutionScope` binding for `*ctr.Context`.
+- A final built-in filter that invokes the target method.
 
-## 3. 最基本的调用
+## 3. Basic invocation
 
 ```go
 type Calculator struct {
@@ -103,14 +103,14 @@ execution.Execute([]any{2, 5})
 results := execution.Results() // []any{7}
 ```
 
-规则：
+The following rules apply:
 
-- `args` 必须和目标方法参数顺序一致
-- `Results()` 返回所有返回值，顺序与方法定义一致
+- `args` must follow the target method's parameter order.
+- `Results()` returns every result in the same order as the method declaration.
 
-## 4. Filter 写法
+## 4. Writing a filter
 
-典型 filter：
+A typical filter looks like this:
 
 ```go
 type TraceFilter struct {
@@ -127,7 +127,7 @@ func (f *TraceFilter) Filter(next ctr.FilterNext) {
 }
 ```
 
-执行顺序和 `FilterTypes` 一致，形成标准洋葱模型：
+Filters run in `FilterTypes` order and form the usual onion model:
 
 ```text
 FilterA(before)
@@ -139,24 +139,24 @@ FilterA(after)
 
 ## 5. `Context`
 
-每次 execution 都会自动创建一个 `*ctr.Context`。
+Each execution automatically creates a `*ctr.Context`.
 
-可用接口包括：
+Its available methods include:
 
 - `TargetType()` / `SetTargetType(...)`
 - `TargetMethodName()` / `SetTargetMethodName(...)`
 - `Arguments()` / `SetArguments(...)`
 - `Results()` / `SetResults(...)`
 
-### 5.1 调用前改写目标与参数
+### 5.1 Changing the target and arguments before invocation
 
-在执行结束前，可以修改：
+Before target invocation completes, a filter can change:
 
-- 目标类型
-- 目标方法名
-- 参数列表
+- The target type.
+- The target method name.
+- The argument list.
 
-例如：
+For example:
 
 ```go
 func (f *RouteFilter) Filter(next ctr.FilterNext) {
@@ -166,15 +166,15 @@ func (f *RouteFilter) Filter(next ctr.FilterNext) {
 }
 ```
 
-### 5.2 调用后改写返回值
+### 5.2 Changing results after invocation
 
-一旦目标方法执行完成，就不能再改：
+After the target method has completed, you can no longer change:
 
 - `TargetType`
 - `TargetMethodName`
 - `Arguments`
 
-但 `SetResults(...)` 仍然可用，所以可以统一包装返回值：
+`SetResults(...)` remains available, so a filter can wrap results consistently:
 
 ```go
 func (f *EnvelopeFilter) Filter(next ctr.FilterNext) {
@@ -185,9 +185,9 @@ func (f *EnvelopeFilter) Filter(next ctr.FilterNext) {
 }
 ```
 
-## 6. Execute 时的 seeding
+## 6. Seeding during `Execute`
 
-`Execution.Execute(...)` 可以额外传 `di.SeedApplier`，把运行时对象塞进本次 execution 的 DI 容器：
+`Execution.Execute(...)` accepts additional `di.SeedApplier` values that place runtime objects in this execution's DI container:
 
 ```go
 execution.Execute([]any{"alice"}, func(s *di.Seeder) {
@@ -196,19 +196,19 @@ execution.Execute([]any{"alice"}, func(s *di.Seeder) {
 })
 ```
 
-适合注入：
+Typical values include:
 
-- 当前请求上下文
-- trace 信息
-- 当前用户
-- 其它一次性执行态对象
+- The current request context.
+- Trace information.
+- The current user.
+- Other per-execution objects.
 
-## 7. 适用场景
+## 7. When to use it
 
-`ctr` 特别适合这几类场景：
+`ctr` is particularly useful when you need to:
 
-- handler / service 方法前后挂统一逻辑
-- 通过 filter 做鉴权、日志、埋点、路由改写
-- 希望目标对象和 filter 都由 `core/di` 托管
+- Apply shared logic before and after handler or service methods.
+- Implement authorization, logging, instrumentation, or route rewriting in filters.
+- Let `core/di` manage both target objects and filters.
 
-如果只是单纯想“拿到对象然后直接调方法”，那就不一定需要 `ctr`。
+If you only need to obtain an object and call a method directly, you may not need `ctr`.

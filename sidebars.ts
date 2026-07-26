@@ -5,7 +5,7 @@ const sidebars: SidebarsConfig = {
     'index',
     {
       type: 'category',
-      label: '快速开始',
+      label: 'Get Started',
       items: [
         'getting-started/overview',
         'getting-started/tutorial-first-app',
@@ -17,7 +17,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: '核心概念',
+      label: 'Core Concepts',
       items: [
         'framework/application-model',
         'framework/components',
@@ -30,7 +30,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: '应用能力',
+      label: 'Application Capabilities',
       items: [
         'framework/configuration',
         'framework/rpc-guide',
@@ -43,12 +43,12 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: '运行时与部署',
+      label: 'Runtime and Deployment',
       items: ['runtime/mechanisms', 'runtime/hub', 'runtime/link', 'runtime/portal'],
     },
     {
       type: 'category',
-      label: '参考',
+      label: 'Reference',
       items: [
         'framework/app',
         'infrastructure/vrpc-http',

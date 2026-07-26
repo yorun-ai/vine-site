@@ -2,19 +2,19 @@
 slug: /meta
 ---
 
-# 调用上下文与身份（Meta）
+# Call Context and Identity (Meta)
 
-Rpc、Web、Event 和 Task 的处理代码都需要知道“这次调用从哪里来、由谁发起、属于哪条调用链”。`core/meta` 用一组统一对象表达这些信息：
+Rpc, Web, Event, and Task handlers all need to know where a call came from, who initiated it, and which call chain it belongs to. `core/meta` represents this information through a consistent set of objects:
 
-- 当前应用自身信息
-- 调用链 trace / span
-- 调用发起方信息
-- 当前操作人信息
-- 带这些元信息的 `context.Context`
+- The current application.
+- Call-chain traces and spans.
+- The initiator of a call.
+- The current actor.
+- A `context.Context` carrying this metadata.
 
-Vine 会在请求边界创建并传递这些对象；业务代码通常只需从执行上下文中读取，不必自行生成或解析传输字段。
+Vine creates and propagates these objects at request boundaries. Business code normally only needs to read them from the execution context; it does not need to generate them or parse transport fields itself.
 
-## 1. 核心接口
+## 1. Core interfaces
 
 ### 1.1 `App`
 
@@ -26,7 +26,7 @@ type App interface {
 }
 ```
 
-创建方式：
+Create one with:
 
 ```go
 appInfo, err := meta.NewApp(
@@ -36,11 +36,11 @@ appInfo, err := meta.NewApp(
 )
 ```
 
-约束：
+The following constraints apply:
 
-- `name` 必须是点分小写名，例如 `demo.service`
-- `version` 必须是合法 semver
-- `instanceId` 必须是合法 UUID
+- `name` must be a dot-separated lowercase name, such as `demo.service`.
+- `version` must be valid semantic versioning.
+- `instanceId` must be a valid UUID.
 
 ### 1.2 `Trace`
 
@@ -53,20 +53,20 @@ type Trace interface {
 }
 ```
 
-创建方式：
+Create one with:
 
 ```go
 trace := meta.InitialTrace()
 child := trace.NewChildTrace()
 ```
 
-也可以显式指定：
+Or specify its values explicitly:
 
 ```go
 trace, err := meta.NewTrace("4bf92f3577b34da6a3ce929d0e0e4736", "")
 ```
 
-当 `span == ""` 时，`NewTrace(...)` 会自动生成新 span。
+When `span == ""`, `NewTrace(...)` generates a new span automatically.
 
 ### 1.3 `Initiator`
 
@@ -78,7 +78,7 @@ type Initiator interface {
 }
 ```
 
-表示“是谁发起了这次调用”。
+An Initiator represents who initiated a call.
 
 ```go
 initiator, err := meta.NewInitiator(
@@ -90,7 +90,7 @@ initiator, err := meta.NewInitiator(
 )
 ```
 
-如果 `ipStr == ""`，`IpAddr()` 会返回空字符串；非空时必须能被 `netip.ParseAddr(...)` 解析。
+If `ipStr == ""`, `IpAddr()` returns an empty string. A non-empty value must be accepted by `netip.ParseAddr(...)`.
 
 ### 1.4 `Actor`
 
@@ -110,7 +110,7 @@ authenticated := meta.NewAuthenticatedActor(&skeled.UserActorInfo{
 })
 ```
 
-认证 Actor 的 info 类型由生成代码注册。使用 `meta.GetActorInfo[T](actor)` 读取类型安全的身份信息。
+Generated code registers the info type of an authenticated Actor. Use `meta.GetActorInfo[T](actor)` to read its type-safe identity information.
 
 ### 1.5 `Context`
 
@@ -124,7 +124,7 @@ type Context interface {
 }
 ```
 
-创建方式：
+Create one with:
 
 ```go
 ctx := meta.NewContext(
@@ -135,55 +135,55 @@ ctx := meta.NewContext(
 )
 ```
 
-`meta.Context` 只是对标准 `context.Context` 的包装。
+`meta.Context` is a wrapper around the standard `context.Context`.
 
-## 2. Trace 规则
+## 2. Trace rules
 
 ### 2.1 Trace ID
 
-Trace ID 规则：
+A trace ID is:
 
-- 16 字节随机数
-- 十六进制小写字符串
-- 长度固定 32
-- 全零值非法
+- 16 random bytes.
+- A lowercase hexadecimal string.
+- Exactly 32 characters long.
+- Invalid when every byte is zero.
 
-可以用这些 API：
+Use these APIs:
 
 - `meta.NewId()`
 - `meta.IsValidId(id)`
 
 ### 2.2 Span ID
 
-Span ID 规则：
+A span ID is:
 
-- 8 字节随机数
-- 十六进制小写字符串
-- 长度固定 16
-- 全零值非法
+- 8 random bytes.
+- A lowercase hexadecimal string.
+- Exactly 16 characters long.
+- Invalid when every byte is zero.
 
-可以用这些 API：
+Use these APIs:
 
 - `meta.NewSpan()`
 - `meta.IsValidSpan(span)`
 
-### 2.3 `InitialTrace()` 与 `NewChildTrace()`
+### 2.3 `InitialTrace()` and `NewChildTrace()`
 
-`InitialTrace()` 会创建根 trace：
+`InitialTrace()` creates a root trace with:
 
-- 新的 `Id()`
-- 新的 `Span()`
-- `ParentSpan()` 为空字符串
+- A new `Id()`.
+- A new `Span()`.
+- An empty `ParentSpan()`.
 
-`NewChildTrace()` 会基于当前 trace 派生子 span：
+`NewChildTrace()` derives a child span from the current trace by:
 
-- 复用相同 trace id
-- `ParentSpan()` 等于父 span
-- 新生成子 span
+- Reusing the same trace ID.
+- Setting `ParentSpan()` to the parent span.
+- Generating a new child span.
 
-## 3. Base64 编解码辅助
+## 3. Base64 encoding helpers
 
-`core/meta` 提供以下两组编解码辅助函数。
+Two sets of helpers are available.
 
 ### 3.1 Initiator
 
@@ -192,9 +192,9 @@ encoded := meta.EncodeInitiatorToBase64(initiator)
 decoded, err := meta.DecodeInitiatorFromBase64(encoded)
 ```
 
-特殊行为：
+Special behavior:
 
-- `DecodeInitiatorFromBase64("")` 会返回 `nil, nil`
+- `DecodeInitiatorFromBase64("")` returns `nil, nil`.
 
 ### 3.2 Actor
 
@@ -203,14 +203,14 @@ encoded := meta.EncodeActorToBase64(actor)
 decoded, err := meta.DecodeActorFromBase64(encoded)
 ```
 
-空字符串不是合法的 Actor 编码，`DecodeActorFromBase64("")` 会返回错误。没有身份信息时，应显式使用 `meta.NewAbsentActor()`；未登录访问使用 `meta.NewAnonymousActor()`。
+An empty string is not a valid Actor encoding, so `DecodeActorFromBase64("")` returns an error. When no identity information is available, use `meta.NewAbsentActor()` explicitly; use `meta.NewAnonymousActor()` for unauthenticated access.
 
-## 4. 适用场景
+## 4. Use cases
 
-典型场景：
+Typical use cases include:
 
-- 在 Rpc / Web / Message 边界上传递 trace
-- 统一表示“调用来自哪个 app”
-- 把 actor 和 initiator 作为运行时上下文对象往下传
+- Propagating traces across Rpc, Web, and message boundaries.
+- Representing which application initiated a call consistently.
+- Passing the Actor and Initiator down through runtime context.
 
-`meta` 只负责数据模型，不负责日志字段格式化。
+`meta` only provides the data model; it does not format log fields.

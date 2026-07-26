@@ -2,11 +2,11 @@
 slug: /configuration
 ---
 
-# 应用配置
+# Application Configuration
 
-Vine 配置由 `.skel` 声明、Hub 保存、Link 分发，并通过依赖注入提供给应用。应用不需要自行轮询配置中心。
+Vine configuration is declared in `.skel`, stored by Hub, distributed by Link, and provided to the application through dependency injection. Applications do not need to poll the configuration center themselves.
 
-## 声明配置
+## Declare configuration
 
 ```skel title="config.skel"
 config CheckoutConfig eternal {
@@ -19,10 +19,10 @@ config FeatureFlagsConfig instant {
 }
 ```
 
-- `eternal`：应用启动时读取，适合连接参数和启动期决定的行为。
-- `instant`：运行期间可更新，适合开关和可动态调整的业务参数。更新后，新创建的执行对象会读取新值；已经注入到现有对象中的配置不会原地变更。
+- `eternal`: read when the application starts; suitable for connection settings and behavior determined at startup.
+- `instant`: can be updated while the application is running; suitable for feature flags and dynamically adjustable business settings. Objects created for new executions read the updated value, while configuration already injected into existing objects does not change in place.
 
-运行 `skelc gen go` 后，生成的配置类型会注册到 Vine。业务对象可像其他依赖一样注入配置：
+After you run `skelc gen go`, the generated configuration types are registered with Vine. Business objects can inject configuration just like any other dependency:
 
 ```go title="service.go"
 type CheckoutService struct {
@@ -30,9 +30,9 @@ type CheckoutService struct {
 }
 ```
 
-## 提供初始值
+## Provide initial values
 
-Hub seed 文件使用配置的完整 Skel 名称，并把值写成 JSON 字符串：
+Hub seed files use each configuration's fully qualified Skel name and encode its value as a JSON string:
 
 ```yaml title="seed.yaml"
 appConfigs:
@@ -42,7 +42,7 @@ appConfigs:
     value: '{"newCheckout":true}'
 ```
 
-standalone 应用可在启动时导入该文件：
+A standalone application can import the file at startup:
 
 ```go title="main.go"
 standalone.NewWithOption[*CheckoutApp](standalone.Option{
@@ -51,15 +51,15 @@ standalone.NewWithOption[*CheckoutApp](standalone.Option{
 }).StartAndWait()
 ```
 
-字段名和类型必须与生成的配置 schema 一致。linked 或分开部署使用相同 seed 格式，由 `vine hub serve --seed-yaml-file ./seed.yaml` 导入。
+Field names and types must match the generated configuration schema. Linked and fully separated deployments use the same seed format; import the file with `vine hub serve --seed-yaml-file ./seed.yaml`.
 
-## 配置如何到达应用
+## How configuration reaches an application
 
 ```mermaid
 flowchart LR
-  Admin["管理端或 seed YAML"] --> Hub["Hub"] --> Redis["配置快照与变更"] --> Link["Link"] --> App["应用配置对象"]
+  Admin["Admin or seed YAML"] --> Hub["Hub"] --> Redis["Configuration snapshots and changes"] --> Link["Link"] --> App["Application configuration objects"]
 ```
 
-standalone 模式使用同一进程中的 Hub 和 Link，读取方式不变。linked 或分开部署时，Link 连接远端 Hub。配置更新失败时，应先确认 Hub 数据、Link 与 Hub 的连接，以及配置 schema 是否与生成代码一致。
+Standalone mode uses Hub and Link in the same process, but the configuration access model remains unchanged. In linked or fully separated deployments, Link connects to a remote Hub. If a configuration update fails, first verify the data in Hub, the connection between Link and Hub, and whether the configuration schema matches the generated code.
 
-配置语法见 [Skel 语法](https://skel.yorun.ai/docs/syntax)，Hub 启动和 seed 文件见 [Hub](/docs/hub)。
+See [Skel Syntax](https://skel.yorun.ai/docs/syntax) for configuration syntax and [Hub](/docs/hub) for Hub startup and seed files.

@@ -31,16 +31,16 @@ const config: Config = {
   },
 
   i18n: {
-    defaultLocale: 'zh-Hans',
-    locales: ['zh-Hans', 'en'],
+    defaultLocale: 'en',
+    locales: ['en', 'zh-CN'],
     localeConfigs: {
-      'zh-Hans': {
-        label: '简体中文',
-        htmlLang: 'zh-Hans',
-      },
       en: {
         label: 'English',
         htmlLang: 'en',
+      },
+      'zh-CN': {
+        label: '简体中文',
+        htmlLang: 'zh-CN',
       },
     },
   },
@@ -54,14 +54,14 @@ const config: Config = {
           routeBasePath: 'docs',
           sidebarPath: './sidebars.ts',
           editUrl: ({locale, docPath}) =>
-            locale === 'en'
-              ? `https://github.com/yorun-ai/vine-site/tree/main/i18n/en/docusaurus-plugin-content-docs/current/${docPath}`
+            locale === 'zh-CN'
+              ? `https://github.com/yorun-ai/vine-site/tree/main/i18n/zh-CN/docusaurus-plugin-content-docs/current/${docPath}`
               : `https://github.com/yorun-ai/vine-site/tree/main/docs/${docPath}`,
           showLastUpdateAuthor: false,
           showLastUpdateTime: false,
           versions: {
             current: {
-              label: 'Vine 开发版',
+              label: 'Vine next',
             },
           },
         },
@@ -86,7 +86,7 @@ const config: Config = {
           type: 'docSidebar',
           sidebarId: 'docsSidebar',
           position: 'left',
-          label: '文档',
+          label: 'Documentation',
         },
         {
           href: 'https://skel.yorun.ai',

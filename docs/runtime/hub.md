@@ -2,32 +2,32 @@
 slug: /hub
 ---
 
-# Hub 配置与注册中心
+# Hub Configuration and Service Registry
 
-Hub 是 Vine runtime 的控制面。它保存配置和注册信息，并将面向运行时的快照与变更事件分发给 Link 和 Portal。
+Hub is the control plane of the Vine runtime. It stores configuration and registration data, then distributes runtime snapshots and change events to Link and Portal.
 
 ```mermaid
 flowchart LR
-  App["业务应用"] -->|"注册"| Link["Link"]
+  App["Business application"] -->|"Register"| Link["Link"]
   Link --> Hub["Hub"]
-  Portal["Portal"] -->|"读取与订阅"| Hub
-  Hub --> DB["数据库：配置、站点规则、证书"]
-  Hub --> Redis["Redis：运行时快照与变更事件"]
-  Hub --> NATS["NATS：事件与任务的消息基础设施"]
+  Portal["Portal"] -->|"Read and subscribe"| Hub
+  Hub --> DB["Database: configuration, site rules, certificates"]
+  Hub --> Redis["Redis: runtime snapshots and change events"]
+  Hub --> NATS["NATS: messaging infrastructure for events and tasks"]
 ```
 
-## 职责
+## Responsibilities
 
-- **配置中心**：从 SQLite 或 PostgreSQL 读取配置，并同步到 Redis。
-- **服务注册中心**：接收 Link 上报的应用、Rpc、Web、事件和任务能力；维护实例状态。
-- **运行时分发层**：将配置、注册、Portal 规则、schema 与证书写入 Redis，供消费者读取和订阅。
-- **管理入口**：提供 Hub API 与 Dashboard；Dashboard 的外部访问由 Portal 配置决定。
+- **Configuration center**: reads configuration from SQLite or PostgreSQL and synchronizes it to Redis.
+- **Service registry**: receives application, Rpc, Web, event, and task capabilities reported by Link, and maintains instance state.
+- **Runtime distribution layer**: writes configuration, registrations, Portal rules, schemas, and certificates to Redis for consumers to read and subscribe to.
+- **Management entry point**: provides the Hub API and Dashboard. External access to the Dashboard is controlled by Portal configuration.
 
-Hub 不是业务请求的转发路径。业务的外部请求由 Portal 处理，应用间调用由 Link 发现并转发。
+Hub is not on the business request path. Portal handles external requests, while Link discovers and forwards calls between applications.
 
-## 启动
+## Starting Hub
 
-最小的本地开发配置使用 SQLite 和内嵌 NATS：
+The smallest local development setup uses SQLite and embedded NATS:
 
 ```bash
 vine hub serve \
@@ -35,23 +35,26 @@ vine hub serve \
   --db-sqlite-file ./hub.sqlite
 ```
 
-默认监听地址如下：
+The default listen addresses are:
 
-| 服务 | 默认地址 | 用途 |
+| Service | Default address | Purpose |
 | --- | --- | --- |
-| Hub API | `127.0.0.1:7071` | Link、Portal 与管理客户端连接 Hub |
-| Hub Redis | `127.0.0.1:7073` | 运行时快照读取与订阅 |
+| Hub API | `127.0.0.1:7071` | Allows Link, Portal, and management clients to connect to Hub. |
+| Hub Redis | `127.0.0.1:7073` | Provides runtime snapshot reads and subscriptions. |
 
-:::warning 当前安全边界
+:::warning Current security boundary
 
-组件间身份认证和传输加密仍是 TODO。Hub 内嵌 Redis 当前允许客户端免密码只读连接，
-且其中包含 Portal TLS 私钥等运行时配置。在该安全能力完成前，只能将 Hub API、Hub
-Redis、Link API 和 Link ingress 部署在回环地址或受信私有网络中，并通过防火墙限制
-访问；不得将这些内部端口暴露到不可信网络。
+Authentication and encrypted transport between components remain TODOs. The
+embedded Hub Redis server currently allows password-free, read-only client
+connections and distributes runtime configuration including Portal TLS private
+keys. Until those security capabilities are implemented, deploy the Hub API,
+Hub Redis, Link API, and Link ingress only on loopback or trusted private
+networks, restrict access with a firewall, and never expose these internal ports
+to an untrusted network.
 
 :::
 
-生产部署可使用 PostgreSQL 和外部 NATS：
+Production deployments can use PostgreSQL and an external NATS server:
 
 ```bash
 vine hub serve \
@@ -59,24 +62,24 @@ vine hub serve \
   --mq-external-nats-url nats://nats.example.com:4222
 ```
 
-数据库参数 `--db-sqlite-file` 和 `--db-postgres-url` 必须二选一；消息队列参数 `--mq-embedded-nats` 和 `--mq-external-nats-url` 也必须二选一。
+Exactly one of `--db-sqlite-file` and `--db-postgres-url` must be provided. Exactly one of `--mq-embedded-nats` and `--mq-external-nats-url` must also be provided.
 
-可用 `--seed-yaml-file ./seed.yaml` 在启动时导入初始配置、Portal 规则和证书。导入后仍由数据库作为配置真源。
+Use `--seed-yaml-file ./seed.yaml` to import initial configuration, Portal rules, and certificates at startup. The database remains the source of truth after the import.
 
-## 注册与租约
+## Registration and Leases
 
-普通进程模式下，Link 为应用和 Rpc 服务注册写入带 TTL 的记录，并通过 heartbeat 续租。Hub 的 registry sweeper 发现租约过期后，会主动注销实例并发布删除事件。
+In normal process mode, Link writes application and Rpc service registrations with a TTL and renews their leases through heartbeats. When Hub's registry sweeper finds an expired lease, it actively unregisters the instance and publishes a deletion event.
 
-因此，当 Link 或业务应用异常停止时，Portal 和其他 Link 会在注册失效后移除对应 endpoint，而不是持续转发到失效实例。
+As a result, if Link or a business application exits unexpectedly, Portal and other Link instances remove the corresponding endpoint after its registration expires instead of continuing to forward requests to a dead instance.
 
-## Inproc 模式
+## Inproc Mode
 
-Hub 可以作为单进程 runtime 的内部组件运行。此时 Hub API 使用 `inproc` transport，Redis 只提供进程内连接，且不启动对外监听端口。
+Hub can run as an internal component of a single-process runtime. In this mode, the Hub API uses the `inproc` transport, Redis only provides in-process connections, and no external listen ports are opened.
 
-inproc 模式不使用 TTL、heartbeat 或 registry sweeper；注册会一直保留到应用显式注销。它适合本地调试、集成测试和 standalone 应用，不用于验证断网、租约失效等分布式故障语义。
+Inproc mode does not use TTLs, heartbeats, or the registry sweeper. A registration remains until the application explicitly unregisters it. This mode is suitable for local debugging, integration tests, and standalone applications, but not for testing distributed failure behavior such as network partitions or lease expiration.
 
-## 相关文档
+## Related Documentation
 
-- [Link](/docs/link)：应用侧注册、配置订阅和服务发现。
-- [Portal](/docs/portal)：读取 Hub 配置并提供外部网关。
-- [命令行](/docs/cli)：完整参数与环境变量。
+- [Link](/docs/link): application-side registration, configuration subscriptions, and service discovery.
+- [Portal](/docs/portal): reads Hub configuration and provides the external gateway.
+- [CLI](/docs/cli): complete options and environment variables.

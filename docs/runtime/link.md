@@ -2,38 +2,38 @@
 slug: /link
 ---
 
-# Link 应用侧接入层
+# Link Application-Side Runtime
 
-Link 是部署在应用侧的 runtime 接入层。它将本地应用注册到 Hub，维护配置和服务发现，并为 Rpc、Web、事件和任务提供统一的运行时能力。
+Link is the runtime access layer deployed alongside applications. It registers local applications with Hub, maintains configuration and service-discovery state, and provides unified runtime capabilities for Rpc, Web, events, and tasks.
 
 ```mermaid
 flowchart LR
-  App["本地应用"] <--> Link["Link"] <--> Hub["Hub"]
-  Link --> RpcWeb["Rpc / Web：发现并转发"]
-  Link --> EventTask["Event / Task：消费并派发"]
-  Link --> Config["Config：订阅配置变更"]
+  App["Local application"] <--> Link["Link"] <--> Hub["Hub"]
+  Link --> RpcWeb["Rpc / Web: discover and forward"]
+  Link --> EventTask["Event / Task: consume and dispatch"]
+  Link --> Config["Config: subscribe to changes"]
 ```
 
-## 职责边界
+## Responsibilities
 
-- **应用注册**：保存本地应用实例事实，向 Hub 注册能力，并在退出时注销。
-- **健康与租约**：普通模式下对实例进行健康检查并向 Hub 发送 heartbeat。
-- **配置读取**：提供配置快照，并监听 Hub Redis 的变更事件。
-- **服务发现与转发**：Rpc 和 Web 请求根据注册信息路由到本地或远端实例。
-- **异步消息派发**：消费 NATS 消息，投递给本地声明的事件监听器和任务执行器。
+- **Application registration**: stores the facts for local application instances, registers their capabilities with Hub, and unregisters them on exit.
+- **Health and leases**: performs instance health checks and sends heartbeats to Hub in normal mode.
+- **Configuration reads**: provides configuration snapshots and watches Hub Redis for change events.
+- **Service discovery and forwarding**: routes Rpc and Web requests to local or remote instances based on registration data.
+- **Asynchronous message dispatch**: consumes NATS messages and delivers them to locally declared event listeners and task runners.
 
-Link 是本地应用能力的唯一 owner。Rpc、Web、事件、任务和配置模块只从它派生各自的运行时索引，不直接维护另一份应用实例状态。
+Link is the sole owner of local application capability state. The Rpc, Web, event, task, and configuration modules derive their runtime indexes from Link rather than maintaining separate copies of application instance state.
 
-## 启动
+## Starting Link
 
-Hub 启动后，可通过其 API endpoint 启动 Link：
+After Hub is running, start Link with the Hub API endpoint:
 
 ```bash
 vine link serve \
   --hub-endpoint http://127.0.0.1:7071
 ```
 
-默认 API 监听在 `127.0.0.1:7079`。Ingress 默认使用 `0.0.0.0:0`，由系统分配端口并将实际 endpoint 注册到 Hub。需要固定地址时显式配置：
+The API listens on `127.0.0.1:7079` by default. Ingress defaults to `0.0.0.0:0`; the operating system assigns a port, and Link registers the resulting endpoint with Hub. Set fixed addresses explicitly when needed:
 
 ```bash
 vine link serve \
@@ -42,30 +42,30 @@ vine link serve \
   --hub-endpoint http://127.0.0.1:7071
 ```
 
-对应环境变量为 `VINE_API_LISTEN`、`VINE_INGRESS_LISTEN` 与 `VINE_HUB_ENDPOINT`。
+The corresponding environment variables are `VINE_API_LISTEN`, `VINE_INGRESS_LISTEN`, and `VINE_HUB_ENDPOINT`.
 
-## 请求路径
+## Request Paths
 
 ### Rpc
 
-应用发起 Rpc 调用时，请求先进入 Link 的 `rpcproxy`。它根据服务发现判断目标位于本地还是远端，再选择本地调用或经远端 Link 转发。外部进入 Link ingress 的 Rpc 请求也会经过该代理后到达本地应用。
+When an application makes an Rpc call, the request first enters Link's `rpcproxy`. The proxy uses service discovery to determine whether the target is local or remote, then invokes it locally or forwards the request through the remote Link. Rpc requests entering through external Link ingress follow the same proxy path before reaching the local application.
 
 ### Web
 
-`webproxy` 维护本地 Web handler 索引与远端发现结果，并采用与 Rpc 相同的“本地优先、远端可达”的转发模型。
+`webproxy` maintains indexes for local Web handlers and remote discovery results. It uses the same model as Rpc: prefer an available local target and reach remote targets through their Link.
 
-### Event 与 Task
+### Event and Task
 
-`event` 和 `task` 根据本地实例声明建立 NATS 消费；应用能力变更时，Link 自动更新相应消费与派发状态。
+The `event` and `task` modules create NATS consumers from the declarations of local instances. Link automatically updates the corresponding consumers and dispatch state when application capabilities change.
 
-## Inproc 模式
+## Inproc Mode
 
-`linked.New(...)` 会让 Link 与业务应用同进程，但 Hub 仍是外部服务。Link 会开放 ingress、向 Hub 注册并继续执行 heartbeat 与应用健康检查。
+`linked.New(...)` runs Link and the business application in the same process, while Hub remains an external service. Link still opens ingress, registers with Hub, and continues heartbeats and application health checks.
 
-standalone 才会把 Hub、Portal、Link 和应用全部放入同一进程，并使用进程内 Redis 与 endpoint；这种模式不执行 heartbeat。要验证租约和网络故障，可使用 linked 或完全分开部署。
+Only standalone mode runs Hub, Portal, Link, and the application in a single process and uses in-process Redis and endpoints. Standalone mode does not send heartbeats. Use linked mode or a fully separated deployment to test leases and network failures.
 
-## 相关文档
+## Related Documentation
 
-- [Hub](/docs/hub)：配置与注册信息的来源。
-- [Portal](/docs/portal)：对外请求进入应用的网关。
-- [App](/docs/app)：以 linked 或 standalone 方式装配应用。
+- [Hub](/docs/hub): the source of configuration and registration data.
+- [Portal](/docs/portal): the gateway through which external requests enter applications.
+- [App](/docs/app): assembles applications in linked or standalone mode.

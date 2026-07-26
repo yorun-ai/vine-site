@@ -1,0 +1,438 @@
+---
+slug: /app
+---
+
+# App API 参考
+
+`app` 的职责是把一个进程组装成统一运行时：管理应用生命周期、创建组件和模块、挂载 HTTP/Rpc/Web 入口，并把运行时依赖通过 DI 暴露给应用内部对象。
+
+## 1. 对外入口
+
+业务代码通常依赖顶层包 `go.yorun.ai/vine/app`。需要组合运行时组件时，再按模式导入 `app/linked` 或 `app/standalone`。
+
+常用入口包括：
+
+- `App`
+- `ApplicationSpec`
+- `Application`
+- `Flag` / `FlagModel` / `RunFlag`
+- `Module` / `BaseModule`
+- `EventerSpec` / `EventerEnabled`
+- `ServicerSpec` / `ServicerEnabled`
+- `TaskerSpec` / `TaskerEnabled`
+- `WebberSpec` / `WebberEnabled`
+- `ListenerOption` / `RunnerOption`
+- `WithListenerTimeout(...)` / `WithListenerConcurrency(...)` / `WithListenerNoRetry()`
+- `WithRunnerTimeout(...)` / `WithRunnerConcurrency(...)` / `WithRunnerNoRetry()`
+- `WithRunnerCronScheduler(...)`
+- `T[T]()`
+- `With(flag)`
+- `New[S](...)`
+- `NewWithOption[S](...)` / `Option`
+- `linked.New[S](...)` / `linked.NewWithOption[S](...)` / `linked.Option`
+- `linked.NewBundled(...)` / `linked.NewBundledWithOption(...)`
+- `standalone.New[S](...)` / `standalone.NewWithOption[S](...)` / `standalone.Option`
+- `standalone.NewBundled(...)` / `standalone.NewBundledWithOption(...)`
+
+## 2. 核心接口
+
+### 2.1 `App`
+
+```go
+type App interface {
+    Name() string
+    Start()
+    StopGracefully()
+    StartAndWait()
+}
+```
+
+常见用法：
+
+```go
+app.New[*DemoApp]().StartAndWait()
+```
+
+语义如下：
+
+- `Start()`：启动应用，非阻塞
+- `StopGracefully()`：执行优雅停止并阻塞到应用完全退出
+- `StartAndWait()`：启动后等待退出信号，再执行优雅停止流程
+
+生命周期调用是单次的：重复 `Start()`、未启动就 `StopGracefully()`、重复 `StopGracefully()`，或停止后再次 `Start()` 都会 panic。
+
+### 2.2 `ApplicationSpec`
+
+应用规格接口是：
+
+```go
+type ApplicationSpec interface {
+    Name() string
+    InitComponents(addComponent TypeAdder)
+    InitModules(addModule TypeAdder)
+    BindCommon(b *di.Binder)
+}
+```
+
+其中：
+
+- `Name()`：应用名，不能为空，且不能包含 `@`
+- `InitComponents(...)`：声明组件类型
+- `InitModules(...)`：声明模块类型
+- `BindCommon(...)`：注册应用级公共依赖
+
+业务应用嵌入 `app.Application` 即可获得默认实现，再覆盖需要的方法。
+
+### 2.3 `Application`
+
+`Application` 是默认基类：
+
+```go
+type Application struct {
+    AppFlag *RunFlag `inject:""`
+}
+```
+
+默认实现如下：
+
+- `Name()` 返回空字符串，业务 app 必须覆写
+- `InitComponents(...)` 默认不追加组件
+- `InitModules(...)` 默认不追加模块
+- `BindCommon(...)` 默认不绑定额外依赖
+
+最小 app 一般这样写：
+
+```go
+type DemoApp struct {
+    app.Application
+}
+
+func (*DemoApp) Name() string {
+    return "demo.app"
+}
+```
+
+## 3. 创建
+
+### 3.1 `New`
+
+```go
+instance := app.New[*DemoApp]()
+```
+
+行为如下：
+
+- 同一个 spec 类型只能创建一次
+- 不同 spec 类型如果 `Name()` 相同，也不能同时创建
+
+也就是说，框架同时约束了“spec 类型唯一”和“应用名唯一”。
+
+顶层 `app.NewWithOption(...)` 的 `Option` 提供 `LinkEndpoint`，也可以通过 `--link-endpoint` 或 `VINE_LINK_ENDPOINT` 提供。
+
+### 3.2 运行模式构造
+
+- `linked.New(...)`：同进程启动一个 Link，再以 inproc app 形式启动业务 app；`linked.Option` 支持 `HubEndpoint` 和 `IngressListen`，也可通过 `--hub-endpoint` / `--ingress-listen` 或对应环境变量提供
+- `linked.NewBundled(...)`：多个业务 app 共享一个同进程 Link，并连接外部 Hub；被打包的 linked app 不能再带自己的 `linked.Option`
+- `standalone.New(...)`：同进程启动 Hub、Portal、Link 和一个业务 app；`standalone.Option` 支持 seed YAML、SQLite 文件、PostgreSQL URL 和 Dashboard URL
+- `standalone.NewBundled(...)`：把多个 standalone app 打包进同一套内置 Hub / Portal / Link；被打包的 standalone app 不能再带自己的 `standalone.Option`
+
+## 4. Flag 模型
+
+### 4.1 `With(flag)`
+
+`New[...]()` 接收 `FlagApplier`，最常见写法是：
+
+```go
+app.New[*DemoApp](
+    app.With(&app.RunFlag{ListenAddr: ":18080"}),
+)
+```
+
+`With(flag)` 的约束：
+
+- `flag` 不能为 `nil`
+- `flag` 必须是“指向 struct 的指针”
+- 同一个 flag 类型只能提供一次
+
+### 4.2 `RunFlag`
+
+```go
+type RunFlag struct {
+    FlagModel
+    ListenAddr string
+    Context    context.Context
+}
+```
+
+语义如下：
+
+- `ListenAddr == ""` 时监听随机端口
+- `Context == nil` 时回退到 `context.Background()`
+- 即使没有显式传入 `RunFlag`，框架也会自动补一个默认实例
+
+应用内部通常通过注入 `AppFlag` 读取或修正运行参数：
+
+```go
+type DemoApp struct {
+    app.Application
+}
+
+func (a *DemoApp) BindCommon(b *di.Binder) {
+    if a.AppFlag.ListenAddr == "" {
+        a.AppFlag.ListenAddr = ":18080"
+    }
+}
+```
+
+### 4.3 自定义 Flag
+
+```go
+type DemoFlag struct {
+    app.FlagModel
+    Region string
+}
+
+type DemoApp struct {
+    app.Application
+    Flag *DemoFlag `inject:""`
+}
+```
+
+创建时传入：
+
+```go
+app.New[*DemoApp](
+    app.With(&DemoFlag{Region: "cn"}),
+)
+```
+
+## 5. 组件与模块
+
+### 5.1 基础设施组件
+
+数据库、Redis 等框架组件通过 `InitComponents` 声明。业务类型应嵌入对应公开组件，例如 `rdb.Database` 或 `redis.Redis`：
+
+```go
+func (*DemoApp) InitComponents(add app.TypeAdder) {
+    add(app.T[*MainDatabase]())
+    add(app.T[*MainRedis]())
+}
+```
+
+组件会把连接、DAO、Cache 或 Locker 等对象提供给依赖注入容器。组件类型不能重复声明。
+
+### 5.2 Module
+
+业务生命周期逻辑使用 `Module`。嵌入 `app.BaseModule` 后，只实现需要的生命周期方法：
+
+```go
+type DemoModule struct {
+    app.BaseModule
+}
+
+func (*DemoApp) InitModules(add app.TypeAdder) {
+    add(app.T[*DemoModule]())
+}
+```
+
+模块同样会参与：
+
+- `BeforeAppStart`
+- `AfterAppStart`
+- `BeforeAppStop`
+- `AfterAppStop`
+
+停止阶段按逆序执行。
+
+## 6. 可选能力
+
+应用 spec 可以按需实现以下能力接口。
+
+### 6.1 Rpc：`ServicerSpec`
+
+```go
+type ServicerSpec interface {
+    ServicerBind(b *di.Binder)
+    ServicerInitHandlers(addHandler TypeAdder)
+    ServicerInitFilters(addFilter TypeAdder)
+}
+```
+
+默认空实现基类：
+
+```go
+type ServicerEnabled struct{}
+```
+
+实现后，框架会创建 `core/rpc` server，并挂到 `/rpc/invoke`。
+
+### 6.2 Web：`WebberSpec`
+
+一个 app 只支持一个 weber：
+
+```go
+type WebberSpec interface {
+    WebberBind(b *di.Binder)
+    WebberInitHandlers(addHandler TypeAdder)
+    WebberInitFilters(addFilter TypeAdder)
+}
+```
+
+`WebberEnabled` 提供默认空实现。
+
+weber 的访问前缀是：
+
+```text
+/web/access/default@<appName>
+```
+
+### 6.3 Event：`EventerSpec`
+
+```go
+type EventerSpec interface {
+    EventerBind(b *di.Binder)
+    EventerInitListeners(addListener ListenerTypeAdder)
+    EventerInitFilters(addFilter TypeAdder)
+}
+```
+
+默认空实现基类：
+
+```go
+type EventerEnabled struct{}
+```
+
+实现后，框架会创建 event server，并挂到 `/event`。
+
+声明 listener 时可以附加选项：
+
+- `app.WithListenerTimeout(timeout)`
+- `app.WithListenerConcurrency(concurrency)`
+- `app.WithListenerNoRetry()`
+
+### 6.4 Task：`TaskerSpec`
+
+```go
+type TaskerSpec interface {
+    TaskerBind(b *di.Binder)
+    TaskerInitRunners(addRunner RunnerTypeAdder)
+    TaskerInitFilters(addFilter TypeAdder)
+}
+```
+
+默认空实现基类：
+
+```go
+type TaskerEnabled struct{}
+```
+
+实现后，框架会创建 task server，并挂到 `/task`。
+
+声明 runner 时可以附加选项：
+
+- `app.WithRunnerTimeout(timeout)`
+- `app.WithRunnerConcurrency(concurrency)`
+- `app.WithRunnerNoRetry()`
+- `app.WithRunnerCronScheduler(triggerSkelName, cronExpr)`
+
+其中 cron scheduler 用于给某个无参数 trigger 注册定时触发规则；`triggerSkelName` 不能为空，`cronExpr` 不能为空且必须能被标准 cron 表达式解析。带参数的 trigger 不能作为 cron scheduler 目标。
+
+## 7. 路由模型
+
+app 进程会按需挂载这些内建前缀：
+
+- `/console`
+- `/rpc/invoke`
+- `/event`
+- `/task`
+- `/web/access/...`
+
+行为说明：
+
+- 命中某个前缀后，框架会去掉该前缀，再把剩余路径转给对应 handler
+- 没有命中任何已注册 route 时，返回 `404`
+
+例如访问：
+
+```text
+/rpc/invoke/demo.user.UserService/getUser
+```
+
+传给 Rpc handler 的内部路径会变成：
+
+```text
+/demo.user.UserService/getUser
+```
+
+模块如果实现 `PathPrefixRouteModule`，还可以主动追加自定义前缀 route。
+
+## 8. HTTP 与 inproc
+
+普通模式下：
+
+- app 默认启 HTTP server
+- `ListenAddr == ""` 时监听随机端口
+- server 使用 h2c 运行
+
+框架内部还支持 inproc 模式，用于框架自带应用互联；它不是顶层 `app` 包的公共创建入口。
+
+inproc 下会注册：
+
+- 所有 Rpc route
+- 所有 `/web/access/...` route
+
+## 9. 启动与停止流程
+
+`Start()` 大致顺序：
+
+1. 初始化 Linker 和配置 reader
+2. 初始化 injector
+3. 初始化组件
+4. 初始化模块
+5. 初始化 console / servicer / webber / eventer / tasker
+6. 执行组件 `BeforeAppStart()`
+7. 执行模块 `BeforeAppStart()`
+8. 启动 HTTP 或 inproc server
+9. 启动 servicer / eventer / tasker
+10. 向 Link 注册 app 能力
+11. 执行组件 `AfterAppStart()`
+12. 执行模块 `AfterAppStart()`
+
+`StopGracefully()` 大致顺序：
+
+1. 逆序执行模块 `BeforeAppStop()`
+2. 逆序执行组件 `BeforeAppStop()`
+3. 注销 app
+4. 停止 HTTP 或 inproc server
+5. 取消运行时 context
+6. 逆序执行模块 `AfterAppStop()`
+7. 逆序执行组件 `AfterAppStop()`
+
+在 `linked` 模式下，外层 app 会先等待业务 app 完成 `StopGracefully()`，再停止同进程内的 Link，避免业务 app 注销时 Link 的 inproc handler 已经卸载。
+
+在 `standalone` / bundled standalone 模式下，会先按逆序优雅停止业务 apps，再停止 Link、Portal、Hub 等内置运行时组件。
+
+## 10. DI 可见性
+
+应用内部常见可见依赖包括：
+
+- 各类 flag
+- app 自己的 spec 实例
+- 用户组件实例
+- 模块实例
+- `BindCommon(...)` 绑定的公共依赖
+- 各能力子系统额外绑定的上下文和 logger
+
+其中：
+
+- `BindCommon(...)` 适合放应用级公共依赖
+- 组件/模块自己的 `Bind(...)` 适合放该对象专属依赖
+- Servicer / Webber / Eventer / Tasker 会把各自上下文再补到执行容器里
+
+## 11. 建议
+
+- 业务 app 一定要覆写 `Name()`
+- 监听地址优先通过 `RunFlag` 传入，必要时再在 app 内修正
+- 组件和模块都用指针类型声明
+- `BindCommon(...)` 只放公共依赖，不要把 route 逻辑塞进这里
+- web 路由入口收敛到单个 `WebberSpec`，如果需要更多路由，放在同一个 weber 下追加多个 handler
