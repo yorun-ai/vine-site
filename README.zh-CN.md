@@ -22,6 +22,19 @@ pnpm typecheck
 pnpm build
 ```
 
+## 部署
+
+Cloudflare Workers Builds 将生成的 Docusaurus 站点作为静态资源部署。
+连接 Git 仓库时使用以下配置：
+
+```text
+Build command: pnpm run build
+Deploy command: pnpm exec wrangler deploy
+```
+
+生产分支为 `main`。Wrangler 配置会发布 `build` 目录，并为未匹配的路由
+返回 Docusaurus 生成的 `404.html`。
+
 ## 版本管理
 
 Vine 文档版本跟随 Vine 发布：

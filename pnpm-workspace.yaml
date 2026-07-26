@@ -3,6 +3,8 @@ autoInstallPeers: false
 allowBuilds:
   '@swc/core': true
   core-js: true
+  esbuild: true
+  workerd: true
 
 auditConfig:
   ignoreGhsas:
