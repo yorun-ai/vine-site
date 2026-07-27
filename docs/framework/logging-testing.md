@@ -2,7 +2,7 @@
 slug: /logging-and-testing
 ---
 
-# Logging and Testing
+# Logging & Testing
 
 Vine uses `core/logger` for structured logging. Every record contains a `logger` field whose colon-separated name identifies its source, such as `app:demo.user:rpc:server`.
 

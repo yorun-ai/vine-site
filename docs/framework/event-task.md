@@ -2,7 +2,7 @@
 slug: /events-and-tasks
 ---
 
-# Events and Tasks
+# Events & Tasks
 
 Use an Event to publish a fact that has already happened. Use a Task to ask an application to perform work. Both use type-safe contracts defined in `.skel`, and Link delivers them through the messaging system.
 

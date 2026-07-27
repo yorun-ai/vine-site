@@ -2,7 +2,7 @@
 slug: /getting-started
 ---
 
-# Get Started with Vine
+# Getting Started
 
 Vine is an application runtime framework for Go. It brings application lifecycle, dependency injection, configuration, Rpc, Web, events, tasks, and infrastructure components into one application model, while Hub, Link, and Portal support a smooth transition from single-process development to multi-process deployment.
 

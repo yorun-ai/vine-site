@@ -2,7 +2,7 @@
 slug: /rdb
 ---
 
-# RDB API 参考
+# RDB API
 
 日常接入请先阅读 [使用关系型数据库](/docs/guide/rdb)。本页说明 `infra/rdb` 的完整连接、DAO、Query 和模型 API。
 
@@ -16,9 +16,9 @@ slug: /rdb
 - 提供泛型 `Dao[M]` / `Query[M]`
 - 通过 app component 机制接入 DI
 
-## 1. 核心类型
+## 核心类型
 
-### 1.1 `Option`
+### `Option`
 
 ```go
 type Option struct {
@@ -32,7 +32,7 @@ type Option struct {
 - `ConnURL`：数据库连接串
 - `MaxOpenConn <= 0` 时回退到默认值 `10`
 
-### 1.2 `DatabaseSpec`
+### `DatabaseSpec`
 
 数据库组件接口是：
 
@@ -45,7 +45,7 @@ type DatabaseSpec interface {
 
 业务组件通过嵌入 `rdb.Database` 获得该契约的默认实现。
 
-### 1.3 `Database`
+### `Database`
 
 数据库组件 `rdb.Database` 已包含应用所需的生命周期支持。业务组件只需要嵌入它并提供配置：
 
@@ -74,7 +74,7 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 }
 ```
 
-## 2. 初始化流程
+## 初始化流程
 
 应用启动时按以下顺序接入数据库：
 
@@ -83,9 +83,9 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 3. 打开或复用数据库连接
 4. 为已声明的 DAO 注册依赖注入工厂
 
-## 3. 连接行为
+## 连接行为
 
-### 3.1 连接串解析
+### 连接串解析
 
 底层规则：
 
@@ -93,7 +93,7 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 - `sqlite://...` 走 SQLite
 - 其他连接串默认按 PostgreSQL 处理
 
-### 3.2 共享连接
+### 共享连接
 
 `rdb` 会按 `ConnURL` 共享底层 `*gorm.DB`：
 
@@ -101,7 +101,7 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 - 连接池参数以第一次打开该 URL 时为准
 - 内部通过引用计数决定何时真正关闭
 
-### 3.3 连接池默认值
+### 连接池默认值
 
 连接池设置包括：
 
@@ -117,7 +117,7 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 - 空闲连接最长 `1h`
 - 总生命周期最长 `8h`
 
-## 4. DI 语义
+## DI 语义
 
 Vine 将用户声明的数据库组件作为单例提供给应用，并通过 factory 创建每个 DAO。DAO factory 会取得：
 
@@ -126,13 +126,13 @@ Vine 将用户声明的数据库组件作为单例提供给应用，并通过 fa
 
 随后把 `gorm.DB.WithContext(...)` 注入 DAO，因此请求 context 与结构化 logger 会跟随数据库操作。
 
-## 5. 生命周期
+## 生命周期
 
 数据库连接在组件启动时打开或复用，在应用停止后释放该 `ConnURL` 的共享引用。最后一个使用者停止后，Vine 才关闭底层连接池。
 
-## 6. 模型基类
+## 模型基类
 
-### 6.1 `Model`
+### `Model`
 
 ```go
 type Model struct {
@@ -145,7 +145,7 @@ type Model struct {
 
 适合需要软删除的表。
 
-### 6.2 `DeletableModel`
+### `DeletableModel`
 
 ```go
 type DeletableModel struct {
@@ -157,7 +157,7 @@ type DeletableModel struct {
 
 适合不需要软删除的表。
 
-## 7. `Dao[M]`
+## `Dao[M]`
 
 泛型 DAO 基类：
 
@@ -185,7 +185,7 @@ type ConfigDAO struct {
 }
 ```
 
-## 8. `Query[M]`
+## `Query[M]`
 
 `Query[M]` 是轻量查询构造器，支持：
 
@@ -204,7 +204,7 @@ type ConfigDAO struct {
 
 复杂查询仍建议直接使用 `dao.GormDB()`。
 
-## 9. 使用建议
+## 使用建议
 
 - 每个数据库组件都嵌入 `Database`
 - DAO 类型统一嵌入 `rdb.Dao[...]`

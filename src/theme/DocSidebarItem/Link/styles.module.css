@@ -1,0 +1,17 @@
+.itemIcon {
+  flex: 0 0 18px;
+  opacity: 0.68;
+}
+
+.linkLabel {
+  display: -webkit-box;
+  overflow: hidden;
+  flex: 1;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+:global(.menu__link--active) .itemIcon {
+  opacity: 1;
+}

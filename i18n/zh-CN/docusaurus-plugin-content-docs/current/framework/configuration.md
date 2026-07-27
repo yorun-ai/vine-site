@@ -2,7 +2,7 @@
 slug: /configuration
 ---
 
-# 应用配置
+# 配置
 
 Vine 配置由 `.skel` 声明、Hub 保存、Link 分发，并通过依赖注入提供给应用。应用不需要自行轮询配置中心。
 

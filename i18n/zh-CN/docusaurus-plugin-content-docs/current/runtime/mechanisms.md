@@ -2,7 +2,7 @@
 slug: /runtime-mechanisms
 ---
 
-# 组件运行机制
+# 运行机制
 
 Vine 将应用能力分为控制面和请求面。Hub 保存期望状态与注册信息；Link 连接应用并提供发现和投递；Portal 接收外部请求。业务代码只需要声明能力和实现 handler。
 

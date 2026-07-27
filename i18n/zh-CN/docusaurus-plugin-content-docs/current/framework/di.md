@@ -24,9 +24,9 @@ func (*DemoApp) BindCommon(b *di.Binder) {
 - 管理对象生命周期
 - 区分根容器与执行期容器
 
-## 1. 核心接口
+## 核心接口
 
-### 1.1 `Injector`
+### `Injector`
 
 ```go
 type Injector interface {
@@ -47,7 +47,7 @@ results := injector.Invoke(func(repo *UserRepo) string {
 })
 ```
 
-### 1.2 `PlainInjector`
+### `PlainInjector`
 
 ```go
 type PlainInjector interface {
@@ -67,7 +67,7 @@ injector := di.NewInjector(func(b *di.Binder) {
 
 根容器的默认 fallback scope 是 `TransientScope`。
 
-### 1.3 `ExecutionInjector`
+### `ExecutionInjector`
 
 ```go
 type ExecutionInjector interface {
@@ -82,7 +82,7 @@ type ExecutionInjector interface {
 - 持有本次执行的 `ExecutionScope` 实例
 - 在 `CompleteExecution()` 时按逆序回收执行期对象
 
-## 2. Scope
+## Scope
 
 Vine 提供 3 种生命周期：
 
@@ -145,7 +145,7 @@ injector.Resolve(&smtp) // 使用 *SMTPGateway 这条 TransientScope binding
 
 注意：`PlainInjector` 不拥有应用停止流程，也不会自动释放 `SingletonScope` 实例。单例资源的关闭应由创建该 injector 的 app、component 或 module 生命周期负责，例如在 `BeforeAppStop()` / `AfterAppStop()` 中关闭数据库连接、Redis client 或其他外部资源。
 
-## 3. 类型辅助函数
+## 类型辅助函数
 
 `di.T[T]()` 用于获取 `reflect.Type`：
 
@@ -162,9 +162,9 @@ di.T[MailGateway]()
 - slice
 - func
 
-## 4. 绑定方式
+## 绑定方式
 
-### 4.1 绑定结构体类型
+### 绑定结构体类型
 
 ```go
 b.Bind(di.T[*UserService]()).In(di.SingletonScope)
@@ -172,7 +172,7 @@ b.Bind(di.T[*UserService]()).In(di.SingletonScope)
 
 这表示让容器自己构造 `*UserService`，并继续解析它的字段依赖。
 
-### 4.2 接口绑定到实现
+### 接口绑定到实现
 
 ```go
 b.Bind(di.T[MailGateway]()).
@@ -188,7 +188,7 @@ b.Bind(di.T[MailGateway]()).
 
 这里的 `In(...)` 作用于 `MailGateway` 这条 binding。若代码也直接解析 `*SMTPGateway`，则会使用 `*SMTPGateway` 自己的显式或隐式 binding。
 
-### 4.3 工厂函数绑定
+### 工厂函数绑定
 
 ```go
 b.Bind(di.T[*Repo]()).
@@ -217,7 +217,7 @@ b.BindFactory(func(db *gorm.DB) *Repo {
 
 `BindFactory(...)` 会自动用工厂的第一个返回值类型作为 target type。
 
-### 4.4 绑定已有实例
+### 绑定已有实例
 
 ```go
 b.BindInstance(existingClient)
@@ -229,11 +229,11 @@ b.BindInstance(existingClient)
 - 实际上等价于 `ToInstance(instance)`
 - scope 会被固定成 `SingletonScope`
 
-### 4.5 抽象工厂
+### 抽象工厂
 
 如果目标是 interface，也可以使用 `ToAbstractFactory(...)` 绑定抽象工厂。它适合做“同一个接口，根据运行时再决定给哪个实现”的场景。
 
-## 5. 字段注入
+## 字段注入
 
 通过 `inject:""` 标记字段：
 
@@ -252,16 +252,16 @@ type UserService struct {
 - 支持导出字段
 - 支持匿名嵌入字段
 
-## 6. Resolve / Invoke / Get
+## Resolve / Invoke / Get
 
-### 6.1 `Resolve`
+### `Resolve`
 
 ```go
 var service *UserService
 injector.Resolve(&service)
 ```
 
-### 6.2 `Invoke`
+### `Invoke`
 
 ```go
 results := injector.Invoke(func(repo *UserRepo, svc *UserService) string {
@@ -271,14 +271,14 @@ results := injector.Invoke(func(repo *UserRepo, svc *UserService) string {
 
 `Invoke(...)` 的返回值是 `[]reflect.Value`。
 
-### 6.3 `Get`
+### `Get`
 
 ```go
 value := injector.Get(di.T[*UserService]())
 service := value.Interface().(*UserService)
 ```
 
-## 7. 执行期容器
+## 执行期容器
 
 ```go
 execution := injector.StartExecution()
@@ -293,7 +293,7 @@ defer execution.CompleteExecution()
 
 根 `PlainInjector` 不能直接解析 `ExecutionScope` 类型。
 
-## 8. Seeding
+## Seeding
 
 执行期对象通常只能在运行现场拿到，可以在 `StartExecution(...)` 时 seed：
 
@@ -319,7 +319,7 @@ execution := injector.StartExecution(func(s *di.Seeder) {
 - seed 只能在 `StartExecution(...)` 的 `SeedApplier` 回调中执行；该方法返回后继续使用保留的 `Seeder` 会 panic
 - `SeedInstance(...)` 的实例类型必须和目标类型兼容
 
-## 9. 子容器
+## 子容器
 
 可以在根容器之上继续扩展：
 
@@ -335,7 +335,7 @@ sub := injector.SubInjector(func(b *di.Binder) {
 - 子容器可以追加自己的绑定
 - 子容器自己的 fallback scope 仍然是 `TransientScope`
 
-## 10. 释放逻辑
+## 释放逻辑
 
 对象可以通过两种方式参与释放：
 
@@ -351,7 +351,7 @@ sub := injector.SubInjector(func(b *di.Binder) {
 
 因此，如果业务代码通过 DI 绑定了数据库、Redis、MQ client、文件句柄等单例资源，也应该在 app/component/module 的停止钩子中明确释放，而不是依赖 `PlainInjector` 自动调用 `DIDispose()`。
 
-## 11. 使用建议
+## 使用建议
 
 - 全局配置、客户端、缓存优先用 `SingletonScope`
 - 请求上下文、trace、调用元数据优先用 `ExecutionScope`

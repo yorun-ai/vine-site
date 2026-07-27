@@ -2,7 +2,7 @@
 slug: /rdb
 ---
 
-# RDB API Reference
+# RDB API
 
 For day-to-day integration, start with [Using Relational Databases](/docs/guide/rdb). This page documents the complete connection, DAO, Query, and model APIs provided by `infra/rdb`.
 
@@ -16,9 +16,9 @@ The top-level `infra/rdb` package exposes public types including `Option`, `Type
 - Provides generic `Dao[M]` and `Query[M]` types.
 - Integrates database access with DI through the application component mechanism.
 
-## 1. Core Types
+## Core Types
 
-### 1.1 `Option`
+### `Option`
 
 ```go
 type Option struct {
@@ -32,7 +32,7 @@ Rules:
 - `ConnURL` is the database connection string.
 - When `MaxOpenConn <= 0`, it falls back to the default value of `10`.
 
-### 1.2 `DatabaseSpec`
+### `DatabaseSpec`
 
 The database component interface is:
 
@@ -45,7 +45,7 @@ type DatabaseSpec interface {
 
 A business component receives the default implementation of this contract by embedding `rdb.Database`.
 
-### 1.3 `Database`
+### `Database`
 
 The `rdb.Database` component already includes the lifecycle support required by an application. A business component only needs to embed it and supply configuration:
 
@@ -74,7 +74,7 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 }
 ```
 
-## 2. Initialization Flow
+## Initialization Flow
 
 The application integrates the database in this order during startup:
 
@@ -83,9 +83,9 @@ The application integrates the database in this order during startup:
 3. It opens or reuses a database connection.
 4. It registers dependency-injection factories for the declared DAOs.
 
-## 3. Connection Behavior
+## Connection Behavior
 
-### 3.1 Connection String Parsing
+### Connection String Parsing
 
 The underlying rules are:
 
@@ -93,7 +93,7 @@ The underlying rules are:
 - A URL beginning with `sqlite://` uses SQLite.
 - All other connection strings are treated as PostgreSQL connection strings.
 
-### 3.2 Shared Connections
+### Shared Connections
 
 `rdb` shares the underlying `*gorm.DB` by `ConnURL`:
 
@@ -101,7 +101,7 @@ The underlying rules are:
 - The first component to open that URL determines its pool settings.
 - An internal reference count determines when the connection is actually closed.
 
-### 3.3 Connection-Pool Defaults
+### Connection-Pool Defaults
 
 Connection-pool settings include:
 
@@ -117,7 +117,7 @@ The default policy is:
 - The maximum idle time is `1h`.
 - The maximum total connection lifetime is `8h`.
 
-## 4. DI Semantics
+## DI Semantics
 
 Vine provides the user-declared database component to the application as a singleton and creates each DAO through a factory. The DAO factory receives:
 
@@ -126,13 +126,13 @@ Vine provides the user-declared database component to the application as a singl
 
 It then injects `gorm.DB.WithContext(...)` into the DAO, so request context and the structured logger follow database operations.
 
-## 5. Lifecycle
+## Lifecycle
 
 The database connection is opened or reused when the component starts, and its shared reference for the `ConnURL` is released after the application stops. Vine closes the underlying connection pool only after its last user has stopped.
 
-## 6. Model Base Types
+## Model Base Types
 
-### 6.1 `Model`
+### `Model`
 
 ```go
 type Model struct {
@@ -145,7 +145,7 @@ type Model struct {
 
 Use it for tables that require soft deletion.
 
-### 6.2 `DeletableModel`
+### `DeletableModel`
 
 ```go
 type DeletableModel struct {
@@ -157,7 +157,7 @@ type DeletableModel struct {
 
 Use it for tables that do not require soft deletion.
 
-## 7. `Dao[M]`
+## `Dao[M]`
 
 The generic DAO base type is:
 
@@ -185,7 +185,7 @@ type ConfigDAO struct {
 }
 ```
 
-## 8. `Query[M]`
+## `Query[M]`
 
 `Query[M]` is a lightweight query builder that supports:
 
@@ -204,7 +204,7 @@ Constraints:
 
 For complex queries, use `dao.GormDB()` directly.
 
-## 9. Recommendations
+## Recommendations
 
 - Embed `Database` in every database component.
 - Embed `rdb.Dao[...]` consistently in DAO types.

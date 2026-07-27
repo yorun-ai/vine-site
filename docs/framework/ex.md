@@ -2,11 +2,11 @@
 slug: /ex
 ---
 
-# Error Handling (EX)
+# Errors (EX)
 
 Vine uses `core/ex` to carry stable error codes across Rpc, Web, Event, Task, and business code. Callers can branch on `Code`, while logs retain the message, reason, detail, and original cause.
 
-## 1. Use cases
+## Use cases
 
 Use `core/ex` when you need to:
 
@@ -23,9 +23,9 @@ The overall model is:
 4. Recover at a boundary with `Recover(...)` or `RecoverApplication(...)`.
 5. Handle the error according to its `Type`, `Category`, or `Code`.
 
-## 2. Core types
+## Core types
 
-### 2.1 `Type`
+### `Type`
 
 ```go
 type Type string
@@ -44,7 +44,7 @@ Their meanings are:
 - `SystemError` represents framework, call-chain, and fallback system failures.
 - `ApplicationError` represents expected business failures.
 
-### 2.2 `Category`
+### `Category`
 
 ```go
 type Category string
@@ -61,7 +61,7 @@ The categories are:
 
 A `Category` is more specific than a `Type` and provides a stable grouping for `Code` values.
 
-### 2.3 `Code`
+### `Code`
 
 ```go
 type Code string
@@ -96,7 +96,7 @@ const (
 )
 ```
 
-### 2.4 `Error`
+### `Error`
 
 ```go
 type Error interface {
@@ -118,11 +118,11 @@ The methods return:
 - `Reason()`: a more specific reason, in an application-defined format, that clients can use to distinguish cases under the same `Code`.
 - `Detail()`: diagnostic detail. Portal preserves the `detail` field in external responses but clears its content.
 
-## 3. Code metadata
+## Code metadata
 
 Each `Code` has stable metadata exposed through methods.
 
-### 3.1 `Type()`
+### `Type()`
 
 ```go
 code := ex.NotFound
@@ -131,7 +131,7 @@ kind := code.Type() // ApplicationError
 
 `Type` is derived from `Code` and does not need to be stored separately.
 
-### 3.2 `Category()`
+### `Category()`
 
 ```go
 category := ex.InvocationTimeout.Category() // InvocationCategory
@@ -145,7 +145,7 @@ Codes are grouped as follows:
 - `Internal` and `Unknown` belong to `FallbackCategory`.
 - `Unauthorized`, `PermissionDenied`, `ElevationRequired`, `ValidationFailed`, `OperationFailed`, and `NotFound` belong to `ApplicationCategory`.
 
-### 3.3 `IsValid()`
+### `IsValid()`
 
 ```go
 if !code.IsValid() {
@@ -155,7 +155,7 @@ if !code.IsValid() {
 
 Only codes predefined by the framework are valid.
 
-### 3.4 `IsUnresponsive()`
+### `IsUnresponsive()`
 
 ```go
 if ex.InvocationTimeout.IsUnresponsive() {
@@ -171,7 +171,7 @@ These invocation errors are classified as unresponsive:
 - `InvocationFailed`
 - `UnexpectedResponse`
 
-### 3.5 `CanRaiseDirectly()`
+### `CanRaiseDirectly()`
 
 ```go
 ex.NotFound.CanRaiseDirectly() // true
@@ -180,7 +180,7 @@ ex.Internal.CanRaiseDirectly() // false
 
 Most public error codes can be raised directly. `Internal` and `Unknown` are fallback errors and should not normally be used as explicit final business semantics.
 
-### 3.6 `DefaultMessage()`
+### `DefaultMessage()`
 
 ```go
 ex.Internal.DefaultMessage() // "error occurred, please retry"
@@ -189,9 +189,9 @@ ex.Unknown.DefaultMessage()  // "unknown error"
 
 Only `Internal` and `Unknown` have predefined default messages; the other codes return an empty default message.
 
-## 4. Constructing errors
+## Constructing errors
 
-### 4.1 Basic form
+### Basic form
 
 ```go
 err := ex.New(ex.NotFound, "missing user")
@@ -199,13 +199,13 @@ err := ex.New(ex.NotFound, "missing user")
 
 This creates an error object implementing `ex.Error`.
 
-### 4.2 Formatted message
+### Formatted message
 
 ```go
 err := ex.New(ex.ValidationFailed, ex.F("field %s is invalid", "email"))
 ```
 
-### 4.3 Specific reason
+### Specific reason
 
 ```go
 err := ex.New(
@@ -217,7 +217,7 @@ err := ex.New(
 
 Use `reason` for a distinguishable subcase in any format agreed upon by producer and consumer. Typically, `Code` identifies the broad failure and `Reason` identifies a specific case that a frontend may present or handle differently.
 
-### 4.4 Detail
+### Detail
 
 ```go
 err := ex.New(
@@ -229,7 +229,7 @@ err := ex.New(
 
 Use detail when you need additional explanation without retaining the original `error` object.
 
-### 4.5 Wrapping an original `error`
+### Wrapping an original `error`
 
 ```go
 err := ex.New(
@@ -244,7 +244,7 @@ This preserves these behaviors:
 - `errors.Is(...)` can still identify the wrapped error.
 - `causeError` is not serialized across processes.
 
-### 4.6 Success and fallback errors
+### Success and fallback errors
 
 ```go
 ok := ex.NewOK()
@@ -254,9 +254,9 @@ internalErr := ex.NewInternal()
 - `NewOK()` creates an error object whose `Code == OK`.
 - `NewInternal()` is equivalent to `New(ex.Internal, ex.Internal.DefaultMessage())`.
 
-## 5. Error-object behavior
+## Error-object behavior
 
-### 5.1 `Type()` is derived from `Code`
+### `Type()` is derived from `Code`
 
 ```go
 err := ex.New(ex.NotFound, "missing user")
@@ -265,7 +265,7 @@ err.Type() // ApplicationError
 
 You normally do not need to inspect the concrete error implementation; use `Code` and `Type` instead.
 
-### 5.2 `Error()` string format
+### `Error()` string format
 
 `ex.Error` also implements the standard `error` interface. Its string resembles:
 
@@ -275,15 +275,15 @@ missing user type=APPLICATION code=NOT_FOUND
 
 When `message` is empty, only the type, code, and related information are included.
 
-### 5.3 Invalid codes panic
+### Invalid codes panic
 
 All constructors call `Code.IsValid()`. Passing an unknown code causes a panic.
 
 Do not construct an unregistered `Code` string manually and pass it to `New(...)`.
 
-## 6. Parsing and checking
+## Parsing and checking
 
-### 6.1 `ParseCode(...)`
+### `ParseCode(...)`
 
 ```go
 code, err := ex.ParseCode("NOT_FOUND")
@@ -294,7 +294,7 @@ code, err := ex.ParseCode("NOT_FOUND")
 
 This is useful when restoring a `Code` from configuration, protocol fields, or log replay.
 
-### 6.2 Common checks
+### Common checks
 
 ```go
 if err.Code() == ex.NotFound {
@@ -310,11 +310,11 @@ if err.Code().Category() == ex.InvocationCategory {
 }
 ```
 
-## 7. Panic and recover
+## Panic and recover
 
 `core/ex` explicitly supports propagating an `ex.Error` through panic and recovering it at a boundary.
 
-### 7.1 Raising an error
+### Raising an error
 
 ```go
 ex.PanicIfError(err)
@@ -330,7 +330,7 @@ ex.PanicNewIfNot(name != "", ex.ValidationFailed, ex.F("field %s is required", "
 - `PanicNewIfError(...)` maps a standard `error` to a given `Code`.
 - `PanicNewIfNot(...)` keeps the condition check at its original call site, preserving a more accurate panic stack.
 
-### 7.2 `Recover(...)`
+### `Recover(...)`
 
 ```go
 defer func() {
@@ -346,7 +346,7 @@ It behaves as follows:
 - An `ex.Error` is returned directly, whether it is an `ApplicationError` or `SystemError`.
 - A panic value that is not an `ex.Error` is rethrown.
 
-### 7.3 `RecoverApplication(...)`
+### `RecoverApplication(...)`
 
 ```go
 defer func() {
@@ -364,7 +364,7 @@ This function is stricter:
 
 Use it at boundaries that should catch only business exceptions without swallowing system failures.
 
-## 8. Typical patterns
+## Typical patterns
 
 ```go
 func FindUser(id string) (*User, ex.Error) {
@@ -407,7 +407,7 @@ func Handle() (err ex.Error) {
 }
 ```
 
-## 9. Recommendations
+## Recommendations
 
 - Use `ApplicationError` for expected business failures.
 - Use existing system-level codes for framework, call-chain, and fallback failures.

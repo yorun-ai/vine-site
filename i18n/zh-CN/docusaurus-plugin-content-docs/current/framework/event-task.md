@@ -2,7 +2,7 @@
 slug: /events-and-tasks
 ---
 
-# Event 与 Task
+# 事件与任务
 
 Event 适合发布已经发生的事实，Task 适合请求某个应用执行工作。两者都由 `.skel` 定义类型安全契约，并由 Link 通过消息系统投递。
 

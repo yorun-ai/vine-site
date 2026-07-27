@@ -2,15 +2,15 @@
 slug: /ctr
 ---
 
-# 执行容器与过滤器（CTR）
+# 容器与过滤器（CTR）
 
 Vine 的 Rpc、Web、Event 和 Task handler 都通过执行容器调用。容器为每次调用创建 execution，准备依赖与上下文，按顺序执行 filters，最后调用目标方法。
 
 业务 handler 会自动使用这套机制。只有要构建自定义执行入口，或为调用链增加通用过滤器时，才需要直接使用 `core/ctr`。
 
-## 1. 核心接口
+## 核心接口
 
-### 1.1 `Container`
+### `Container`
 
 ```go
 type Container interface {
@@ -27,7 +27,7 @@ container := ctr.NewContainer(ctr.Option{
 })
 ```
 
-### 1.2 `Execution`
+### `Execution`
 
 ```go
 type Execution interface {
@@ -41,7 +41,7 @@ type Execution interface {
 - `Execute(...)`：触发一次完整执行
 - `Results()`：读取目标方法最终返回值
 
-### 1.3 `Filter`
+### `Filter`
 
 ```go
 type Filter interface {
@@ -57,7 +57,7 @@ filter 可以：
 - 在 `next()` 后做后置逻辑
 - 不调用 `next()`，直接短路后续执行
 
-## 2. 初始化方式
+## 初始化方式
 
 ```go
 type Option struct {
@@ -77,7 +77,7 @@ type Option struct {
 - `*ctr.Context` 的 `ExecutionScope` 绑定
 - 最后一个“真正调用目标方法”的内置 filter
 
-## 3. 最基本的调用
+## 最基本的调用
 
 ```go
 type Calculator struct {
@@ -108,7 +108,7 @@ results := execution.Results() // []any{7}
 - `args` 必须和目标方法参数顺序一致
 - `Results()` 返回所有返回值，顺序与方法定义一致
 
-## 4. Filter 写法
+## Filter 写法
 
 典型 filter：
 
@@ -137,7 +137,7 @@ FilterA(before)
 FilterA(after)
 ```
 
-## 5. `Context`
+## `Context`
 
 每次 execution 都会自动创建一个 `*ctr.Context`。
 
@@ -148,7 +148,7 @@ FilterA(after)
 - `Arguments()` / `SetArguments(...)`
 - `Results()` / `SetResults(...)`
 
-### 5.1 调用前改写目标与参数
+### 调用前改写目标与参数
 
 在执行结束前，可以修改：
 
@@ -166,7 +166,7 @@ func (f *RouteFilter) Filter(next ctr.FilterNext) {
 }
 ```
 
-### 5.2 调用后改写返回值
+### 调用后改写返回值
 
 一旦目标方法执行完成，就不能再改：
 
@@ -185,7 +185,7 @@ func (f *EnvelopeFilter) Filter(next ctr.FilterNext) {
 }
 ```
 
-## 6. Execute 时的 seeding
+## Execute 时的 seeding
 
 `Execution.Execute(...)` 可以额外传 `di.SeedApplier`，把运行时对象塞进本次 execution 的 DI 容器：
 
@@ -203,7 +203,7 @@ execution.Execute([]any{"alice"}, func(s *di.Seeder) {
 - 当前用户
 - 其它一次性执行态对象
 
-## 7. 适用场景
+## 适用场景
 
 `ctr` 特别适合这几类场景：
 

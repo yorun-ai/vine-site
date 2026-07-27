@@ -3,7 +3,7 @@ sidebar_position: 1
 slug: /tutorial-first-app
 ---
 
-# 教程：启动第一个 Vine 应用
+# 第一个 Vine 应用
 
 本教程创建一个最小的 Vine 应用，并以 standalone 模式启动它。standalone 会在同一进程内启动 Hub、Portal、Link 和业务应用，适合第一次体验、本地开发和集成测试。
 
@@ -23,7 +23,7 @@ go mod init example.com/vine-hello
 go get go.yorun.ai/vine@latest
 ```
 
-## 1. 定义应用
+## 定义应用
 
 创建 `main.go`：
 
@@ -71,7 +71,7 @@ func main() {
 
 `StartAndWait()` 启动运行时并等待 `SIGINT` 或 `SIGTERM`。按 `Ctrl+C` 后，应用会按反向顺序优雅停止。
 
-## 2. 运行
+## 运行
 
 ```bash
 go run .
@@ -87,7 +87,7 @@ hello from Vine
 
 按 `Ctrl+C` 停止。再次执行同一命令会复用 `vine.sqlite` 中保存的 Hub 数据。
 
-## 3. 理解 standalone 的组成
+## 理解 standalone 的组成
 
 ```mermaid
 flowchart LR
@@ -104,7 +104,7 @@ flowchart LR
 
 standalone 中 Hub 和 Link 的管理连接使用 inproc transport，不额外开放管理端口；Portal 仍可根据入口规则监听业务 HTTP/HTTPS 端口。该模式不模拟 heartbeat、TTL 过期或网络断连，需要验证这些行为时改用 linked 模式。
 
-## 4. 连接已有 Hub
+## 连接已有 Hub
 
 先单独启动 Hub：
 

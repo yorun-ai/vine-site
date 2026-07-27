@@ -2,7 +2,7 @@
 slug: /core-packages
 ---
 
-# Framework Architecture Reference
+# Framework Architecture
 
 This page explains how Vine's application assembly, dependency injection, configuration, context, request execution, and message delivery capabilities work together. Package paths help locate each capability; everyday business development does not need to depend on these internal packages directly.
 

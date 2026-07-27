@@ -24,9 +24,9 @@ The application creates the root container for you. You only need to call `di.Ne
 - Manages object lifetimes.
 - Distinguishes root containers from execution containers.
 
-## 1. Core interfaces
+## Core interfaces
 
-### 1.1 `Injector`
+### `Injector`
 
 ```go
 type Injector interface {
@@ -47,7 +47,7 @@ results := injector.Invoke(func(repo *UserRepo) string {
 })
 ```
 
-### 1.2 `PlainInjector`
+### `PlainInjector`
 
 ```go
 type PlainInjector interface {
@@ -67,7 +67,7 @@ injector := di.NewInjector(func(b *di.Binder) {
 
 The root container's fallback scope is `TransientScope`.
 
-### 1.3 `ExecutionInjector`
+### `ExecutionInjector`
 
 ```go
 type ExecutionInjector interface {
@@ -82,7 +82,7 @@ It:
 - Owns `ExecutionScope` instances for the current execution.
 - Disposes execution objects in reverse order when `CompleteExecution()` runs.
 
-## 2. Scopes
+## Scopes
 
 Vine provides three lifetimes:
 
@@ -145,7 +145,7 @@ If a struct implements `DIInit()`, the container calls it automatically after co
 
 Note: `PlainInjector` does not own the application shutdown sequence and does not automatically dispose `SingletonScope` instances. The application, component, or module that created the injector should close singleton resources in a lifecycle hook such as `BeforeAppStop()` or `AfterAppStop()`.
 
-## 3. Type helper
+## Type helper
 
 Use `di.T[T]()` to obtain a `reflect.Type`:
 
@@ -162,9 +162,9 @@ Supported binding target types primarily include:
 - Slices.
 - Functions.
 
-## 4. Binding methods
+## Binding methods
 
-### 4.1 Binding a struct type
+### Binding a struct type
 
 ```go
 b.Bind(di.T[*UserService]()).In(di.SingletonScope)
@@ -172,7 +172,7 @@ b.Bind(di.T[*UserService]()).In(di.SingletonScope)
 
 This tells the container to construct `*UserService` and continue resolving its field dependencies.
 
-### 4.2 Binding an interface to an implementation
+### Binding an interface to an implementation
 
 ```go
 b.Bind(di.T[MailGateway]()).
@@ -188,7 +188,7 @@ The following constraints apply:
 
 Here, `In(...)` applies to the `MailGateway` binding. If code also resolves `*SMTPGateway` directly, that request uses `*SMTPGateway`'s own explicit or implicit binding.
 
-### 4.3 Binding a factory function
+### Binding a factory function
 
 ```go
 b.Bind(di.T[*Repo]()).
@@ -217,7 +217,7 @@ b.BindFactory(func(db *gorm.DB) *Repo {
 
 `BindFactory(...)` uses the factory's first return type as the target type automatically.
 
-### 4.4 Binding an existing instance
+### Binding an existing instance
 
 ```go
 b.BindInstance(existingClient)
@@ -229,11 +229,11 @@ This binding:
 - Is equivalent to `ToInstance(instance)`.
 - Always uses `SingletonScope`.
 
-### 4.5 Abstract factories
+### Abstract factories
 
 For an interface target, you can also use `ToAbstractFactory(...)`. It is useful when the concrete implementation of an interface must be selected at runtime.
 
-## 5. Field injection
+## Field injection
 
 Mark fields with `inject:""`:
 
@@ -252,16 +252,16 @@ Field injection:
 - Supports exported fields.
 - Supports anonymous embedded fields.
 
-## 6. Resolve, Invoke, and Get
+## Resolve, Invoke, and Get
 
-### 6.1 `Resolve`
+### `Resolve`
 
 ```go
 var service *UserService
 injector.Resolve(&service)
 ```
 
-### 6.2 `Invoke`
+### `Invoke`
 
 ```go
 results := injector.Invoke(func(repo *UserRepo, svc *UserService) string {
@@ -271,14 +271,14 @@ results := injector.Invoke(func(repo *UserRepo, svc *UserService) string {
 
 `Invoke(...)` returns `[]reflect.Value`.
 
-### 6.3 `Get`
+### `Get`
 
 ```go
 value := injector.Get(di.T[*UserService]())
 service := value.Interface().(*UserService)
 ```
 
-## 7. Execution containers
+## Execution containers
 
 ```go
 execution := injector.StartExecution()
@@ -293,7 +293,7 @@ Resolution follows these rules:
 
 A root `PlainInjector` cannot resolve an `ExecutionScope` type directly.
 
-## 8. Seeding
+## Seeding
 
 Objects available only at runtime can be seeded when calling `StartExecution(...)`:
 
@@ -319,7 +319,7 @@ The following constraints apply:
 - Seeding is only allowed inside a `SeedApplier` passed to `StartExecution(...)`; retaining and using the `Seeder` after that method returns causes a panic.
 - The value passed to `SeedInstance(...)` must be compatible with the target type.
 
-## 9. Child containers
+## Child containers
 
 Extend a root container with:
 
@@ -335,7 +335,7 @@ A child container:
 - Can add its own bindings.
 - Still uses `TransientScope` as its fallback scope.
 
-## 10. Disposal
+## Disposal
 
 Objects can participate in disposal in two ways:
 
@@ -351,7 +351,7 @@ Objects can participate in disposal in two ways:
 
 Therefore, if business code binds databases, Redis or MQ clients, file handles, or other singleton resources through DI, it should release them explicitly in an application, component, or module shutdown hook rather than relying on `PlainInjector` to call `DIDispose()`.
 
-## 11. Recommendations
+## Recommendations
 
 - Prefer `SingletonScope` for global configuration, clients, and caches.
 - Prefer `ExecutionScope` for request contexts, traces, and invocation metadata.

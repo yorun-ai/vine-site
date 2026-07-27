@@ -2,15 +2,15 @@
 slug: /ctr
 ---
 
-# Execution Containers and Filters (CTR)
+# Containers & Filters (CTR)
 
 Vine invokes Rpc, Web, Event, and Task handlers through an execution container. For each call, the container creates an execution, prepares dependencies and context, runs filters in order, and finally invokes the target method.
 
 Business handlers use this mechanism automatically. You only need to use `core/ctr` directly when building a custom execution entry point or adding shared filters to a call chain.
 
-## 1. Core interfaces
+## Core interfaces
 
-### 1.1 `Container`
+### `Container`
 
 ```go
 type Container interface {
@@ -27,7 +27,7 @@ container := ctr.NewContainer(ctr.Option{
 })
 ```
 
-### 1.2 `Execution`
+### `Execution`
 
 ```go
 type Execution interface {
@@ -41,7 +41,7 @@ The methods mean:
 - `Execute(...)`: runs one complete execution.
 - `Results()`: returns the final values produced by the target method.
 
-### 1.3 `Filter`
+### `Filter`
 
 ```go
 type Filter interface {
@@ -57,7 +57,7 @@ A filter can:
 - Run logic after `next()`.
 - Short-circuit the remaining execution by not calling `next()`.
 
-## 2. Initialization
+## Initialization
 
 ```go
 type Option struct {
@@ -77,7 +77,7 @@ The framework automatically adds:
 - An `ExecutionScope` binding for `*ctr.Context`.
 - A final built-in filter that invokes the target method.
 
-## 3. Basic invocation
+## Basic invocation
 
 ```go
 type Calculator struct {
@@ -108,7 +108,7 @@ The following rules apply:
 - `args` must follow the target method's parameter order.
 - `Results()` returns every result in the same order as the method declaration.
 
-## 4. Writing a filter
+## Writing a filter
 
 A typical filter looks like this:
 
@@ -137,7 +137,7 @@ FilterA(before)
 FilterA(after)
 ```
 
-## 5. `Context`
+## `Context`
 
 Each execution automatically creates a `*ctr.Context`.
 
@@ -148,7 +148,7 @@ Its available methods include:
 - `Arguments()` / `SetArguments(...)`
 - `Results()` / `SetResults(...)`
 
-### 5.1 Changing the target and arguments before invocation
+### Changing the target and arguments before invocation
 
 Before target invocation completes, a filter can change:
 
@@ -166,7 +166,7 @@ func (f *RouteFilter) Filter(next ctr.FilterNext) {
 }
 ```
 
-### 5.2 Changing results after invocation
+### Changing results after invocation
 
 After the target method has completed, you can no longer change:
 
@@ -185,7 +185,7 @@ func (f *EnvelopeFilter) Filter(next ctr.FilterNext) {
 }
 ```
 
-## 6. Seeding during `Execute`
+## Seeding during `Execute`
 
 `Execution.Execute(...)` accepts additional `di.SeedApplier` values that place runtime objects in this execution's DI container:
 
@@ -203,7 +203,7 @@ Typical values include:
 - The current user.
 - Other per-execution objects.
 
-## 7. When to use it
+## When to use it
 
 `ctr` is particularly useful when you need to:
 

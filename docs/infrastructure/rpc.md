@@ -2,7 +2,7 @@
 slug: /rpc
 ---
 
-# Rpc API Reference
+# Rpc API
 
 For day-to-day use, start with [Using Rpc](/docs/guide/rpc). See [vRPC over HTTP](/docs/vrpc-http) for the wire protocol. This page documents the client, server, executor, and service metadata APIs provided by `core/rpc`. Use it when you need to tune low-level invocation options or build a custom integration layer.
 
@@ -16,7 +16,7 @@ For day-to-day use, start with [Using Rpc](/docs/guide/rpc). See [vRPC over HTTP
 
 It is designed to be used with generated code.
 
-## 1. Relationship to Generated Code
+## Relationship to Generated Code
 
 A typical workflow is:
 
@@ -28,9 +28,9 @@ A typical workflow is:
 
 You generally should not write a complete `ServiceSpec` by hand.
 
-## 2. Client
+## Client
 
-### 2.1 `ClientOption`
+### `ClientOption`
 
 The client configuration is:
 
@@ -51,7 +51,7 @@ Notes:
 - `Logger` cannot be nil.
 - When `ReturnIfSystemError == false`, system errors panic by default.
 
-### 2.2 Creating and Invoking a Client
+### Creating and Invoking a Client
 
 ```go
 client := rpc.NewClient(rpc.ClientOption{
@@ -73,7 +73,7 @@ The return values are:
 - The business result.
 - An `ex.Error`.
 
-### 2.3 Invoke Options
+### Invoke Options
 
 The supported options are:
 
@@ -88,15 +88,15 @@ Rules:
 - `WithContext(...)` and `WithTimeout(...)` cannot be used together.
 - When `WithContext(...)` is omitted, the default request timeout is `30s`.
 
-### 2.4 `ReturnIfSystemError`
+### `ReturnIfSystemError`
 
 When `ReturnIfSystemError == true`, the client returns a system error to the caller instead of panicking.
 
 The default value is `false`.
 
-## 3. Server
+## Server
 
-### 3.1 `ServerOption`
+### `ServerOption`
 
 ```go
 type Option struct {
@@ -118,7 +118,7 @@ server := rpc.NewServer(rpc.ServerOption{
 })
 ```
 
-### 3.2 Exposed Capabilities
+### Exposed Capabilities
 
 `Server` mainly provides:
 
@@ -128,7 +128,7 @@ server := rpc.NewServer(rpc.ServerOption{
 
 `HTTPHandler()` returns a standard `http.Handler`.
 
-## 4. Executor
+## Executor
 
 ```go
 type Executor interface {
@@ -139,13 +139,13 @@ type Executor interface {
 
 The framework includes two implementations.
 
-### 4.1 `NewDefaultExecutor()`
+### `NewDefaultExecutor()`
 
 The default executor creates the implementation object through reflection and calls its method directly.
 
 If a handler struct contains exactly one field of type `spec.Context`, the default executor automatically injects the current Rpc context into it.
 
-### 4.2 `NewContainerExecutor(...)`
+### `NewContainerExecutor(...)`
 
 ```go
 rpc.NewContainerExecutor(filterTypes, bindAppliers)
@@ -158,7 +158,7 @@ This executor integrates `core/ctr` and `core/di` and additionally injects these
 
 Use it for server execution chains that need filters, DI, or context extensions.
 
-## 5. `rpc.Context`
+## `rpc.Context`
 
 `rpc.Context` extends `meta.Context` with `Client()`:
 
@@ -182,9 +182,9 @@ It represents:
 - The current actor.
 - The client application for the current Rpc call.
 
-## 6. Service Metadata
+## Service Metadata
 
-### 6.1 `ServiceSpec`
+### `ServiceSpec`
 
 `ServiceSpec` is the registration input and is usually provided by generated code:
 
@@ -208,7 +208,7 @@ type ServiceSpec struct {
 }
 ```
 
-### 6.2 `MethodSpec`
+### `MethodSpec`
 
 ```go
 type MethodSpec struct {
@@ -225,7 +225,7 @@ type MethodSpec struct {
 }
 ```
 
-### 6.3 `ServiceInfo`
+### `ServiceInfo`
 
 After registration, service metadata is exposed as `ServiceInfo`:
 
@@ -246,7 +246,7 @@ type ServiceInfo interface {
 }
 ```
 
-### 6.4 `MethodInfo`
+### `MethodInfo`
 
 ```go
 type MethodInfo interface {
@@ -276,7 +276,7 @@ In particular:
 - `ValidateArguments(...)` verifies that arguments satisfy the generated Skeleton constraints.
 - `ValidateResult(...)` verifies that a result satisfies the generated Skeleton constraints.
 
-## 7. Service Registration
+## Service Registration
 
 Register a service with:
 
@@ -284,7 +284,7 @@ Register a service with:
 rpc.Register(serviceSpec)
 ```
 
-## 8. Normal and ER Interfaces
+## Normal and ER Interfaces
 
 The framework supports two styles of service signature.
 
@@ -310,7 +310,7 @@ Rules:
 - The final return value of an ER server is always `ex.Error`.
 - A normal server can be wrapped as an ER server through `WrapperERServerCtor`.
 
-## 9. Recommendations
+## Recommendations
 
 - Prefer generated metadata to handwritten specs.
 - Always provide a `Logger` explicitly when creating a client.

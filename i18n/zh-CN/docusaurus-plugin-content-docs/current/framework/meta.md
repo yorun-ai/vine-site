@@ -2,7 +2,7 @@
 slug: /meta
 ---
 
-# 调用上下文与身份（Meta）
+# 上下文与身份（Meta）
 
 Rpc、Web、Event 和 Task 的处理代码都需要知道“这次调用从哪里来、由谁发起、属于哪条调用链”。`core/meta` 用一组统一对象表达这些信息：
 
@@ -14,9 +14,9 @@ Rpc、Web、Event 和 Task 的处理代码都需要知道“这次调用从哪�
 
 Vine 会在请求边界创建并传递这些对象；业务代码通常只需从执行上下文中读取，不必自行生成或解析传输字段。
 
-## 1. 核心接口
+## 核心接口
 
-### 1.1 `App`
+### `App`
 
 ```go
 type App interface {
@@ -42,7 +42,7 @@ appInfo, err := meta.NewApp(
 - `version` 必须是合法 semver
 - `instanceId` 必须是合法 UUID
 
-### 1.2 `Trace`
+### `Trace`
 
 ```go
 type Trace interface {
@@ -68,7 +68,7 @@ trace, err := meta.NewTrace("4bf92f3577b34da6a3ce929d0e0e4736", "")
 
 当 `span == ""` 时，`NewTrace(...)` 会自动生成新 span。
 
-### 1.3 `Initiator`
+### `Initiator`
 
 ```go
 type Initiator interface {
@@ -92,7 +92,7 @@ initiator, err := meta.NewInitiator(
 
 如果 `ipStr == ""`，`IpAddr()` 会返回空字符串；非空时必须能被 `netip.ParseAddr(...)` 解析。
 
-### 1.4 `Actor`
+### `Actor`
 
 ```go
 type Actor interface {
@@ -112,7 +112,7 @@ authenticated := meta.NewAuthenticatedActor(&skeled.UserActorInfo{
 
 认证 Actor 的 info 类型由生成代码注册。使用 `meta.GetActorInfo[T](actor)` 读取类型安全的身份信息。
 
-### 1.5 `Context`
+### `Context`
 
 ```go
 type Context interface {
@@ -137,9 +137,9 @@ ctx := meta.NewContext(
 
 `meta.Context` 只是对标准 `context.Context` 的包装。
 
-## 2. Trace 规则
+## Trace 规则
 
-### 2.1 Trace ID
+### Trace ID
 
 Trace ID 规则：
 
@@ -153,7 +153,7 @@ Trace ID 规则：
 - `meta.NewId()`
 - `meta.IsValidId(id)`
 
-### 2.2 Span ID
+### Span ID
 
 Span ID 规则：
 
@@ -167,7 +167,7 @@ Span ID 规则：
 - `meta.NewSpan()`
 - `meta.IsValidSpan(span)`
 
-### 2.3 `InitialTrace()` 与 `NewChildTrace()`
+### `InitialTrace()` 与 `NewChildTrace()`
 
 `InitialTrace()` 会创建根 trace：
 
@@ -181,11 +181,11 @@ Span ID 规则：
 - `ParentSpan()` 等于父 span
 - 新生成子 span
 
-## 3. Base64 编解码辅助
+## Base64 编解码辅助
 
 `core/meta` 提供以下两组编解码辅助函数。
 
-### 3.1 Initiator
+### Initiator
 
 ```go
 encoded := meta.EncodeInitiatorToBase64(initiator)
@@ -196,7 +196,7 @@ decoded, err := meta.DecodeInitiatorFromBase64(encoded)
 
 - `DecodeInitiatorFromBase64("")` 会返回 `nil, nil`
 
-### 3.2 Actor
+### Actor
 
 ```go
 encoded := meta.EncodeActorToBase64(actor)
@@ -205,7 +205,7 @@ decoded, err := meta.DecodeActorFromBase64(encoded)
 
 空字符串不是合法的 Actor 编码，`DecodeActorFromBase64("")` 会返回错误。没有身份信息时，应显式使用 `meta.NewAbsentActor()`；未登录访问使用 `meta.NewAnonymousActor()`。
 
-## 4. 适用场景
+## 适用场景
 
 典型场景：
 

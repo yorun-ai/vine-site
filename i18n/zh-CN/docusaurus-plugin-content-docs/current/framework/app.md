@@ -2,11 +2,11 @@
 slug: /app
 ---
 
-# App API 参考
+# App API
 
 `app` 的职责是把一个进程组装成统一运行时：管理应用生命周期、创建组件和模块、挂载 HTTP/Rpc/Web 入口，并把运行时依赖通过 DI 暴露给应用内部对象。
 
-## 1. 对外入口
+## 对外入口
 
 业务代码通常依赖顶层包 `go.yorun.ai/vine/app`。需要组合运行时组件时，再按模式导入 `app/linked` 或 `app/standalone`。
 
@@ -34,9 +34,9 @@ slug: /app
 - `standalone.New[S](...)` / `standalone.NewWithOption[S](...)` / `standalone.Option`
 - `standalone.NewBundled(...)` / `standalone.NewBundledWithOption(...)`
 
-## 2. 核心接口
+## 核心接口
 
-### 2.1 `App`
+### `App`
 
 ```go
 type App interface {
@@ -61,7 +61,7 @@ app.New[*DemoApp]().StartAndWait()
 
 生命周期调用是单次的：重复 `Start()`、未启动就 `StopGracefully()`、重复 `StopGracefully()`，或停止后再次 `Start()` 都会 panic。
 
-### 2.2 `ApplicationSpec`
+### `ApplicationSpec`
 
 应用规格接口是：
 
@@ -83,7 +83,7 @@ type ApplicationSpec interface {
 
 业务应用嵌入 `app.Application` 即可获得默认实现，再覆盖需要的方法。
 
-### 2.3 `Application`
+### `Application`
 
 `Application` 是默认基类：
 
@@ -112,9 +112,9 @@ func (*DemoApp) Name() string {
 }
 ```
 
-## 3. 创建
+## 创建
 
-### 3.1 `New`
+### `New`
 
 ```go
 instance := app.New[*DemoApp]()
@@ -129,16 +129,16 @@ instance := app.New[*DemoApp]()
 
 顶层 `app.NewWithOption(...)` 的 `Option` 提供 `LinkEndpoint`，也可以通过 `--link-endpoint` 或 `VINE_LINK_ENDPOINT` 提供。
 
-### 3.2 运行模式构造
+### 运行模式构造
 
 - `linked.New(...)`：同进程启动一个 Link，再以 inproc app 形式启动业务 app；`linked.Option` 支持 `HubEndpoint` 和 `IngressListen`，也可通过 `--hub-endpoint` / `--ingress-listen` 或对应环境变量提供
 - `linked.NewBundled(...)`：多个业务 app 共享一个同进程 Link，并连接外部 Hub；被打包的 linked app 不能再带自己的 `linked.Option`
 - `standalone.New(...)`：同进程启动 Hub、Portal、Link 和一个业务 app；`standalone.Option` 支持 seed YAML、SQLite 文件、PostgreSQL URL 和 Dashboard URL
 - `standalone.NewBundled(...)`：把多个 standalone app 打包进同一套内置 Hub / Portal / Link；被打包的 standalone app 不能再带自己的 `standalone.Option`
 
-## 4. Flag 模型
+## Flag 模型
 
-### 4.1 `With(flag)`
+### `With(flag)`
 
 `New[...]()` 接收 `FlagApplier`，最常见写法是：
 
@@ -154,7 +154,7 @@ app.New[*DemoApp](
 - `flag` 必须是“指向 struct 的指针”
 - 同一个 flag 类型只能提供一次
 
-### 4.2 `RunFlag`
+### `RunFlag`
 
 ```go
 type RunFlag struct {
@@ -184,7 +184,7 @@ func (a *DemoApp) BindCommon(b *di.Binder) {
 }
 ```
 
-### 4.3 自定义 Flag
+### 自定义 Flag
 
 ```go
 type DemoFlag struct {
@@ -206,9 +206,9 @@ app.New[*DemoApp](
 )
 ```
 
-## 5. 组件与模块
+## 组件与模块
 
-### 5.1 基础设施组件
+### 基础设施组件
 
 数据库、Redis 等框架组件通过 `InitComponents` 声明。业务类型应嵌入对应公开组件，例如 `rdb.Database` 或 `redis.Redis`：
 
@@ -221,7 +221,7 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 组件会把连接、DAO、Cache 或 Locker 等对象提供给依赖注入容器。组件类型不能重复声明。
 
-### 5.2 Module
+### Module
 
 业务生命周期逻辑使用 `Module`。嵌入 `app.BaseModule` 后，只实现需要的生命周期方法：
 
@@ -244,11 +244,11 @@ func (*DemoApp) InitModules(add app.TypeAdder) {
 
 停止阶段按逆序执行。
 
-## 6. 可选能力
+## 可选能力
 
 应用 spec 可以按需实现以下能力接口。
 
-### 6.1 Rpc：`ServicerSpec`
+### Rpc：`ServicerSpec`
 
 ```go
 type ServicerSpec interface {
@@ -266,7 +266,7 @@ type ServicerEnabled struct{}
 
 实现后，框架会创建 `core/rpc` server，并挂到 `/rpc/invoke`。
 
-### 6.2 Web：`WebberSpec`
+### Web：`WebberSpec`
 
 一个 app 只支持一个 weber：
 
@@ -286,7 +286,7 @@ weber 的访问前缀是：
 /web/access/default@<appName>
 ```
 
-### 6.3 Event：`EventerSpec`
+### Event：`EventerSpec`
 
 ```go
 type EventerSpec interface {
@@ -310,7 +310,7 @@ type EventerEnabled struct{}
 - `app.WithListenerConcurrency(concurrency)`
 - `app.WithListenerNoRetry()`
 
-### 6.4 Task：`TaskerSpec`
+### Task：`TaskerSpec`
 
 ```go
 type TaskerSpec interface {
@@ -337,7 +337,7 @@ type TaskerEnabled struct{}
 
 其中 cron scheduler 用于给某个无参数 trigger 注册定时触发规则；`triggerSkelName` 不能为空，`cronExpr` 不能为空且必须能被标准 cron 表达式解析。带参数的 trigger 不能作为 cron scheduler 目标。
 
-## 7. 路由模型
+## 路由模型
 
 app 进程会按需挂载这些内建前缀：
 
@@ -366,7 +366,7 @@ app 进程会按需挂载这些内建前缀：
 
 模块如果实现 `PathPrefixRouteModule`，还可以主动追加自定义前缀 route。
 
-## 8. HTTP 与 inproc
+## HTTP 与 inproc
 
 普通模式下：
 
@@ -381,7 +381,7 @@ inproc 下会注册：
 - 所有 Rpc route
 - 所有 `/web/access/...` route
 
-## 9. 启动与停止流程
+## 启动与停止流程
 
 `Start()` 大致顺序：
 
@@ -412,7 +412,7 @@ inproc 下会注册：
 
 在 `standalone` / bundled standalone 模式下，会先按逆序优雅停止业务 apps，再停止 Link、Portal、Hub 等内置运行时组件。
 
-## 10. DI 可见性
+## DI 可见性
 
 应用内部常见可见依赖包括：
 
@@ -429,7 +429,7 @@ inproc 下会注册：
 - 组件/模块自己的 `Bind(...)` 适合放该对象专属依赖
 - Servicer / Webber / Eventer / Tasker 会把各自上下文再补到执行容器里
 
-## 11. 建议
+## 建议
 
 - 业务 app 一定要覆写 `Name()`
 - 监听地址优先通过 `RunFlag` 传入，必要时再在 app 内修正

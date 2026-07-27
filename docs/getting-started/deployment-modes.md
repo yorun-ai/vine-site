@@ -2,7 +2,7 @@
 slug: /deployment-modes
 ---
 
-# Runtime Modes and Deployment Topologies
+# Runtime & Deployment
 
 Vine supports different runtime topologies for development and production. The business application code remains the same; the difference is whether Hub, Portal, Link, and the business application run in the same process, and whether components communicate through inproc or network connections.
 
@@ -16,7 +16,7 @@ Vine supports different runtime topologies for development and production. The b
 
 Regardless of the selected mode, the business application keeps the same `ApplicationSpec`, Rpc, Web, Event, and Task definitions. Only the startup entry point and endpoint configuration change.
 
-## 1. Standalone
+## Standalone
 
 Standalone assembles Hub, Portal, Link, and one business application in the same process:
 
@@ -44,7 +44,7 @@ The startup order is Hub → Portal → Link → business application. Shutdown 
 - Hub and Link do not expose separate management ports. Portal can still listen on business HTTP/HTTPS ports according to its entry rules.
 - This mode does not cover cross-process networking or independent service restarts.
 
-## 2. Linked: Separate Hub and Application
+## Linked: Separate Hub and Application
 
 Linked mode runs Hub and Portal as independent runtime services, while each business application carries an inproc Link in its own process:
 
@@ -81,7 +81,7 @@ linked.NewWithOption[*HelloApp](linked.Option{
 
 This mode preserves the configuration, registration, and lease semantics of an independent Hub, but Link and the business application are still released and stopped together. It is suitable for development and deployment environments where maintaining a separate Link sidecar is undesirable.
 
-## 3. Separated Deployment: Independent Runtime and Application
+## Separated Deployment: Independent Runtime and Application
 
 In production, you can separate the control plane, external entry point, application-side connectivity layer, and business application into independent processes:
 

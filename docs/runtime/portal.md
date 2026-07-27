@@ -2,7 +2,7 @@
 slug: /portal
 ---
 
-# Portal External Gateway
+# Portal
 
 Portal is Vine's northbound entry point. It reads entry, site, certificate, schema, and endpoint data from Hub Redis, then routes incoming HTTP, HTTPS, Rpc, and Web requests to the target application's Link endpoint.
 

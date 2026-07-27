@@ -2,7 +2,7 @@
 slug: /cli
 ---
 
-# Vine CLI Guide
+# Vine CLI
 
 `vine` is the command-line entry point for Vine. It provides runtime services and version information.
 
@@ -22,7 +22,7 @@ vine --help
 vine hub serve --help
 ```
 
-## 1. Installation and Version
+## Installation and Version
 
 Install a published version:
 
@@ -37,7 +37,7 @@ which vine
 vine version
 ```
 
-## 2. hub
+## hub
 
 `hub` is the configuration, registration, and management center.
 
@@ -113,7 +113,7 @@ Notes:
 - Choose exactly one of `--db-sqlite-file` and `--db-postgres-url`.
 - Choose exactly one of `--mq-external-nats-url` and `--mq-embedded-nats`.
 
-## 3. link
+## link
 
 `link` is the application-side sidecar mesh. It connects to Hub, provides ingress, and registers the capabilities of the current application.
 
@@ -139,7 +139,7 @@ Environment variables:
 - `VINE_INGRESS_LISTEN`
 - `VINE_HUB_ENDPOINT`
 
-## 4. portal
+## portal
 
 `portal` is the application gateway. It reads portal entry, rule, and site configuration from Hub, then forwards external requests to the target application.
 
@@ -154,9 +154,9 @@ Environment variables:
 
 - `VINE_HUB_ENDPOINT`
 
-## 5. Common Workflows
+## Common Workflows
 
-### 5.1 Start Runtime Infrastructure Services Separately
+### Start Runtime Infrastructure Services Separately
 
 ```bash
 vine hub serve --mq-embedded-nats --db-sqlite-file ./hub.sqlite

@@ -2,7 +2,7 @@
 slug: /portal
 ---
 
-# Portal 外部访问网关
+# Portal
 
 Portal 是 Vine 的北向入口。它从 Hub Redis 读取入口、站点、证书、schema 与 endpoint 信息，并把 HTTP、HTTPS、Rpc 和 Web 请求路由到目标应用的 Link endpoint。
 
