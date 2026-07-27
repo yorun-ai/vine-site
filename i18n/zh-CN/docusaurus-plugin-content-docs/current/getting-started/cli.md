@@ -2,7 +2,7 @@
 slug: /cli
 ---
 
-# Vine CLI 使用说明
+# Vine CLI
 
 `vine` 是 Vine 的命令行入口，包含运行时服务和版本信息。
 
@@ -22,7 +22,7 @@ vine --help
 vine hub serve --help
 ```
 
-## 1. 安装与版本
+## 安装与版本
 
 从已发布版本安装：
 
@@ -37,7 +37,7 @@ which vine
 vine version
 ```
 
-## 2. hub
+## hub
 
 `hub` 是配置、注册和管理中心。
 
@@ -113,7 +113,7 @@ vine hub serve \
 - `--db-sqlite-file` 和 `--db-postgres-url` 必须二选一
 - `--mq-external-nats-url` 和 `--mq-embedded-nats` 必须二选一
 
-## 3. link
+## link
 
 `link` 是应用侧 sidecar mesh，负责连接 hub、提供 ingress，并注册当前应用能力。
 
@@ -139,7 +139,7 @@ vine link serve \
 - `VINE_INGRESS_LISTEN`
 - `VINE_HUB_ENDPOINT`
 
-## 4. portal
+## portal
 
 `portal` 是应用网关，从 hub 获取 portal entry / rule / site 配置，然后把外部请求转发到目标应用。
 
@@ -154,9 +154,9 @@ vine portal serve \
 
 - `VINE_HUB_ENDPOINT`
 
-## 5. 常见工作流
+## 常见工作流
 
-### 5.1 单独启动运行时基础服务
+### 单独启动运行时基础服务
 
 ```bash
 vine hub serve --mq-embedded-nats --db-sqlite-file ./hub.sqlite

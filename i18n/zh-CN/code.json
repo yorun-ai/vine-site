@@ -327,24 +327,69 @@
     "description": "The title of the tag list page"
   },
   "homepage.title": {
-    "message": "用明确的契约，构建可演进的 Go 应用"
+    "message": "Vine 开发者"
   },
   "homepage.description": {
-    "message": "Vine 统一应用生命周期、依赖注入、服务调用、事件、任务与部署，让业务代码保持清晰。"
+    "message": "了解如何使用 Vine 构建契约驱动的 Go 应用，从第一个本地进程逐步演进到分布式运行时。"
   },
-  "homepage.start": {
-    "message": "开始使用 Vine"
+  "homepage.sections.gettingStarted": {
+    "message": "开始使用"
   },
-  "homepage.otherSite": {
-    "message": "了解 Skel"
+  "homepage.sections.guides": {
+    "message": "指南"
   },
-  "homepage.flow.application": {
-    "message": "用 App、Module 和组件组织依赖、生命周期与业务边界。"
+  "homepage.cards.quickStart.title": {
+    "message": "快速开始"
   },
-  "homepage.flow.capabilities": {
-    "message": "以一致的方式使用 Rpc、Web、Event、Task、Redis 和数据库。"
+  "homepage.cards.quickStart.description": {
+    "message": "创建一个最小化的 Vine 应用，并了解其核心结构。"
   },
-  "homepage.flow.runtime": {
-    "message": "从单进程开发平滑演进到由 Hub、Link 和 Portal 组成的部署。"
+  "homepage.cards.applicationModel.title": {
+    "message": "应用模型"
+  },
+  "homepage.cards.applicationModel.description": {
+    "message": "理解应用、组件、模块及其生命周期。"
+  },
+  "homepage.cards.dependencyInjection.title": {
+    "message": "依赖注入"
+  },
+  "homepage.cards.dependencyInjection.description": {
+    "message": "通过显式、可测试的依赖关系连接各项能力。"
+  },
+  "homepage.cards.example.title": {
+    "message": "示例应用"
+  },
+  "homepage.cards.example.description": {
+    "message": "从完整教程开始了解 Vine 的开发约定。"
+  },
+  "homepage.cards.rpc.title": {
+    "message": "Rpc 服务"
+  },
+  "homepage.cards.rpc.description": {
+    "message": "使用一致的运行时契约定义并调用服务。"
+  },
+  "homepage.cards.web.title": {
+    "message": "Web 应用"
+  },
+  "homepage.cards.web.description": {
+    "message": "构建 HTTP 入口，同时保持业务代码独立。"
+  },
+  "homepage.cards.events.title": {
+    "message": "事件与任务"
+  },
+  "homepage.cards.events.description": {
+    "message": "使用事件和后台任务运行异步工作流。"
+  },
+  "homepage.cards.runtime.title": {
+    "message": "运行时与部署"
+  },
+  "homepage.cards.runtime.description": {
+    "message": "从本地进程平滑演进到分布式 Vine 运行时。"
+  },
+  "homepage.cards.packages.title": {
+    "message": "包参考"
+  },
+  "homepage.cards.packages.description": {
+    "message": "浏览框架包及其职责边界。"
   }
 }

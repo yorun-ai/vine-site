@@ -6,7 +6,7 @@ slug: /trace-timeout
 
 请求进入 Vine 后，trace 会贯穿 Portal、auth/check、Rpc/Web handler 和后续下游调用；timeout 会从入口开始计时，并在每次转发时换算成剩余时间继续传递。业务代码通常不需要手工解析这些 header，只要继续使用当前注入的上下文发起下游调用即可。
 
-## 1. 你会看到哪些 Header
+## 你会看到哪些 Header
 
 外部请求进入 Portal 时，主要涉及这些 header：
 
@@ -34,7 +34,7 @@ vweb-options: timeout=30s
 
 timeout 使用 Go duration 格式，例如 `1000ms`、`1s`、`30s`。
 
-## 2. 外部 Rpc 客户端应该怎么传
+## 外部 Rpc 客户端应该怎么传
 
 调用 rpcgw 时必须传 `vrpc-trace`。如果客户端有自己的 span，传完整格式：
 
@@ -58,7 +58,7 @@ vrpc-options: timeout=10s
 
 如果不传，rpcgw 默认使用 `30s`。如果传入超过 `120s`，rpcgw 会返回 invalid request。
 
-## 3. 外部 Web 客户端应该怎么传
+## 外部 Web 客户端应该怎么传
 
 调用 webgw 时可以传 `vweb-trace`：
 
@@ -80,7 +80,7 @@ vweb-options: timeout=10s
 
 外部客户端不应该依赖 `vweb-actor` 或 `vweb-initiator`。这些 header 由 webgw 写给后端应用，客户端传入的同名值不会作为可信身份使用。
 
-## 4. 响应里怎么拿 Trace Id
+## 响应里怎么拿 Trace Id
 
 Portal 会在响应中写：
 
@@ -92,7 +92,7 @@ portal-trace-id: <trace_id>
 
 如果请求本身带了合法 trace id，`portal-trace-id` 会尽量返回同一个 id。若 trace header 缺失或非法，Portal 会生成新的 trace id 或返回错误，具体取决于入口类型和校验规则。
 
-## 5. Timeout 怎么计算
+## Timeout 怎么计算
 
 timeout 从进入 gateway 开始计时，而不是只限制最后一次转发。
 
@@ -119,7 +119,7 @@ rpcgw 入口
 
 如果请求体还没有传完整，Portal 或下游读取 body 时仍会失败。这类情况不会被当作已经开始的完整业务执行。
 
-## 6. Handler 里调用下游要注意什么
+## Handler 里调用下游要注意什么
 
 业务 handler 里继续调用 Rpc 时，通常不用手工设置 timeout。只要使用 Vine 注入的当前上下文，Rpc client 会自动读取 context deadline，并把剩余时间写入 `vrpc-options`。
 
@@ -140,7 +140,7 @@ ctx := context.Background()
 
 普通 Web handler 也是一样。webgw 会把 `vweb-options` 应用到后端 Web handler 的 request context；handler 内再调用 Rpc 时，会继续递减并传播为 `vrpc-options`。未显式指定 timeout 的 SSE/WebSocket handler context 没有总时长 deadline；其中发起的 Rpc 调用仍使用 Rpc 自身的默认 timeout，除非业务代码显式传入 context 或 timeout。
 
-## 7. 在 OTel 后台会看到什么
+## 在 OTel 后台会看到什么
 
 带 auth/check 的 Rpc 请求大致会形成这样的调用树：
 
@@ -168,7 +168,7 @@ incoming trace
 
 如果客户端只传了 trace id，没有传 span，Portal 会补一个入口 span。这个 span 只是服务端调用树的 parent anchor，不一定能在客户端侧找到对应日志。
 
-## 8. Vine 内部怎么派生 Span
+## Vine 内部怎么派生 Span
 
 Vine 使用 `meta.Trace` 表示 trace context：
 
@@ -201,7 +201,7 @@ incoming trace
 
 `ParentSpan()` 只存在于本地 trace 对象中，用于日志或后续 OTel 映射，不会写入 header。
 
-## 9. 与 OTel 的关系
+## 与 OTel 的关系
 
 `meta.Trace` 不是完整的 OTel span。它只负责生成和传播：
 

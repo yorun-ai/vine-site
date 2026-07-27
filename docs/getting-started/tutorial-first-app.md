@@ -3,7 +3,7 @@ sidebar_position: 1
 slug: /tutorial-first-app
 ---
 
-# Tutorial: Start Your First Vine Application
+# First Vine Application
 
 In this tutorial, you will create a minimal Vine application and run it in standalone mode. Standalone starts Hub, Portal, Link, and the business application in the same process, making it suitable for first-time evaluation, local development, and integration testing.
 
@@ -23,7 +23,7 @@ go mod init example.com/vine-hello
 go get go.yorun.ai/vine@latest
 ```
 
-## 1. Define the Application
+## Define the Application
 
 Create `main.go`:
 
@@ -71,7 +71,7 @@ This code introduces three concepts you need to understand:
 
 `StartAndWait()` starts the runtime and waits for `SIGINT` or `SIGTERM`. After you press `Ctrl+C`, the application shuts down gracefully in reverse startup order.
 
-## 2. Run the Application
+## Run the Application
 
 ```bash
 go run .
@@ -87,7 +87,7 @@ This message confirms that the application, dependency injection, and module lif
 
 Press `Ctrl+C` to stop it. Running the same command again reuses the Hub data stored in `vine.sqlite`.
 
-## 3. Understand the Standalone Runtime
+## Understand the Standalone Runtime
 
 ```mermaid
 flowchart LR
@@ -104,7 +104,7 @@ flowchart LR
 
 In standalone, the management connections between Hub and Link use the inproc transport and do not open additional management ports. Portal can still listen on business HTTP/HTTPS ports according to its entry rules. This mode does not simulate heartbeat, TTL expiration, or network disconnection. Use linked mode when you need to validate these behaviors.
 
-## 4. Connect to an Existing Hub
+## Connect to an Existing Hub
 
 First, start Hub separately:
 

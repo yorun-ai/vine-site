@@ -2,18 +2,18 @@
 slug: /first-skel-contract
 ---
 
-# 教程：创建第一个 Skel 契约
+# 第一个 Skel 契约
 
 本教程定义一个 Greeting 服务，使用 `skelc` 完成校验和 Go 代码生成。完成后，你将得到类型安全的服务端接口和客户端。
 
-## 1. 安装 skelc
+## 安装 skelc
 
 ```bash
 go install go.yorun.ai/skelc/cmd/skelc@latest
 skelc version
 ```
 
-## 2. 创建契约目录
+## 创建契约目录
 
 ```text
 greeting/
@@ -47,7 +47,7 @@ pub service GreetingService {
 }
 ```
 
-## 3. 校验
+## 校验
 
 ```bash
 skelc check --skel-in ./skel
@@ -66,7 +66,7 @@ pub  data     demo.greeting.Greeting
 pub  service  demo.greeting.GreetingService
 ```
 
-## 4. 生成 Go 代码
+## 生成 Go 代码
 
 ```bash
 skelc gen go \

@@ -2,18 +2,18 @@
 slug: /first-skel-contract
 ---
 
-# Tutorial: Create Your First Skel Contract
+# First Skel Contract
 
 In this tutorial, you will define a Greeting service and use `skelc` to validate it and generate Go code. When you finish, you will have a type-safe server interface and client.
 
-## 1. Install skelc
+## Install skelc
 
 ```bash
 go install go.yorun.ai/skelc/cmd/skelc@latest
 skelc version
 ```
 
-## 2. Create the Contract Directory
+## Create the Contract Directory
 
 ```text
 greeting/
@@ -47,7 +47,7 @@ pub service GreetingService {
 }
 ```
 
-## 3. Validate the Contract
+## Validate the Contract
 
 ```bash
 skelc check --skel-in ./skel
@@ -66,7 +66,7 @@ pub  data     demo.greeting.Greeting
 pub  service  demo.greeting.GreetingService
 ```
 
-## 4. Generate Go Code
+## Generate Go Code
 
 ```bash
 skelc gen go \

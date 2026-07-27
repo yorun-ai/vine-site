@@ -2,11 +2,11 @@
 slug: /guide/rpc
 ---
 
-# 使用 Rpc
+# Rpc
 
 Vine Rpc 的常规工作流是：在 Skel 中声明服务，由 skelc 生成接口，实现服务端，然后在 App 中注册 handler。业务代码通常不需要手工构造底层 `ServiceSpec`。
 
-## 1. 定义和生成
+## 定义和生成
 
 ```skel title="greeting.skel"
 pub service GreetingService {
@@ -23,7 +23,7 @@ skelc check --skel-in ./skel
 skelc gen go --skel-in ./skel --go-out ./skeled
 ```
 
-## 2. 实现服务
+## 实现服务
 
 生成代码提供 Server 接口和默认实现。业务实现嵌入默认实现，并实现需要的方法：
 
@@ -37,7 +37,7 @@ func (*GreetingService) Hello(name string) skeled.Greeting {
 }
 ```
 
-## 3. 注册到应用
+## 注册到应用
 
 ```go title="app.go"
 type GreetingApp struct {
@@ -54,7 +54,7 @@ func (*GreetingApp) ServicerInitHandlers(add app.TypeAdder) {
 }
 ```
 
-## 4. 发起第一次调用
+## 发起第一次调用
 
 生成的 client 可以直接注入 handler 或 module。下面的模块会在应用启动完成后调用刚注册的服务：
 

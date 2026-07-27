@@ -53,10 +53,6 @@ const config: Config = {
           path: './docs',
           routeBasePath: 'docs',
           sidebarPath: './sidebars.ts',
-          editUrl: ({locale, docPath}) =>
-            locale === 'zh-CN'
-              ? `https://github.com/yorun-ai/vine-site/tree/main/i18n/zh-CN/docusaurus-plugin-content-docs/current/${docPath}`
-              : `https://github.com/yorun-ai/vine-site/tree/main/docs/${docPath}`,
           showLastUpdateAuthor: false,
           showLastUpdateTime: false,
           versions: {
@@ -80,7 +76,13 @@ const config: Config = {
 
   themeConfig: {
     navbar: {
-      title: 'Vine',
+      title: 'Vine Framework',
+      logo: {
+        alt: 'Vine',
+        src: 'brand/logo-simple.png',
+        width: 36,
+        height: 36,
+      },
       items: [
         {
           type: 'docSidebar',
@@ -103,6 +105,7 @@ const config: Config = {
           position: 'right',
         },
         {
+          className: 'navbar-github-link',
           href: 'https://github.com/yorun-ai/vine-site',
           label: 'GitHub',
           position: 'right',

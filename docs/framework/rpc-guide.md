@@ -2,11 +2,11 @@
 slug: /guide/rpc
 ---
 
-# Using Rpc
+# Rpc
 
 The usual Vine Rpc workflow is to declare a service in Skel, generate its interfaces with skelc, implement the server, and register the handler in an App. Business code normally does not need to construct a low-level `ServiceSpec` manually.
 
-## 1. Define and generate
+## Define and generate
 
 ```skel title="greeting.skel"
 pub service GreetingService {
@@ -23,7 +23,7 @@ skelc check --skel-in ./skel
 skelc gen go --skel-in ./skel --go-out ./skeled
 ```
 
-## 2. Implement the service
+## Implement the service
 
 Generated code provides a Server interface and default implementation. Embed the default implementation and implement the methods you need:
 
@@ -37,7 +37,7 @@ func (*GreetingService) Hello(name string) skeled.Greeting {
 }
 ```
 
-## 3. Register it with the application
+## Register it with the application
 
 ```go title="app.go"
 type GreetingApp struct {
@@ -54,7 +54,7 @@ func (*GreetingApp) ServicerInitHandlers(add app.TypeAdder) {
 }
 ```
 
-## 4. Make the first call
+## Make the first call
 
 Generated clients can be injected directly into a handler or module. The module below calls the service you just registered after the application has finished starting:
 

@@ -2,13 +2,13 @@
 slug: /vrpc-http
 ---
 
-# vRPC over HTTP 协议
+# vRPC over HTTP
 
 vRPC 是 Vine 的 Rpc 线协议。它使用 HTTP 承载请求与响应，通过 URL 标识 Skel service 和 method，通过 `vrpc-*` Header 传递调用元数据，并使用 JSON 或 CBOR 编码参数、结果和错误。
 
 本文描述当前 vRPC 的 HTTP 承载格式，适合实现非 Go 客户端、调试 Portal Rpc 入口或排查跨进程调用。业务 Go 代码通常应使用 skelc 生成的 client，而不是手工拼装 HTTP 请求。
 
-## 1. 请求目标
+## 请求目标
 
 每次调用使用一个 HTTP `POST` 请求：
 
@@ -30,7 +30,7 @@ POST /rpc/invoke/demo.greeting.GreetingService/hello HTTP/1.1
 
 除 `POST` 外的请求方法不是有效的 vRPC invoke 请求。
 
-## 2. 请求 Header
+## 请求 Header
 
 | Header | 必需 | 格式与用途 |
 | --- | --- | --- |
@@ -65,7 +65,7 @@ vrpc-options: timeout=10s
 
 同一个 Header 不应使用多个独立字段行重复发送。需要声明多个响应媒体类型时，把它们放在同一个 `accept` 值中并用逗号分隔。
 
-## 3. 请求体
+## 请求体
 
 JSON 请求体是一个只包含 `params` 的信封：
 
@@ -89,7 +89,7 @@ JSON 请求体是一个只包含 `params` 的信封：
 
 CBOR 使用相同的数据模型，只把整个信封和 `params` 改为 CBOR 编码。当请求参数包含 binary 类型时，生成的客户端会选择 `application/vrpc+cbor`；其他请求默认使用 JSON。
 
-## 4. 响应 Header 与响应体
+## 响应 Header 与响应体
 
 每个可解码的 vRPC 响应至少包含：
 
@@ -135,7 +135,7 @@ vrpc-server: name=demo.greeting,version=1.2.3,instanceId=123e4567-e89b-12d3-a456
 
 客户端必须以 `vrpc-status` 和 `error.code` 判断调用结果，不能只解析 HTTP reason phrase。成功时 `vrpc-status` 必须是 `OK` 且 `error` 为空；失败时状态码和 `error.code` 必须一致。
 
-## 5. JSON 与 CBOR 协商
+## JSON 与 CBOR 协商
 
 请求和响应分别协商：
 
@@ -152,7 +152,7 @@ accept: application/vrpc+cbor, application/vrpc+json
 
 媒体类型参数可以存在，例如 `application/vrpc+json; charset=utf-8`。普通 `application/json` 和 `application/cbor` 不是有效的 vRPC content type。
 
-## 6. HTTP 状态码
+## HTTP 状态码
 
 应用内部的 vRPC HTTP handler 使用固定的 HTTP `200`，业务和框架结果由 `vrpc-status` 表示。这样中间转发层不会把 Rpc 错误误判成 HTTP transport 失败。
 
@@ -172,7 +172,7 @@ Portal rpcgw 是面向外部客户端的 HTTP gateway，会保留 `vrpc-status`�
 
 `SERVER_UNREACHABLE`、`INVOCATION_CANCELLED`、`INVOCATION_TIMEOUT`、`INVOCATION_FAILED` 和 `UNEXPECTED_RESPONSE` 是客户端本地调用错误，不会作为服务端 `vrpc-status` 返回。
 
-## 7. Portal rpcgw 的附加行为
+## Portal rpcgw 的附加行为
 
 Portal 在 vRPC transport 之外还负责外部 HTTP 语义：
 
@@ -186,7 +186,7 @@ Portal 在 vRPC transport 之外还负责外部 HTTP 语义：
 
 因此，面向 Portal 的客户端应同时记录 HTTP 状态码、`vrpc-status` 和 `portal-trace-id`。
 
-## 8. 完整 JSON 调用示例
+## 完整 JSON 调用示例
 
 下面展示一个面向 Portal rpcgw 的请求。实际 host 和站点基路径取决于 Portal 配置。
 

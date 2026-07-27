@@ -2,7 +2,7 @@
 slug: /guide/rdb
 ---
 
-# Using a Relational Database
+# Relational Database
 
 The RDB component connects to PostgreSQL or SQLite and injects type-safe DAOs into business objects. Each database component declares one connection and a set of DAOs.
 

@@ -2,11 +2,11 @@
 slug: /app
 ---
 
-# App API Reference
+# App API
 
 The `app` package assembles a process into a unified runtime: it manages the application lifecycle, creates components and modules, mounts HTTP/Rpc/Web entry points, and exposes runtime dependencies to objects inside the application through DI.
 
-## 1. Public entry points
+## Public entry points
 
 Business code usually depends on the top-level `go.yorun.ai/vine/app` package. Import `app/linked` or `app/standalone` only when composing those runtime modes.
 
@@ -34,9 +34,9 @@ Commonly used entry points include:
 - `standalone.New[S](...)` / `standalone.NewWithOption[S](...)` / `standalone.Option`
 - `standalone.NewBundled(...)` / `standalone.NewBundledWithOption(...)`
 
-## 2. Core interfaces
+## Core interfaces
 
-### 2.1 `App`
+### `App`
 
 ```go
 type App interface {
@@ -61,7 +61,7 @@ The methods have the following semantics:
 
 Lifecycle methods are single-use. Calling `Start()` more than once, calling `StopGracefully()` before startup, calling `StopGracefully()` more than once, or calling `Start()` after shutdown causes a panic.
 
-### 2.2 `ApplicationSpec`
+### `ApplicationSpec`
 
 The application specification interface is:
 
@@ -83,7 +83,7 @@ Its methods are:
 
 A business application can embed `app.Application` to obtain the default implementations, then override only the methods it needs.
 
-### 2.3 `Application`
+### `Application`
 
 `Application` is the default base type:
 
@@ -112,9 +112,9 @@ func (*DemoApp) Name() string {
 }
 ```
 
-## 3. Creation
+## Creation
 
-### 3.1 `New`
+### `New`
 
 ```go
 instance := app.New[*DemoApp]()
@@ -129,16 +129,16 @@ In other words, the framework enforces both spec-type uniqueness and application
 
 The `Option` accepted by the top-level `app.NewWithOption(...)` provides `LinkEndpoint`. You can also provide it through `--link-endpoint` or `VINE_LINK_ENDPOINT`.
 
-### 3.2 Runtime-mode constructors
+### Runtime-mode constructors
 
 - `linked.New(...)`: starts a Link in the same process, then starts the business application as an in-process application. `linked.Option` supports `HubEndpoint` and `IngressListen`, which can also be supplied through `--hub-endpoint` / `--ingress-listen` or the corresponding environment variables.
 - `linked.NewBundled(...)`: lets multiple business applications share one in-process Link connected to an external Hub. A bundled linked application cannot also carry its own `linked.Option`.
 - `standalone.New(...)`: starts Hub, Portal, Link, and one business application in the same process. `standalone.Option` supports a seed YAML file, a SQLite file, a PostgreSQL URL, and a Dashboard URL.
 - `standalone.NewBundled(...)`: bundles multiple standalone applications with one embedded Hub, Portal, and Link. A bundled standalone application cannot also carry its own `standalone.Option`.
 
-## 4. Flag model
+## Flag model
 
-### 4.1 `With(flag)`
+### `With(flag)`
 
 `New[...]()` accepts `FlagApplier` values. The most common form is:
 
@@ -154,7 +154,7 @@ app.New[*DemoApp](
 - `flag` must be a pointer to a struct.
 - Each flag type can be supplied only once.
 
-### 4.2 `RunFlag`
+### `RunFlag`
 
 ```go
 type RunFlag struct {
@@ -184,7 +184,7 @@ func (a *DemoApp) BindCommon(b *di.Binder) {
 }
 ```
 
-### 4.3 Custom flags
+### Custom flags
 
 ```go
 type DemoFlag struct {
@@ -206,9 +206,9 @@ app.New[*DemoApp](
 )
 ```
 
-## 5. Components and modules
+## Components and modules
 
-### 5.1 Infrastructure components
+### Infrastructure components
 
 Declare framework components such as databases and Redis through `InitComponents`. Business types should embed the corresponding public component, such as `rdb.Database` or `redis.Redis`:
 
@@ -221,7 +221,7 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 Components expose connections, DAOs, caches, lockers, and other objects through the dependency injection container. A component type cannot be declared more than once.
 
-### 5.2 Module
+### Module
 
 Use a `Module` for business lifecycle logic. Embed `app.BaseModule` and implement only the lifecycle methods you need:
 
@@ -244,11 +244,11 @@ Modules participate in:
 
 Shutdown hooks run in reverse order.
 
-## 6. Optional capabilities
+## Optional capabilities
 
 An application spec can implement the following capability interfaces as needed.
 
-### 6.1 Rpc: `ServicerSpec`
+### Rpc: `ServicerSpec`
 
 ```go
 type ServicerSpec interface {
@@ -266,7 +266,7 @@ type ServicerEnabled struct{}
 
 When enabled, the framework creates a `core/rpc` server and mounts it at `/rpc/invoke`.
 
-### 6.2 Web: `WebberSpec`
+### Web: `WebberSpec`
 
 An application supports one Webber:
 
@@ -286,7 +286,7 @@ The Webber access prefix is:
 /web/access/default@<appName>
 ```
 
-### 6.3 Event: `EventerSpec`
+### Event: `EventerSpec`
 
 ```go
 type EventerSpec interface {
@@ -310,7 +310,7 @@ Listener declarations can include these options:
 - `app.WithListenerConcurrency(concurrency)`
 - `app.WithListenerNoRetry()`
 
-### 6.4 Task: `TaskerSpec`
+### Task: `TaskerSpec`
 
 ```go
 type TaskerSpec interface {
@@ -337,7 +337,7 @@ Runner declarations can include these options:
 
 The Cron scheduler registers a schedule for a trigger with no arguments. `triggerSkelName` and `cronExpr` cannot be empty, and `cronExpr` must be a valid standard Cron expression. A trigger with arguments cannot be a Cron scheduler target.
 
-## 7. Routing model
+## Routing model
 
 An application process mounts these built-in prefixes as needed:
 
@@ -366,7 +366,7 @@ the path passed to the Rpc handler is:
 
 A module that implements `PathPrefixRouteModule` can also add custom prefix routes.
 
-## 8. HTTP and in-process transport
+## HTTP and in-process transport
 
 In normal mode:
 
@@ -381,7 +381,7 @@ In-process mode registers:
 - All Rpc routes.
 - All `/web/access/...` routes.
 
-## 9. Startup and shutdown
+## Startup and shutdown
 
 `Start()` runs approximately in this order:
 
@@ -412,7 +412,7 @@ In `linked` mode, the outer application waits for the business application to co
 
 In standalone and bundled standalone modes, business applications are stopped gracefully in reverse order before the embedded Link, Portal, Hub, and other runtime components stop.
 
-## 10. DI visibility
+## DI visibility
 
 Dependencies commonly visible inside an application include:
 
@@ -429,7 +429,7 @@ In particular:
 - Use a component or module's own `Bind(...)` method for dependencies specific to that object.
 - Servicer, Webber, Eventer, and Tasker capabilities add their respective contexts to the execution container.
 
-## 11. Recommendations
+## Recommendations
 
 - Always override `Name()` in a business application.
 - Prefer supplying the listen address through `RunFlag`; adjust it inside the application only when necessary.

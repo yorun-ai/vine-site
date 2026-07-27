@@ -2,7 +2,7 @@
 slug: /rpc
 ---
 
-# Rpc API 参考
+# Rpc API
 
 日常使用请先阅读 [使用 Rpc](/docs/guide/rpc)。HTTP 线协议见 [vRPC over HTTP](/docs/vrpc-http)。本页列出 `core/rpc` 的 client、server、executor 和服务元信息 API，适合调整底层调用选项或构建自定义接入层时查阅。
 
@@ -16,7 +16,7 @@ slug: /rpc
 
 它默认和生成代码配套使用。
 
-## 1. 和生成代码的关系
+## 和生成代码的关系
 
 典型流程：
 
@@ -28,9 +28,9 @@ slug: /rpc
 
 通常不建议手写完整 `ServiceSpec`。
 
-## 2. Client
+## Client
 
-### 2.1 `ClientOption`
+### `ClientOption`
 
 `ClientOption` 的字段如下：
 
@@ -51,7 +51,7 @@ type Option struct {
 - `Logger` 不能为空
 - `ReturnIfSystemError == false` 时，system error 默认会直接 panic
 
-### 2.2 创建与调用
+### 创建与调用
 
 ```go
 client := rpc.NewClient(rpc.ClientOption{
@@ -73,7 +73,7 @@ result, err := client.Invoke(methodInfo, arguments, options...)
 - 第一个返回值是业务结果
 - 第二个返回值是 `ex.Error`
 
-### 2.3 Invoke 选项
+### Invoke 选项
 
 调用选项包括：
 
@@ -88,15 +88,15 @@ result, err := client.Invoke(methodInfo, arguments, options...)
 - `WithContext(...)` 与 `WithTimeout(...)` 不能同时使用
 - 不传 `WithContext(...)` 时，默认请求超时是 `30s`
 
-### 2.4 `ReturnIfSystemError`
+### `ReturnIfSystemError`
 
 当 `ReturnIfSystemError == true` 时，客户端会把 system error 作为返回值交给调用方处理，而不是直接 panic。
 
 默认值是 `false`。
 
-## 3. Server
+## Server
 
-### 3.1 `ServerOption`
+### `ServerOption`
 
 ```go
 type Option struct {
@@ -120,7 +120,7 @@ server := rpc.NewServer(rpc.ServerOption{
 })
 ```
 
-### 3.2 暴露能力
+### 暴露能力
 
 `Server` 提供：
 
@@ -130,7 +130,7 @@ server := rpc.NewServer(rpc.ServerOption{
 
 其中 `HTTPHandler()` 返回标准 `http.Handler`。
 
-## 4. Executor
+## Executor
 
 ```go
 type Executor interface {
@@ -141,13 +141,13 @@ type Executor interface {
 
 框架内置两种实现。
 
-### 4.1 `NewDefaultExecutor()`
+### `NewDefaultExecutor()`
 
 直接反射创建实现对象并调用方法。
 
 如果 handler struct 中有且只有一个 `spec.Context` 类型字段，默认 executor 会自动把当前 Rpc 上下文注入进去。
 
-### 4.2 `NewContainerExecutor(...)`
+### `NewContainerExecutor(...)`
 
 ```go
 rpc.NewContainerExecutor(filterTypes, bindAppliers)
@@ -160,7 +160,7 @@ rpc.NewContainerExecutor(filterTypes, bindAppliers)
 
 适合需要 filter、DI、上下文扩展的服务端执行链。
 
-## 5. `rpc.Context`
+## `rpc.Context`
 
 `rpc.Context` 在 `meta.Context` 基础上补充了 `Client()`：
 
@@ -184,9 +184,9 @@ rpcCtx := rpc.NewContext(ctx, trace, clientApp, initiator, actor)
 - 当前 actor
 - 本次 Rpc 调用的 client app
 
-## 6. 服务元信息
+## 服务元信息
 
-### 6.1 `ServiceSpec`
+### `ServiceSpec`
 
 `ServiceSpec` 是注册输入结构，常由生成代码提供：
 
@@ -210,7 +210,7 @@ type ServiceSpec struct {
 }
 ```
 
-### 6.2 `MethodSpec`
+### `MethodSpec`
 
 ```go
 type MethodSpec struct {
@@ -227,7 +227,7 @@ type MethodSpec struct {
 }
 ```
 
-### 6.3 `ServiceInfo`
+### `ServiceInfo`
 
 注册完成后，对外暴露的是 `ServiceInfo`：
 
@@ -248,7 +248,7 @@ type ServiceInfo interface {
 }
 ```
 
-### 6.4 `MethodInfo`
+### `MethodInfo`
 
 ```go
 type MethodInfo interface {
@@ -278,7 +278,7 @@ type MethodInfo interface {
 - `ValidateArguments(...)` 会检查参数是否满足生成的 Skeleton 约束
 - `ValidateResult(...)` 会检查返回值是否满足生成的 Skeleton 约束
 
-## 7. 服务注册
+## 服务注册
 
 注册入口：
 
@@ -286,7 +286,7 @@ type MethodInfo interface {
 rpc.Register(serviceSpec)
 ```
 
-## 8. 普通接口与 ER 接口
+## 普通接口与 ER 接口
 
 框架同时支持两套服务签名风格。
 
@@ -312,7 +312,7 @@ type UserServiceServerER interface {
 - ER server 的最后一个返回值固定是 `ex.Error`
 - 普通 server 可以通过 `WrapperERServerCtor` 包成 ER server
 
-## 9. 使用建议
+## 使用建议
 
 - 优先使用生成的元信息，不要手写完整 spec
 - client 一定显式传入 `Logger`

@@ -2,7 +2,7 @@
 slug: /meta
 ---
 
-# Call Context and Identity (Meta)
+# Context & Identity (Meta)
 
 Rpc, Web, Event, and Task handlers all need to know where a call came from, who initiated it, and which call chain it belongs to. `core/meta` represents this information through a consistent set of objects:
 
@@ -14,9 +14,9 @@ Rpc, Web, Event, and Task handlers all need to know where a call came from, who 
 
 Vine creates and propagates these objects at request boundaries. Business code normally only needs to read them from the execution context; it does not need to generate them or parse transport fields itself.
 
-## 1. Core interfaces
+## Core interfaces
 
-### 1.1 `App`
+### `App`
 
 ```go
 type App interface {
@@ -42,7 +42,7 @@ The following constraints apply:
 - `version` must be valid semantic versioning.
 - `instanceId` must be a valid UUID.
 
-### 1.2 `Trace`
+### `Trace`
 
 ```go
 type Trace interface {
@@ -68,7 +68,7 @@ trace, err := meta.NewTrace("4bf92f3577b34da6a3ce929d0e0e4736", "")
 
 When `span == ""`, `NewTrace(...)` generates a new span automatically.
 
-### 1.3 `Initiator`
+### `Initiator`
 
 ```go
 type Initiator interface {
@@ -92,7 +92,7 @@ initiator, err := meta.NewInitiator(
 
 If `ipStr == ""`, `IpAddr()` returns an empty string. A non-empty value must be accepted by `netip.ParseAddr(...)`.
 
-### 1.4 `Actor`
+### `Actor`
 
 ```go
 type Actor interface {
@@ -112,7 +112,7 @@ authenticated := meta.NewAuthenticatedActor(&skeled.UserActorInfo{
 
 Generated code registers the info type of an authenticated Actor. Use `meta.GetActorInfo[T](actor)` to read its type-safe identity information.
 
-### 1.5 `Context`
+### `Context`
 
 ```go
 type Context interface {
@@ -137,9 +137,9 @@ ctx := meta.NewContext(
 
 `meta.Context` is a wrapper around the standard `context.Context`.
 
-## 2. Trace rules
+## Trace rules
 
-### 2.1 Trace ID
+### Trace ID
 
 A trace ID is:
 
@@ -153,7 +153,7 @@ Use these APIs:
 - `meta.NewId()`
 - `meta.IsValidId(id)`
 
-### 2.2 Span ID
+### Span ID
 
 A span ID is:
 
@@ -167,7 +167,7 @@ Use these APIs:
 - `meta.NewSpan()`
 - `meta.IsValidSpan(span)`
 
-### 2.3 `InitialTrace()` and `NewChildTrace()`
+### `InitialTrace()` and `NewChildTrace()`
 
 `InitialTrace()` creates a root trace with:
 
@@ -181,11 +181,11 @@ Use these APIs:
 - Setting `ParentSpan()` to the parent span.
 - Generating a new child span.
 
-## 3. Base64 encoding helpers
+## Base64 encoding helpers
 
 Two sets of helpers are available.
 
-### 3.1 Initiator
+### Initiator
 
 ```go
 encoded := meta.EncodeInitiatorToBase64(initiator)
@@ -196,7 +196,7 @@ Special behavior:
 
 - `DecodeInitiatorFromBase64("")` returns `nil, nil`.
 
-### 3.2 Actor
+### Actor
 
 ```go
 encoded := meta.EncodeActorToBase64(actor)
@@ -205,7 +205,7 @@ decoded, err := meta.DecodeActorFromBase64(encoded)
 
 An empty string is not a valid Actor encoding, so `DecodeActorFromBase64("")` returns an error. When no identity information is available, use `meta.NewAbsentActor()` explicitly; use `meta.NewAnonymousActor()` for unauthenticated access.
 
-## 4. Use cases
+## Use cases
 
 Typical use cases include:
 

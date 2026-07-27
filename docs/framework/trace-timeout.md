@@ -2,11 +2,11 @@
 slug: /trace-timeout
 ---
 
-# Trace and Timeout
+# Trace & Timeout
 
 When a request enters Vine, trace context follows it through Portal, auth/check, Rpc/Web handlers, and downstream calls. Timeout starts at the entry point and is converted to the remaining time before each forward. Application code usually does not need to parse these headers manually; it should keep using the injected context for downstream calls.
 
-## 1. Headers You Will See
+## Headers You Will See
 
 When an external request enters Portal, these headers are relevant:
 
@@ -34,7 +34,7 @@ vweb-options: timeout=30s
 
 Timeout values use Go duration syntax, such as `1000ms`, `1s`, or `30s`.
 
-## 2. External Rpc Clients
+## External Rpc Clients
 
 Requests to rpcgw must carry `vrpc-trace`. If the client owns a span, send the full form:
 
@@ -58,7 +58,7 @@ vrpc-options: timeout=10s
 
 If it is missing, rpcgw uses `30s`. If it is above `120s`, rpcgw returns invalid request.
 
-## 3. External Web Clients
+## External Web Clients
 
 Requests to webgw may carry `vweb-trace`:
 
@@ -80,7 +80,7 @@ An explicit timeout still limits the total duration of the request or connection
 
 External clients should not rely on `vweb-actor` or `vweb-initiator`. webgw writes those headers for backend applications, and client-supplied values are not trusted.
 
-## 4. Reading Trace Id From Responses
+## Reading Trace Id From Responses
 
 Portal writes this response header:
 
@@ -92,7 +92,7 @@ Clients can log this value and use it for later investigation. It only contains 
 
 If the request carries a valid trace id, `portal-trace-id` usually returns the same id. If the trace header is missing or invalid, Portal may generate a new trace id or reject the request, depending on the gateway and validation rule.
 
-## 5. How Timeout Is Counted
+## How Timeout Is Counted
 
 Timeout starts when the request enters the gateway. It is not only applied to the final forward.
 
@@ -119,7 +119,7 @@ For ordinary Rpc/Web requests, Portal separates external client disconnects from
 
 If the request body has not been fully received, Portal or the downstream service can still fail while reading the body. That case is not treated as a complete business execution that has already started.
 
-## 6. Calling Downstream From Handlers
+## Calling Downstream From Handlers
 
 When a business handler calls Rpc, it usually does not need to set timeout manually. As long as the call uses the current injected context, the Rpc client reads the context deadline and writes the remaining time to `vrpc-options`.
 
@@ -140,7 +140,7 @@ If a handler replaces the current context with one that has no deadline, downstr
 
 The same applies to ordinary Web handlers. webgw applies `vweb-options` to the backend Web handler request context. If that handler calls Rpc, the remaining timeout continues as `vrpc-options`. SSE/WebSocket handler contexts without an explicit timeout have no total-duration deadline; Rpc calls made from them still use the Rpc default timeout unless application code supplies a context or timeout explicitly.
 
-## 7. What You Will See in an OTel Backend
+## What You Will See in an OTel Backend
 
 An Rpc request with auth/check roughly forms this tree:
 
@@ -168,7 +168,7 @@ incoming trace
 
 If the client only sends a trace id and no span, Portal creates an entry span. That span is only a parent anchor for the server-side tree and may not have matching client-side logs.
 
-## 8. How Vine Derives Spans Internally
+## How Vine Derives Spans Internally
 
 Vine uses `meta.Trace` for trace context:
 
@@ -201,7 +201,7 @@ incoming trace
 
 `ParentSpan()` only exists on the local trace object. It is useful for logs or future OTel mapping, but is not written into headers.
 
-## 9. Relationship With OTel
+## Relationship With OTel
 
 `meta.Trace` is not a full OTel span. It only creates and propagates:
 

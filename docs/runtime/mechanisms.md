@@ -2,7 +2,7 @@
 slug: /runtime-mechanisms
 ---
 
-# Component Runtime Mechanisms
+# Runtime Mechanisms
 
 Vine separates application capabilities into a control plane and a request plane. Hub stores desired state and registration data, Link connects applications and provides discovery and delivery, and Portal accepts external requests. Business code only needs to declare capabilities and implement handlers.
 

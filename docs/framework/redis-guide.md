@@ -2,7 +2,7 @@
 slug: /guide/redis
 ---
 
-# Using Redis
+# Redis
 
 The Redis component provides `go-redis` commands, type-safe caches, and distributed lockers. An application only needs to declare the endpoint and the Cache/Locker types it wants to inject.
 

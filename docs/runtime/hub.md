@@ -2,7 +2,7 @@
 slug: /hub
 ---
 
-# Hub Configuration and Service Registry
+# Hub
 
 Hub is the control plane of the Vine runtime. It stores configuration and registration data, then distributes runtime snapshots and change events to Link and Portal.
 

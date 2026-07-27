@@ -2,7 +2,7 @@
 slug: /filetree
 ---
 
-# Recommended Vine Project Structure
+# Project Structure
 
 Vine is a Go application framework. It does not require a project manifest or a fixed directory layout. A runnable Vine application is an ordinary Go module, and can be as small as this:
 

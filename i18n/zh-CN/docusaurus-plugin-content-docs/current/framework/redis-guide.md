@@ -2,7 +2,7 @@
 slug: /guide/redis
 ---
 
-# 使用 Redis
+# Redis
 
 Redis 组件提供 `go-redis` 命令、类型安全 Cache 和分布式 Locker。应用只需声明 endpoint 以及需要注入的 Cache/Locker 类型。
 

@@ -2,7 +2,7 @@
 slug: /getting-started
 ---
 
-# 开始使用 Vine
+# Vine 入门
 
 Vine 是一个面向 Go 应用的运行框架。它把应用生命周期、依赖注入、配置、Rpc、Web、事件、任务和基础设施组件放在同一套应用模型中，并通过 Hub、Link、Portal 支持从单进程开发平滑过渡到多进程部署。
 

@@ -2,7 +2,7 @@
 slug: /configuration
 ---
 
-# Application Configuration
+# Configuration
 
 Vine configuration is declared in `.skel`, stored by Hub, distributed by Link, and provided to the application through dependency injection. Applications do not need to poll the configuration center themselves.
 

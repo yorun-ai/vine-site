@@ -2,7 +2,7 @@
 slug: /components
 ---
 
-# Components and Modules
+# Components & Modules
 
 Components and modules split an application into functional units that can be initialized, injected, and stopped independently. Vine creates them and injects their dependencies when the application starts, then releases their resources in reverse order when the application stops.
 

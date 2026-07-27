@@ -2,7 +2,7 @@
 slug: /deployment-modes
 ---
 
-# 运行模式与部署拓扑
+# 运行与部署
 
 Vine 可按开发和生产需求选择不同的运行拓扑。区别不在业务应用的写法，而在 Hub、Portal、Link 和业务应用是否位于同一进程，以及组件之间使用 inproc 还是网络连接。
 
@@ -16,7 +16,7 @@ Vine 可按开发和生产需求选择不同的运行拓扑。区别不在业务
 
 无论选择哪种模式，业务应用的 `ApplicationSpec`、Rpc、Web、Event 和 Task 定义保持不变；改变的是启动入口和 endpoint 配置。
 
-## 1. Standalone
+## Standalone
 
 standalone 将 Hub、Portal、Link 和一个业务应用装配到同一进程：
 
@@ -44,7 +44,7 @@ standalone.NewWithOption[*HelloApp](standalone.Option{
 - Hub 和 Link 不开放独立管理端口；Portal 仍可按入口规则监听业务 HTTP/HTTPS 端口。
 - 不覆盖跨进程网络、服务单独重启等场景。
 
-## 2. Linked：Hub 与应用分开
+## Linked：Hub 与应用分开
 
 linked 模式将 Hub 与 Portal 作为独立 runtime 服务运行，而每个业务应用在自己的进程中携带一个 inproc Link：
 
@@ -81,7 +81,7 @@ linked.NewWithOption[*HelloApp](linked.Option{
 
 这种模式保留了独立 Hub 的配置、注册和租约语义，但 Link 与业务应用仍同时发布、同时停止。它适合不想额外维护 Link sidecar 的开发和部署环境。
 
-## 3. 分开部署：独立 runtime 与应用
+## 分开部署：独立 runtime 与应用
 
 在生产环境中，可将控制面、外部入口、应用侧接入层和业务应用完全拆开：
 
