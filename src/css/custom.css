@@ -769,6 +769,12 @@ html.docs-doc-page,
 }
 
 .theme-doc-sidebar-container {
+  --docs-sidebar-section-color: color-mix(
+    in srgb,
+    var(--foreground) 58%,
+    var(--muted-foreground)
+  );
+
   @apply border-r border-sidebar-border bg-card;
 }
 
@@ -884,7 +890,8 @@ html.docs-doc-page,
 .theme-doc-sidebar-container
   .theme-doc-sidebar-item-link-level-1
   > .menu__link {
-  @apply font-semibold text-foreground;
+  @apply font-semibold;
+  color: var(--docs-sidebar-section-color);
   padding-left: 0.25rem;
   font-size: 15px;
   line-height: 21px;
@@ -909,7 +916,8 @@ html.docs-doc-page,
 }
 
 .theme-doc-sidebar-container .menu__list-item-collapsible > .menu__link {
-  @apply pr-0 py-1.5 font-semibold normal-case text-foreground;
+  @apply pr-0 py-1.5 font-semibold normal-case;
+  color: var(--docs-sidebar-section-color);
   padding-left: 0.25rem;
   gap: 0;
   font-size: 15px;
@@ -938,7 +946,7 @@ html.docs-doc-page,
   .menu__list-item-collapsible
   > .menu__link--active {
   @apply font-semibold;
-  color: var(--foreground) !important;
+  color: var(--docs-sidebar-section-color) !important;
 }
 
 .theme-doc-sidebar-container
@@ -976,7 +984,7 @@ html.docs-doc-page,
 .theme-doc-sidebar-container
   .menu__list-item-collapsible:has(> .menu__link--active)
   > .menu__caret {
-  color: var(--foreground);
+  color: var(--docs-sidebar-section-color);
 }
 
 .theme-doc-sidebar-container .menu__caret::before,
