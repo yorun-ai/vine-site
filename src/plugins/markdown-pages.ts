@@ -1,4 +1,4 @@
-import {mkdir, readFile, writeFile} from 'node:fs/promises'
+import {mkdir, readFile, rm, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 import type {LoadContext, Plugin} from '@docusaurus/types'
 import type {
@@ -11,6 +11,11 @@ import {
   vineMechanisms,
   type LocalizedCopy,
 } from '../data/developerLanding'
+
+type DocusaurusWebpackConfig = Exclude<
+  ReturnType<NonNullable<Plugin['configureWebpack']>>,
+  void
+>
 
 function withoutFrontMatter(source: string): string {
   return source.replace(
@@ -128,16 +133,68 @@ function overviewMarkdown(
 }
 
 export default function markdownPagesPlugin({
+  baseUrl,
   siteDir,
   codeTranslations,
 }: LoadContext): Plugin {
   let docs: DocMetadata[] = []
+  const developmentOutputDir = path.join(
+    siteDir,
+    '.docusaurus',
+    'vine-markdown-pages',
+  )
+  const isDevelopment = process.env.NODE_ENV === 'development'
   const translate = (id: string, fallback: string) =>
     codeTranslations[id] ?? fallback
+  const markdownForDoc = async (doc: DocMetadata) =>
+    doc.id === 'index'
+      ? overviewMarkdown(translate)
+      : withoutFrontMatter(
+          await readFile(sourcePath(siteDir, doc.source), 'utf8'),
+        ).trim()
+  const writeMarkdownPages = async ({
+    outputBaseUrl,
+    outputDir,
+  }: {
+    outputBaseUrl: string
+    outputDir: string
+  }) => {
+    await Promise.all(
+      docs.map(async (doc) => {
+        const outputPath = markdownOutputPath({
+          baseUrl: outputBaseUrl,
+          outDir: outputDir,
+          permalink: doc.permalink,
+        })
+
+        await mkdir(path.dirname(outputPath), {recursive: true})
+        await writeFile(
+          outputPath,
+          `${await markdownForDoc(doc)}\n`,
+          'utf8',
+        )
+      }),
+    )
+  }
 
   return {
     name: 'vine-markdown-pages',
-    allContentLoaded({allContent}) {
+    configureWebpack() {
+      if (!isDevelopment) return {}
+
+      return {
+        devServer: {
+          static: [
+            {
+              directory: developmentOutputDir,
+              publicPath: baseUrl,
+              watch: false,
+            },
+          ],
+        },
+      } as DocusaurusWebpackConfig
+    },
+    async allContentLoaded({allContent}) {
       const docsContent = allContent[
         'docusaurus-plugin-content-docs'
       ]?.default as LoadedContent | undefined
@@ -145,29 +202,20 @@ export default function markdownPagesPlugin({
       docs =
         docsContent?.loadedVersions.flatMap((version) => version.docs) ??
         []
+
+      if (isDevelopment) {
+        await rm(developmentOutputDir, {force: true, recursive: true})
+        await writeMarkdownPages({
+          outputBaseUrl: baseUrl,
+          outputDir: developmentOutputDir,
+        })
+      }
     },
     async postBuild({baseUrl, outDir}) {
-      await Promise.all(
-        docs.map(async (doc) => {
-          const markdown =
-            doc.id === 'index'
-              ? overviewMarkdown(translate)
-              : withoutFrontMatter(
-                  await readFile(
-                    sourcePath(siteDir, doc.source),
-                    'utf8',
-                  ),
-                ).trim()
-          const outputPath = markdownOutputPath({
-            baseUrl,
-            outDir,
-            permalink: doc.permalink,
-          })
-
-          await mkdir(path.dirname(outputPath), {recursive: true})
-          await writeFile(outputPath, `${markdown}\n`, 'utf8')
-        }),
-      )
+      await writeMarkdownPages({
+        outputBaseUrl: baseUrl,
+        outputDir: outDir,
+      })
     },
   }
 }
