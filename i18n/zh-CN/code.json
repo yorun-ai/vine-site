@@ -556,5 +556,8 @@
   },
   "homepage.status.production": {
     "message": "上线检查"
+  },
+  "vine.navbar.mobileMenu.ariaLabel": {
+    "message": "打开文档菜单"
   }
 }
