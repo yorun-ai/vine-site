@@ -3,7 +3,7 @@ slug: /link
 sidebar_label: Link 运行时
 ---
 
-# Link
+# Link 运行时
 
 Link 是部署在应用侧的 runtime 接入层。它将本地应用注册到 Hub，维护配置和服务发现，并为 Rpc、Web、事件和任务提供统一的运行时能力。
 

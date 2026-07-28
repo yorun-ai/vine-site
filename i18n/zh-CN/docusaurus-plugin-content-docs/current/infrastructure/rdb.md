@@ -3,7 +3,7 @@ slug: /rdb
 sidebar_label: 数据库 API
 ---
 
-# RDB API
+# 数据库 API
 
 把数据库接进应用时，先看[使用关系型数据库](../framework/rdb-guide.md)。需要确认连接
 共享、模型语义以及 `Dao`、`Query` 的精确行为时，再查这里的 `infra/rdb` API。

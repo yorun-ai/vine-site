@@ -3,7 +3,7 @@ slug: /deployment-modes
 sidebar_label: 部署
 ---
 
-# 运行与部署
+# 部署
 
 Vine 可按开发和生产需求选择不同的运行拓扑。区别不在业务应用的写法，而在 Hub、Portal、Link 和业务应用是否位于同一进程，以及组件之间使用 inproc 还是网络连接。
 

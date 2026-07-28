@@ -3,7 +3,7 @@ slug: /guide/rpc
 sidebar_label: Rpc 服务
 ---
 
-# Rpc
+# Rpc 服务
 
 Vine Rpc 的常规工作流是：在 Skel 中声明服务，由 skelc 生成接口，实现服务端，然后在 App 中注册 handler。业务代码通常不需要手工构造底层 `ServiceSpec`。
 

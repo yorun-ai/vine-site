@@ -3,7 +3,7 @@ slug: /web
 sidebar_label: Web Apps
 ---
 
-# Web
+# Web Apps
 
 The Web capability registers HTTP routes, static assets, or reverse-proxy endpoints for an application. `.skel` declares the Web name and Actors allowed to access it, while Go handlers define the actual routes.
 

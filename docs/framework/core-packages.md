@@ -1,11 +1,11 @@
 ---
 slug: /core-packages
-title: Public Package Map
+title: Public Packages
 sidebar_label: Public Packages
 description: The supported Vine package for each application task and the boundary for lower-level APIs.
 ---
 
-# Public Package Map
+# Public Packages
 
 Vine keeps its public Go boundary in facade packages. Application code usually
 starts with `app` and generated contract types, then imports a `core/*` or

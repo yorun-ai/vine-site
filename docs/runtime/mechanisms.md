@@ -1,11 +1,11 @@
 ---
 slug: /runtime-mechanisms
-title: Runtime Architecture
+title: Architecture
 sidebar_label: Architecture
 description: How Vine turns application declarations into configuration, discovery, routing, and delivery behavior.
 ---
 
-# Runtime Architecture
+# Architecture
 
 Vine keeps business code separate from the runtime that makes it reachable. An
 application declares typed capabilities; Link turns those declarations into

@@ -3,7 +3,7 @@ slug: /rdb
 sidebar_label: Database API
 ---
 
-# RDB API
+# Database API
 
 Start with [Using Relational Databases](../framework/rdb-guide.md) to add a
 database to an application. Use this reference for connection sharing, model

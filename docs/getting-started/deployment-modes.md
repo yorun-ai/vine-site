@@ -3,7 +3,7 @@ slug: /deployment-modes
 sidebar_label: Deployment
 ---
 
-# Runtime & Deployment
+# Deployment
 
 Vine supports different runtime topologies for development and production. The business application code remains the same; the difference is whether Hub, Portal, Link, and the business application run in the same process, and whether components communicate through inproc or network connections.
 

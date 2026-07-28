@@ -1,5 +1,5 @@
 ---
-title: 生产就绪清单
+title: 上线检查
 sidebar_label: 上线检查
 description: Vine 生产部署需要确认的边界与验证项。
 slug: /production-readiness

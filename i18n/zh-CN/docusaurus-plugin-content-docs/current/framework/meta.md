@@ -3,7 +3,7 @@ slug: /meta
 sidebar_label: 上下文与身份
 ---
 
-# 上下文与身份（Meta）
+# 上下文与身份
 
 Rpc、Web、Event 和 Task 的处理代码都需要知道“这次调用从哪里来、由谁发起、属于哪条调用链”。`core/meta` 用一组统一对象表达这些信息：
 

@@ -1,11 +1,11 @@
 ---
 slug: /getting-started
-title: 快速开始
+title: 从这里开始
 sidebar_label: 从这里开始
 description: 第一个 Vine 应用、主要能力入口，以及随后需要理解的运行时边界。
 ---
 
-# 快速开始
+# 从这里开始
 
 Vine 用一套 Go 应用模型组织生命周期、依赖注入、配置、Rpc、Web、Event、
 Task、Redis 和关系型数据库。刚开始时，把 Hub、Link、Portal 和业务应用都放在

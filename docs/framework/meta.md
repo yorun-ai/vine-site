@@ -3,7 +3,7 @@ slug: /meta
 sidebar_label: Context & Identity
 ---
 
-# Context & Identity (Meta)
+# Context & Identity
 
 Rpc, Web, Event, and Task handlers all need to know where a call came from, who initiated it, and which call chain it belongs to. `core/meta` represents this information through a consistent set of objects:
 

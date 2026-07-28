@@ -3,7 +3,7 @@ slug: /di
 sidebar_label: Dependency Injection
 ---
 
-# Dependency Injection (DI)
+# Dependency Injection
 
 Vine creates modules, handlers, listeners, and runners through DI. Start with
 `inject:""` fields. Add a binding when an interface needs an implementation,
