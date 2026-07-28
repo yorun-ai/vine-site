@@ -9,6 +9,7 @@ import process from 'node:process'
 import {fileURLToPath} from 'node:url'
 
 const siteDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const siteName = path.basename(siteDir)
 const docusaurusBin = path.join(
   siteDir,
   'node_modules',
@@ -77,7 +78,7 @@ const assertPortAvailable = (host, port) =>
 
 const createIsolatedSite = async (locale) => {
   const isolatedSiteDir = await mkdtemp(
-    path.join(tmpdir(), `vine-site-dev-${locale}-`),
+    path.join(tmpdir(), `${siteName}-dev-${locale}-`),
   )
   const entries = await readdir(siteDir, {withFileTypes: true})
 
@@ -308,8 +309,8 @@ try {
         cwd: isolatedSiteDir,
         env: {
           ...process.env,
-          VINE_DEV_LOCALE: locale,
-          VINE_MULTILINGUAL_DEV: '1',
+          YORUN_DEV_LOCALE: locale,
+          YORUN_MULTILINGUAL_DEV: '1',
         },
         stdio: 'inherit',
       },
@@ -338,7 +339,7 @@ try {
     proxyRequest(request, response, targetPort)
   })
   server.on('upgrade', (request, socket, head) => {
-    const targetPort = request.url?.startsWith('/__vine_hmr_zh_CN')
+    const targetPort = request.url?.startsWith('/__yorun_hmr_zh_CN')
       ? zhPort
       : enPort
     proxyUpgrade(request, socket, head, targetPort)
@@ -353,7 +354,7 @@ try {
         ? 'localhost'
         : options.host
     console.log(
-      `\nBilingual Vine development server: http://${displayHost}:${options.port}/`,
+      `\nBilingual development server: http://${displayHost}:${options.port}/`,
     )
   })
 } catch (error) {

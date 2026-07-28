@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url'
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const projectDir = path.resolve(scriptDir, '..')
 const temporarySiteDir = await mkdtemp(
-  path.join(tmpdir(), 'vine-site-build-'),
+  path.join(tmpdir(), `${path.basename(projectDir)}-build-`),
 )
 const excludedTopLevelEntries = new Set([
   '.docusaurus',
