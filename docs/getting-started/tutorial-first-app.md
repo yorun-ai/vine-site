@@ -4,7 +4,7 @@ sidebar_label: First Application
 slug: /tutorial-first-app
 ---
 
-# First Vine Application
+# First Application
 
 The quickest way to see Vine run is standalone mode: Hub, Portal, Link, and the
 business application start in one process. The small application below has no

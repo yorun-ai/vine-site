@@ -3,7 +3,7 @@ slug: /ctr
 sidebar_label: 容器与过滤器
 ---
 
-# 容器与过滤器（CTR）
+# 容器与过滤器
 
 Vine 的 Rpc、Web、Event 和 Task handler 都通过执行容器调用。容器为每次调用创建 execution，准备依赖与上下文，按顺序执行 filters，最后调用目标方法。
 

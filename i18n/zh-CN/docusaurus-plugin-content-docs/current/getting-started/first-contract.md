@@ -3,7 +3,7 @@ slug: /first-skel-contract
 sidebar_label: 第一个契约
 ---
 
-# 第一个 Skel 契约
+# 第一个契约
 
 下面定义一个 Greeting 服务，校验契约，并生成对应的 Go 类型、服务端接口和
 客户端。这里先不实现 Vine handler；生成完成后可直接接着阅读

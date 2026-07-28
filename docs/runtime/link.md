@@ -3,7 +3,7 @@ slug: /link
 sidebar_label: Link Runtime
 ---
 
-# Link
+# Link Runtime
 
 Link is the runtime access layer deployed alongside applications. It registers local applications with Hub, maintains configuration and service-discovery state, and provides unified runtime capabilities for Rpc, Web, events, and tasks.
 

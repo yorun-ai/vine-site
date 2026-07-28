@@ -4,7 +4,7 @@ sidebar_label: 第一个应用
 slug: /tutorial-first-app
 ---
 
-# 第一个 Vine 应用
+# 第一个应用
 
 最快看到 Vine 跑起来的方式是 standalone：Hub、Portal、Link 和业务应用都在
 同一进程启动。下面的应用暂时没有业务入口，只用来验证应用装配、module

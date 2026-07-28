@@ -1,5 +1,5 @@
 ---
-title: Production Readiness Checklist
+title: Production Checks
 sidebar_label: Production Checks
 description: Production boundaries and verification checks for a Vine deployment.
 slug: /production-readiness

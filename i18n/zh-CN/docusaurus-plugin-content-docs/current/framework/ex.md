@@ -3,7 +3,7 @@ slug: /ex
 sidebar_label: 错误处理
 ---
 
-# 错误（EX）
+# 错误处理
 
 Vine 使用 `core/ex` 在 Rpc、Web、Event、Task 和业务代码之间传递稳定的错误码。调用方可以按 `Code` 处理错误，日志仍能保留 message、reason、detail 和原始 cause。
 

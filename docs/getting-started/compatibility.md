@@ -1,5 +1,5 @@
 ---
-title: Version Compatibility
+title: Compatibility
 sidebar_label: Compatibility
 description: Compatibility and pinning rules for Vine, Go, and skelc.
 slug: /compatibility

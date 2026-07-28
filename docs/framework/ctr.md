@@ -3,7 +3,7 @@ slug: /ctr
 sidebar_label: Containers & Filters
 ---
 
-# Containers & Filters (CTR)
+# Containers & Filters
 
 Vine invokes Rpc, Web, Event, and Task handlers through an execution container. For each call, the container creates an execution, prepares dependencies and context, runs filters in order, and finally invokes the target method.
 

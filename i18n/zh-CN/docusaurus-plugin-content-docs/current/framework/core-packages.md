@@ -1,11 +1,11 @@
 ---
 slug: /core-packages
-title: 公共 Package 导航
+title: 公共 Package
 sidebar_label: 公共 Package
 description: 应用任务对应的 Vine package，以及底层 API 的使用边界。
 ---
 
-# 公共 Package 导航
+# 公共 Package
 
 Vine 用 facade package 保持公共 Go API 的边界。应用代码通常从 `app` 和生成的
 contract 类型开始，只为实际使用的能力引入对应的 `core/*` 或 `infra/*` package。

@@ -3,7 +3,7 @@ slug: /application-lifecycle
 sidebar_label: Lifecycle
 ---
 
-# Application Lifecycle
+# Lifecycle
 
 Vine applications have two setup moments: construction with `New(...)` and
 activation with `Start()`. Construction is not lazy, while most of the

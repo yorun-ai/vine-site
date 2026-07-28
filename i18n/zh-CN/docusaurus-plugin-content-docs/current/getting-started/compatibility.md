@@ -1,5 +1,5 @@
 ---
-title: 版本兼容性
+title: 兼容性
 sidebar_label: 兼容性
 description: Vine、Go 与 skelc 的兼容和版本固定规则。
 slug: /compatibility

@@ -3,7 +3,7 @@ slug: /request-routing
 sidebar_label: 路由与就绪
 ---
 
-# 请求路由与就绪状态
+# 路由与就绪
 
 Vine 根据能力声明路由，而不是让业务代码写死地址。应用发布自己能够处理的
 Rpc service 和 Web handler；Hub 分发注册状态；Link 与 Portal 在本地维护快照，
