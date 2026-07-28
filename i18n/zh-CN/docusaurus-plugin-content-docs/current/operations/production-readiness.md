@@ -1,13 +1,13 @@
 ---
 title: 生产就绪清单
 sidebar_label: 上线检查
-description: 在不假设当前 runtime 尚未提供的能力的前提下，准备 Vine 生产部署。
+description: Vine 生产部署需要确认的边界与验证项。
 slug: /production-readiness
 ---
 
-应用在 standalone 模式正常工作后、提升 linked 或分开部署到生产环境前，请
-使用这份清单。它覆盖 Vine `v0.10.0` 和当前源码已经具备的行为。standalone
-测试通过并不能证明分布式故障处理正确。
+应用在 standalone 模式下能够工作，只说明业务装配已经跑通，并不能证明分布式部署
+可靠。进入 linked 或分离拓扑之前，应按实际准备部署的 Vine revision，逐项验证下面的
+进程、网络、持久化、交付和停止边界。
 
 ## 选择部署拓扑
 
@@ -38,8 +38,8 @@ vine version --json
 skelc version
 ```
 
-当前稳定基线是 Vine `v0.10.0`、Go `1.26.5` 或更高，以及最低
-`v0.9.0` 的 skelc。完整矩阵和固定命令见
+当前 Vine 源码要求 Go `1.26.5` 或更高，并报告最低 skelc 版本 `v0.9.0`。`next`
+并不是冻结的发行版；如何记录部署实际使用的 revision，见
 [版本兼容性](../getting-started/compatibility.md)。
 
 ## 保护运行时网络
@@ -130,8 +130,8 @@ standalone/inproc 模式下，注册信息会保留到显式 unregister。此时
 heartbeat、租约过期扫描或本地应用健康检查，因此 standalone 测试通过并
 不能证明分布式存活机制正确。
 
-在 `v0.10.0` 和当前源码中，独立运行的 Link 每 5 秒检查一次应用，console
-ping 的 timeout 是 2 秒；连续三次发生非 timeout 失败后，Link 会注销应用。
+在当前源码中，独立运行的 Link 每 5 秒检查一次应用，console ping 的 timeout
+是 2 秒；连续三次发生非 timeout 失败后，Link 会注销应用。
 调用 timeout 只会写入日志，不会增加该失败计数。Hub 租约为 30 秒，sweeper
 每 5 秒运行一次。这些时间是当前实现常量，不是 CLI 调优参数。应分别测试
 无响应应用和已停止进程：应用卡住时，Link 仍可能继续续订它在 Hub 中的

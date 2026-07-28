@@ -408,7 +408,7 @@ func Handle() (err ex.Error) {
 }
 ```
 
-## Recommendations
+## Error-boundary rules
 
 - Use `ApplicationError` for expected business failures.
 - Use existing system-level codes for framework, call-chain, and fallback failures.

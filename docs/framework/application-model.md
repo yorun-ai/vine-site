@@ -5,7 +5,9 @@ sidebar_label: Application Model
 
 # Application Model
 
-A Vine App is the entry point of a business process. It gives the application a stable name, declares the components and modules it needs, and selects standalone, linked, or fully separated deployment.
+A Vine App is the unit the runtime starts, registers, and stops. Its
+specification supplies a stable name and declares the components, modules, and
+capabilities that belong to that application.
 
 ## Minimal application
 

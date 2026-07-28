@@ -1,71 +1,70 @@
 ---
 title: 版本兼容性
 sidebar_label: 兼容性
-description: 为开发与生产选择相互兼容的 Vine、Go 和 skelc 版本。
+description: Vine、Go 与 skelc 的兼容和版本固定规则。
 slug: /compatibility
 ---
 
-Vine 应用依赖三个带版本的输入：Go 工具链、`go.yorun.ai/vine` module，
-以及生成契约代码的 `skelc` 版本。为了让构建可复现，应固定三者的版本。
+一份 Vine 构建由三个版本共同决定：Go、`go.yorun.ai/vine`，以及生成契约代码的
+`skelc`。三者都应留下明确记录。只升级其中一个，可能导致仓库里的生成代码与
+runtime 不一致。
 
-:::warning 1.0 之前只维护 `next` 文档流
+:::warning 1.0 之前的 `next`
 
-这些页面跟随 Vine 当前源码，可能先于最新发行版变化。Vine 不会为每个 1.0
-之前的版本分别维护文档快照；版本化文档将从 `v1.0.0` 开始。
+本站跟随 Vine 当前源码，内容可能比最新发行版更靠前；`v1.0.0` 之前不提供
+逐版本文档快照。
 
-1.0 之前用于生产环境时，应将 module 与工具固定到精确的发行 tag；如果某个
-行为只出现在 `next`，依赖它之前应使用对应 tag 的源码核对并完成测试。
+发布应用时，请固定精确 commit 或 tag。`next` 与所选版本不一致时，以该 revision
+的源码为准。
 
 :::
 
-## 选择文档版本
-
-评估当前源码或参与 Vine 开发时使用 `next`。版本化文档从 `v1.0.0` 开始；
-在此之前，生产基线应使用精确发行 tag 及其源码。
-
-| 使用场景 | Vine 源码 | 文档 | 建议 |
-| --- | --- | --- | --- |
-| 生产环境 | 经过审查的精确发行 tag | `Vine next` 与所选 tag 的源码 | 固定所有工具和 module，并用该 tag 核对文档行为 |
-| 当前源码开发 | 当前 Vine checkout | `Vine next` | 依赖示例前，先用同一个 checkout 验证 |
+## 1.0 之前如何使用文档
 
 Vine 目前仍处于 1.0 之前。同一个 minor 版本线内的 patch 版本以保持向后
 兼容为目标，而新的 minor 版本可能修改公共 API、CLI 行为、配置、Skel
-集成或协议。精确固定版本可以让这些升级显式发生。
+集成或协议。
 
-## 当前兼容矩阵
+- 基于当前源码开发：使用 `next`，并与同一个 Vine checkout 对照。
+- 基于发行版构建：固定发行 tag，API 有差异时查看该 tag 的源码。
+- 执行升级：在同一次审查中更新 Vine、skelc 和生成代码。
 
-| Vine | Go | 最低 skelc | 建议固定的 skelc |
+## 当前源码要求
+
+| Vine 文档 | Go | 最低 skelc | 应使用的 skelc |
 | --- | --- | --- | --- |
-| `v0.10.0` | `1.26.5` 或更高 | `v0.9.0` | `v0.10.0` |
-| 当前源码 / `Vine next` | `1.26.5` 或更高 | `v0.9.0` | 使用与当前 checkout 一起审查过的精确 skelc 版本 |
+| 当前源码 / `next` | `1.26.5` 或更高 | `v0.9.0` | 与应用一起审查过的精确 revision |
 
-Vine `v0.10.0` 和当前源码报告的最低版本都是 `v0.9.0`，这个值来自
-`core/skel.MinSkelcVersion()`。这是下限，不代表可以不固定 compiler
-版本。生成的 schema 会记录 compiler 版本；如果版本缺失或低于 runtime
-要求，Vine 会拒绝注册该 schema。
+当前 Vine 源码通过 `core/skel.MinSkelcVersion()` 报告最低版本 `v0.9.0`。
+这是兼容下限，不是版本选择策略。生成的 schema 会记录 compiler 版本；如果版本缺失
+或低于 runtime 要求，Vine 会拒绝注册该 schema。
 
 runtime 检查没有为未来的 skelc 版本定义兼容上限。请固定已经在应用中完成
 生成、审查和测试的版本。
 
-## 固定生产工具链
+## 固定经过审查的工具链
 
-对于当前稳定发行版，固定构建 toolchain、module 和安装工具：
+教程使用 `main`，因为本站描述的是当前源码。CI 或正式发布时，应把下面两个值换成
+经过审查的 commit hash 或 tag：
 
 ```bash
-go mod edit -go=1.26.5 -toolchain=go1.26.5
-go get go.yorun.ai/vine@v0.10.0
+VINE_REVISION=main
+SKELC_REVISION=main
 
-go install go.yorun.ai/vine/cmd/vine@v0.10.0
-go install go.yorun.ai/skelc/cmd/skelc@v0.10.0
+go mod edit -go=1.26.5 -toolchain=go1.26.5
+go get go.yorun.ai/vine@"$VINE_REVISION"
+
+go install go.yorun.ai/vine/cmd/vine@"$VINE_REVISION"
+go install go.yorun.ai/skelc/cmd/skelc@"$SKELC_REVISION"
 ```
 
 `go` directive 记录预期的语言版本，`toolchain` directive 请求使用指定
 compiler。同时还应固定 CI image 或 toolchain 安装，因为已经更新的默认
 toolchain 仍可能被选中。提交 `go.mod`、`go.sum`、Skel 源文件和生成代码的
-变更。生产构建流水线不要使用 `@latest`，因为它会在应用源码未变化时改变
-实际解析出的工具版本。
+变更。生产构建流水线不要保留 `main` 或 `@latest`；即使应用仓库没有变更，它们
+也可能解析到新的代码。
 
-### 核对已安装工具
+### 核对 CI 实际使用的工具
 
 ```bash
 go version
@@ -100,7 +99,7 @@ func main() {
 }
 ```
 
-对于 Vine `v0.10.0` 和当前源码，输出为：
+当前 Vine 源码的输出是：
 
 ```text
 v0.9.0
@@ -110,9 +109,9 @@ v0.9.0
 schema 仍然是最终的 runtime 检查，因此修改 Vine 或 skelc 版本后都要重新
 生成并测试应用。
 
-## 升级时避免混用版本
+## 将整套版本一起升级
 
-每次升级都应：
+升级时：
 
 1. 在一个便于审查的分支中同时修改固定的 Vine 与 skelc 版本。
 2. 确认所选 Vine module 要求的 Go 版本。

@@ -10,10 +10,10 @@ code. An application publishes the Rpc services and Web handlers it can serve;
 Hub distributes that registration state; Link and Portal keep local snapshots
 and select an instance for each request.
 
-This page explains when a new instance becomes routable, how internal and
-external requests reach it, and what graceful shutdown can guarantee.
+The important boundary is registration: listening is local process state;
+being routable means the caller's Link or Portal has observed the registration.
 
-## The Four Runtime Roles
+## The four runtime roles
 
 | Runtime | Owns | Does not own |
 | --- | --- | --- |
@@ -26,7 +26,7 @@ The snapshots in Link and Portal are derived state. They update after Hub
 publishes a registration change, so separate processes converge asynchronously
 rather than through one global routing table.
 
-## Registration Is the Routing Boundary
+## Registration is the routing boundary
 
 An App starts its handlers before it advertises them. Its normal startup path
 is:
@@ -67,7 +67,7 @@ available endpoint, or a snapshot that still contains a departing endpoint.
 Treat availability errors as an expected distributed-system boundary and retry
 only when the operation is safe to repeat.
 
-## Application-to-Application Rpc
+## Application-to-application Rpc
 
 A generated Rpc client calls the caller's local Link. That Link chooses one
 currently known registration for the service:
@@ -85,7 +85,7 @@ For a local target, Link forwards directly to the App endpoint. For a remote
 target, it forwards through the target Link, which verifies the instance and
 service before invoking the App.
 
-### Instance Selection
+### Instance selection
 
 Selection is round-robin within the calling Link's current service snapshot.
 The behavior is deliberately simple:
@@ -106,7 +106,7 @@ Application-level retry therefore needs an explicit deadline and idempotency
 decision. A read may be safe to retry; a payment, email, or state transition
 usually needs an idempotency key or a query-before-retry design.
 
-## External Rpc and Web Requests
+## External Rpc and Web requests
 
 External requests enter through Portal. They do not first use an arbitrary
 business application's outbound Link.
@@ -147,7 +147,7 @@ entry path: that endpoint expects Vine's internal Web metadata headers.
 Portal uses a local round-robin cursor for Rpc and Web endpoints. Like Link, it
 does not add weights, circuit breaking, or automatic same-request failover.
 
-## Graceful Shutdown and Drain
+## Graceful shutdown and drain
 
 Graceful App shutdown removes discovery before closing the App server:
 
@@ -187,7 +187,7 @@ The `linked` and `standalone` wrappers already stop business Apps before their
 in-process Link. In a separated deployment, preserve that ordering in the
 process supervisor.
 
-## Standalone and In-Process Routing
+## Standalone and in-process routing
 
 Standalone keeps the registration, snapshot, proxy, round-robin, metadata, and
 serialization boundaries. Calls still pass through Link's routing logic, and
@@ -211,7 +211,7 @@ network timeout. It does not prove that such a handler has stopped.
 Use standalone for fast integration tests. Use linked or fully separated
 processes for liveness, lease, network, TLS, and restart exercises.
 
-## Readiness Checklist
+## Before marking an instance ready
 
 Before declaring a deployment ready, verify:
 

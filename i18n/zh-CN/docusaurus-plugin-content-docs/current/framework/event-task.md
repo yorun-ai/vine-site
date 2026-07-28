@@ -317,9 +317,7 @@ Event 与 Task 消息不会携带完整的同步请求 context：
 如果业务日程需要日历规则、严格时区治理、misfire policy、执行历史或运营人员
 控制的回放，应使用专门 scheduler/workflow 系统，再由它启动 Vine Task。
 
-## 生产检查清单
-
-依赖 Event 或 Task 前，应确认：
+## 依赖 Event 或 Task 之前
 
 - 契约中包含稳定业务标识。
 - 接收方应按 App 名各收一份，还是全局竞争。

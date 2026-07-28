@@ -5,7 +5,7 @@ sidebar_label: Vine CLI
 
 # Vine CLI
 
-`vine` 是 Vine 的命令行入口，包含运行时服务和版本信息。
+使用 `vine` 命令启动 Hub、Link 或 Portal，也可以查看当前 binary 的构建版本。
 
 - `hub` / `link` / `portal`：启动 Vine 运行时基础服务
 - `version`：查看当前 CLI 版本
@@ -25,10 +25,10 @@ vine hub serve --help
 
 ## 安装与版本
 
-从已发布版本安装：
+安装 `next` 当前描述的源码版本：
 
 ```bash
-go install go.yorun.ai/vine/cmd/vine@v0.10.0
+go install go.yorun.ai/vine/cmd/vine@main
 ```
 
 确认安装结果：
@@ -38,8 +38,8 @@ which vine
 vine version
 ```
 
-CLI 应与应用 module 固定到同一个经过审查的发行版。升级前请查看
-[版本兼容性](./compatibility.md)。
+正式发布应用时，应把 `main` 换成与应用 module 相同、经过审查的 commit 或 tag。
+升级前先看[版本兼容性](./compatibility.md)。
 
 ## hub
 
@@ -119,7 +119,8 @@ vine hub serve \
 
 ## link
 
-`link` 是应用侧 sidecar mesh，负责连接 hub、提供 ingress，并注册当前应用能力。
+`link` 是应用侧运行时，负责连接 Hub、接收 Portal 或其他 Link 的 ingress，并注册
+它所管理的应用能力。
 
 启动 link：
 

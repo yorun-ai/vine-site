@@ -5,18 +5,22 @@ sidebar_label: First Contract
 
 # First Skel Contract
 
-In this tutorial, you will define a Greeting service and use `skelc` to validate it and generate Go code. When you finish, you will have a type-safe server interface and client.
+Begin with one Greeting service. `skelc` checks the contract and generates its
+Go types, server interface, and client. The generated code is the handoff point
+to the [Rpc guide](../framework/rpc-guide.md), where the Vine handler is
+implemented.
 
 ## Install skelc
 
 ```bash
-go install go.yorun.ai/skelc/cmd/skelc@v0.10.0
+go install go.yorun.ai/skelc/cmd/skelc@main
 skelc version
 ```
 
-This tutorial pins the generator so that its output is reproducible. Check
-[Version Compatibility](./compatibility.md) before changing Vine, Go, or
-`skelc`.
+`@main` keeps this example aligned with the `next` documentation. A released
+application should install a reviewed commit or tag instead, record the
+selected `skelc version`, and regenerate contracts only as an explicit change.
+See [Version Compatibility](./compatibility.md).
 
 ## Create the Contract Directory
 
@@ -86,13 +90,12 @@ skelc gen go \
   --go-out ./skeled
 ```
 
-The output directory contains data models, schemas, and service code. Implement
-the server with the generated `GreetingServiceServer` interface, and make calls
-with the generated client. When the implementation is outside the generated
-package, embed `DefaultGreetingServiceServer`; the interface includes a
-package-private seal method and cannot be implemented directly from another
-package. Generated files are updated the next time the command runs, so do not
-edit them manually.
+The output directory contains data models, schemas, and service code. A server
+implementation outside the generated package must embed
+`DefaultGreetingServiceServer`: the generated interface has a package-private
+seal method, so another package cannot implement it from scratch. Calls use the
+generated client. Regeneration replaces these files; make contract changes in
+`.skel`, not in the generated Go.
 
 ```mermaid
 flowchart LR

@@ -39,10 +39,11 @@ pnpm build
 
 ## 版本管理
 
-Vine 文档版本跟随 Vine 发布：
+Vine 1.0 之前，站点只维护当前的 `next` 文档；版本快照从 `v1.0.0` 开始。
+发布维护者可使用以下命令创建快照：
 
 ```bash
-pnpm docusaurus docs:version 0.10.0
+pnpm docusaurus docs:version 1.0.0
 ```
 
 不要手工修改生成的版本快照。

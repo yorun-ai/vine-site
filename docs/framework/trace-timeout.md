@@ -124,14 +124,14 @@ If the request body has not been fully received, Portal or the downstream servic
 
 When a business handler calls Rpc, it usually does not need to set timeout manually. As long as the call uses the current injected context, the Rpc client reads the context deadline and writes the remaining time to `vrpc-options`.
 
-Recommended:
+Keep the injected context:
 
 ```go
 // Use the current injected client/context for downstream Rpc calls.
 result := h.SomeClient.DoSomething(...)
 ```
 
-Avoid:
+This breaks propagation:
 
 ```go
 ctx := context.Background()

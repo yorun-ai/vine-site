@@ -1,14 +1,14 @@
 ---
 title: Production Readiness Checklist
 sidebar_label: Production Checks
-description: Prepare a Vine deployment for production without assuming capabilities the current runtime does not provide.
+description: Production boundaries and verification checks for a Vine deployment.
 slug: /production-readiness
 ---
 
-Use this checklist after the application works in standalone mode and before
-promoting a linked or separated deployment. It covers behavior available in
-Vine `v0.10.0` and the current source. It does not turn standalone tests into
-evidence for distributed failure handling.
+An application working in standalone mode has proved its business assembly,
+not its distributed deployment. Before promoting a linked or separated
+topology, verify the process, network, persistence, delivery, and shutdown
+boundaries below against the Vine revision you will actually deploy.
 
 ## Choose a deployment topology
 
@@ -41,10 +41,10 @@ vine version --json
 skelc version
 ```
 
-The current stable baseline is Vine `v0.10.0`, Go `1.26.5` or later, and a
-minimum skelc version of `v0.9.0`. See
-[Version Compatibility](../getting-started/compatibility.md) for the complete matrix and
-pinning commands.
+Current Vine source requires Go `1.26.5` or later and reports a minimum skelc
+version of `v0.9.0`. The `next` site does not represent a frozen release;
+[Version Compatibility](../getting-started/compatibility.md) explains how to
+record the exact revisions used by a deployment.
 
 ## Secure the runtime network
 
@@ -146,8 +146,8 @@ In standalone/inproc mode, registration remains until explicit unregister.
 There is no heartbeat, lease-expiry sweep, or local application health check,
 so a passing standalone test does not validate distributed liveness.
 
-In `v0.10.0` and the current source, a separately running Link checks each
-application every 5 seconds with a 2-second console-ping timeout and
+In the current source, a separately running Link checks each application every
+5 seconds with a 2-second console-ping timeout and
 unregisters it after three consecutive non-timeout failures. Invocation
 timeouts are logged but do not increment that failure count. Hub leases last
 30 seconds and the sweeper runs every 5 seconds. These timings are current

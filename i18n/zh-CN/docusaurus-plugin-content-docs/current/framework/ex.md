@@ -420,7 +420,7 @@ func Handle() (err ex.Error) {
 }
 ```
 
-## 使用建议
+## 错误边界规则
 
 - 业务可预期失败优先使用 `ApplicationError`
 - 框架层、调用链、兜底异常优先使用已有系统级 `Code`

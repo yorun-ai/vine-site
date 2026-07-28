@@ -5,7 +5,9 @@ sidebar_label: Redis API
 
 # Redis API
 
-For day-to-day integration, start with [Using Redis](../framework/redis-guide.md). This page documents the complete configuration, dependency injection, Cache, and Locker APIs provided by `infra/redis`.
+Start with [Using Redis](../framework/redis-guide.md) to add Redis to an
+application. Use this reference for the exact component, Cache, Locker, and
+lock-invalidation behavior exposed by `infra/redis`.
 
 The top-level `infra/redis` package exposes public types including `Option`, `TypeAdder`, `RedisSpec`, `Redis`, `Locker`, `Lock`, `Cache[T]`, and `NewCache[T](...)`.
 
@@ -493,7 +495,7 @@ The default `KeyPrefix()` rules match those for `Locker`:
 - By default, every cache type receives a unique prefix derived from its fully qualified type name.
 - To let multiple cache types share the same Redis keys, explicitly override `KeyPrefix()` and return the same value from each type.
 
-## Recommendations
+## Cache and lock rules
 
 - Embed `redis.Redis` consistently in Redis components.
 - Prefer injectable lockers for stable key prefixes.

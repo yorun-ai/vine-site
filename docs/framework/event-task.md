@@ -23,7 +23,7 @@ An Event is not a broadcast to every process. A Task is not addressed to the
 App that launched it. Choose based on these delivery groups, not only on the
 method name.
 
-## Enable the Capabilities
+## Enable the capabilities
 
 An App that listens for Events or runs Tasks embeds the corresponding enabled
 types:
@@ -43,7 +43,7 @@ func (*DemoApp) Name() string {
 The embedded types provide no-op defaults. Override only the registration and
 binding methods that the App needs.
 
-## Define and Generate the Contracts
+## Define and generate the contracts
 
 This contract includes business identifiers that consumers can use for
 idempotency:
@@ -79,7 +79,7 @@ launcher/runner pair for the Task. Do not edit generated files.
 
 ## Publish an Event
 
-### Register a Listener
+### Register a listener
 
 Embed the generated default listener and implement its method:
 
@@ -105,7 +105,7 @@ func (*DemoApp) EventerInitListeners(add app.ListenerTypeAdder) {
 Without options, one registered listener uses a 30-second attempt timeout,
 allows 10 concurrent executions, and retries failures.
 
-### Emit From Business Code
+### Emit from business code
 
 Inject the generated emitter. The method returns after Link has accepted and
 published the message, not after listeners finish:
@@ -130,7 +130,7 @@ flowchart LR
   Stream --> GroupB["Consumer: event + App B name"] --> B["One App B instance"]
 ```
 
-### How Event Recipients Are Selected
+### How Event recipients are selected
 
 Vine forms an Event consumer identity from the Event's Skel name and the
 listener App name:
@@ -148,7 +148,7 @@ consumer.
 
 ## Launch a Task
 
-### Register a Runner
+### Register a runner
 
 Embed the generated default runner. A Cron schedule may only target a no-input
 trigger, so `nightly` is schedulable while `manually` is not:
@@ -179,7 +179,7 @@ func (*DemoApp) TaskerInitRunners(add app.RunnerTypeAdder) {
 Without options, one registered runner uses a 30-second attempt timeout,
 allows 10 concurrent executions, and retries failures.
 
-### Launch From Business Code
+### Launch from business code
 
 Inject the generated launcher for an immediate Task:
 
@@ -201,7 +201,7 @@ flowchart LR
   Choice --> RunnerB["Runner instance B"]
 ```
 
-### How Task Runners Are Selected
+### How Task runners are selected
 
 Vine forms one consumer identity from the Task's Skel name. All Links and all
 App instances registered for that Task compete in the same logical work queue:
@@ -216,7 +216,7 @@ If two teams need independent work for the same business occurrence, define
 two Tasks or launch two explicit jobs. Registering two App names for one Task
 does not create two copies.
 
-## Delivery Defaults and Boundaries
+## Delivery defaults and boundaries
 
 | Behavior | Event listener | Task runner |
 | --- | --- | --- |
@@ -251,7 +251,7 @@ guarantee across messaging-runtime restarts. Use a database-backed outbox,
 durable external workflow system, or another persisted record when loss across
 runtime restart is unacceptable.
 
-## At-Least-Once Requires Idempotency
+## At-least-once requires idempotency
 
 Default Event and Task processing is at-least-once. The same business message
 can execute more than once after:
@@ -275,7 +275,7 @@ that trades duplicate risk for silent loss after the first failure. Decide
 which outcome the business can reconcile, and keep an auditable business
 record when necessary.
 
-## Timeout Does Not Mean Execution Stopped
+## Timeout does not mean execution stopped
 
 The registration timeout bounds how long Link waits for one attempt. The
 listener or runner receives a context with that deadline and should stop work
@@ -294,7 +294,7 @@ Consequences:
 - Treat concurrency as the number of attempts, not necessarily the number of
   distinct business messages.
 
-## Metadata and Context Propagation
+## Metadata and context propagation
 
 Event and Task messages do not carry the full synchronous request context:
 
@@ -312,7 +312,7 @@ If authorization or tenant identity is required for asynchronous work, put the
 minimum immutable identity data needed by the consumer in the contract,
 validate it again, and avoid copying credentials or secrets into the payload.
 
-## Cron Scheduling
+## Cron scheduling
 
 `WithRunnerCronScheduler` uses a standard five-field Cron expression:
 
@@ -341,9 +341,7 @@ For business schedules that require calendars, explicit timezone governance,
 misfire policies, history, or operator-controlled replay, use a dedicated
 scheduler/workflow system and launch a Vine Task from it.
 
-## Production Checklist
-
-Before relying on an Event or Task:
+## Before relying on an Event or Task
 
 - Include a stable business identifier in the contract.
 - Confirm whether recipients should be per App name or globally competing.

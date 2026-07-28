@@ -1,29 +1,34 @@
 ---
 slug: /getting-started
 title: 快速开始
-sidebar_label: 学习路径
-description: 选择 Vine 学习路径，并在构建第一个应用前理解基本运行时模型。
+sidebar_label: 从这里开始
+description: 第一个 Vine 应用、主要能力入口，以及随后需要理解的运行时边界。
 ---
 
 # 快速开始
 
-Vine 是一个 Go 应用运行时框架。它用一套应用模型统一业务代码所需的生命周期、
-依赖注入、配置、Rpc、Web、事件、任务、Redis 与关系型数据库。同一份应用代码既可在
-内嵌的开发运行时中启动，也可连接到独立部署的运行时服务。
+Vine 用一套 Go 应用模型组织生命周期、依赖注入、配置、Rpc、Web、Event、
+Task、Redis 和关系型数据库。刚开始时，把 Hub、Link、Portal 和业务应用都放在
+standalone 进程里即可；等到需要真实网络边界或独立运维时再拆开。
 
-本节帮助你选择最短且有用的文档路径。在开始编写第一个 handler 前，你不需要先理解
-Hub、Link 与 Portal 的内部实现。
+第一次使用 Vine，按下面的顺序最省事：
 
-:::info 先确认版本
+1. 确认 [Go、Vine 与 skelc 的兼容版本](./compatibility.md)。
+2. 跑通[第一个应用](./tutorial-first-app.md)。
+3. 用[第一个 Skel 契约](./first-contract.md)生成服务代码。
+4. 按 [Rpc 指南](../framework/rpc-guide.md)实现并调用服务。
 
-复制示例前先检查版本选择器。**Vine next** 跟随当前源码，发行版标签则对应
-不可变的文档快照。生产构建应选择一个发行版，并固定相互兼容的 Vine 与
-`skelc` 版本，不要在可复现构建中直接复制 `@latest`。详见
-[版本与兼容性](./compatibility.md)。
+这四步都可以在 standalone 模式完成，不需要预先启动独立运行时服务。
+
+:::info 复制命令之前
+
+Vine 1.0 之前，本站只维护 **Vine next**。它跟随当前源码，可能比最新发行版
+更靠前。生产构建应固定精确的 Vine 与 skelc revision；如果示例与所用 revision
+有差异，请先查看[版本兼容性](./compatibility.md)。
 
 :::
 
-## 先建立心智模型
+## 各部分分别做什么
 
 ```mermaid
 flowchart LR
@@ -42,10 +47,10 @@ flowchart LR
 - **Hub**是配置和运行时注册状态的控制面。
 - **Portal**是可选的外部 HTTP/HTTPS 网关；应用之间的内部调用不需要经过 Portal。
 
-standalone 模式会在一个进程中启动 Hub、Link、Portal 与业务应用。即使网络跳转变成
-进程内调用，各组件的职责边界仍然不变。
+standalone 会在一个进程里启动这四个角色。职责并没有变化，只是通信变成了
+进程内调用。
 
-## 按需求选择能力
+## 按要解决的问题选择能力
 
 | 你的需求 | 从这里开始 | 核心语义 |
 | --- | --- | --- |
@@ -60,18 +65,9 @@ standalone 模式会在一个进程中启动 Hub、Link、Portal 与业务应用
 如果两个组件属于同一应用，且不需要网络 contract，应直接注入 Go 依赖，而不是额外
 创建 Rpc 服务。
 
-## 推荐学习路径
+## 遇到问题时再往下读
 
-### 评估 Vine
-
-1. 确认[前置条件与兼容矩阵](./compatibility.md)。
-2. 运行[第一个 Vine 应用](./tutorial-first-app.md)。
-3. 定义[第一个 Skel contract](./first-contract.md)。
-4. 按照 [Rpc 指南](../framework/rpc-guide.md)实现并调用生成的服务。
-
-这条路径从 standalone 模式开始，因此不需要预先安装或单独启动任何运行时进程。
-
-### 构建应用
+### 应用开始变大时
 
 1. 理解[应用模型](../framework/application-model.md)，并学习如何组合
    [component 与 module](../framework/components.md)。
@@ -79,17 +75,16 @@ standalone 模式会在一个进程中启动 Hub、Link、Portal 与业务应用
 3. 仅在应用确实拥有对应基础设施依赖时添加 Redis 或 RDB。
 4. 使用[日志与 testkit](../framework/logging-testing.md)验证可观察行为。
 
-### 理解运行时机制
+### 需要处理生命周期或并发时
 
-建议在第一个应用跑通后阅读；如果正在做生命周期或并发设计，也可以提前阅读：
+先看[运行时架构](../runtime/mechanisms.md)，再按当前问题继续：
 
-1. [运行时架构](../runtime/mechanisms.md)
-2. [应用生命周期](../runtime/application-lifecycle.md)
-3. [依赖与执行模型](../runtime/execution-model.md)
-4. [注册、发现与请求路由](../runtime/request-routing.md)
-5. [Trace 与 timeout 传播](../framework/trace-timeout.md)
+- Hook 顺序、就绪、停机和资源归属：看[应用生命周期](../runtime/application-lifecycle.md)。
+- Scope、请求内对象、filter 与释放：看[依赖与执行模型](../runtime/execution-model.md)。
+- 注册、服务发现、实例选择与 drain：看[请求路由](../runtime/request-routing.md)。
+- 下游 deadline 与调用元数据：看 [Trace 与 timeout](../framework/trace-timeout.md)。
 
-### 准备部署
+### 上线之前
 
 1. 选择[部署拓扑](./deployment-modes.md)。
 2. 完成[生产就绪清单](../operations/production-readiness.md)。
@@ -98,7 +93,7 @@ standalone 模式会在一个进程中启动 Hub、Link、Portal 与业务应用
    [安全边界](../operations/production-readiness.md#保护运行时网络)
    不支持把这些 endpoint 暴露给不可信网络。
 
-## 业务代码应遵守的边界
+## 几条不要打破的边界
 
 - 将业务行为放在 module 与能力 handler 中，不要放进 `main`。
 - 将生成代码视为构建产物；修改 `.skel` 源文件后重新生成。

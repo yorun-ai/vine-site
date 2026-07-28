@@ -41,10 +41,11 @@ Contributors do not need Cloudflare access to build or preview the site locally.
 
 ## Versioning
 
-Vine documentation versions follow Vine releases:
+Before Vine 1.0, the site maintains only the current `next` documentation.
+Version snapshots begin with `v1.0.0`. Release maintainers can create one with:
 
 ```bash
-pnpm docusaurus docs:version 0.10.0
+pnpm docusaurus docs:version 1.0.0
 ```
 
 Do not edit generated version snapshots manually.

@@ -64,6 +64,14 @@ navigation work in both locales.
 ## Writing and Site Changes
 
 - Prefer concrete, runnable examples over abstract placeholders.
+- Write for someone trying to make a decision or finish a task. Lead with the
+  fact, command, or constraint they need; avoid opening with “this page
+  explains” or “in this tutorial, you will.”
+- Do not pad a page with generic benefits, repeated summaries, or a
+  “Recommendations” section that restates earlier paragraphs. Keep a warning
+  only when it changes what the reader should build, run, or operate.
+- Use tables for real comparisons, not to make prose look systematic. Use
+  checklists only for work that can actually be checked.
 - State version requirements when behavior depends on a particular Vine or
   skelc release.
 - Keep terminology and API spelling consistent with the Vine source.
@@ -77,8 +85,8 @@ appropriate source repository when practical.
 
 ## Documentation Versions
 
-Current documentation is edited first. Release snapshots are generated from the
-current documentation with:
+Before Vine 1.0, edit only the current `next` documentation. Version snapshots
+begin with `v1.0.0` and are generated during a release with:
 
 ```bash
 pnpm docusaurus docs:version VERSION

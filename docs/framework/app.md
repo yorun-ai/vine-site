@@ -5,7 +5,9 @@ sidebar_label: App API
 
 # App API
 
-The `app` package assembles a process into a unified runtime: it manages the application lifecycle, creates components and modules, mounts HTTP/Rpc/Web entry points, and exposes runtime dependencies to objects inside the application through DI.
+Most application code only needs `go.yorun.ai/vine/app`. The package owns the
+process lifecycle, creates components and modules, mounts HTTP/Rpc/Web entry
+points, and makes runtime dependencies available through DI.
 
 ## Public entry points
 
@@ -167,14 +169,18 @@ app.New[*DemoApp](
 ```go
 type RunFlag struct {
     FlagModel
-    ListenAddr string
-    Context    context.Context
+    ListenAddr   string
+    LinkEndpoint string
+    Context      context.Context
 }
 ```
 
 Its behavior is:
 
 - When `ListenAddr == ""`, the application listens on a randomly assigned port.
+- `LinkEndpoint` selects the Link API used by an application created directly
+  with `app.New(...)` or `app.NewWithOption(...)`. It can be set through
+  `app.Option`, `--link-endpoint`, or `VINE_LINK_ENDPOINT`.
 - When `Context == nil`, it falls back to `context.Background()`.
 - The framework creates a default `RunFlag` even when one is not provided explicitly.
 
@@ -450,13 +456,13 @@ In particular:
 - Use a component or module's own `Bind(...)` method for dependencies specific to that object.
 - Servicer, Webber, Eventer, and Tasker capabilities add their respective contexts to the execution container.
 
-## Recommendations
+## Working rules
 
-- Always override `Name()` in a business application.
+- Override `Name()` in every business application.
 - Supply the listen address through
   `app.With(&app.RunFlag{ListenAddr: "..."})` at construction time. If an
   application must choose its own default, set the injected flag in the
   specification's `DIInit()`; `BindCommon(...)` is too late.
 - Declare components and modules as pointer types.
-- Keep `BindCommon(...)` limited to common dependencies; do not put routing logic there.
+- Put shared bindings in `BindCommon(...)`, not routing or startup work.
 - Keep Web routing under a single `WebberSpec`. If you need more routes, add multiple handlers to the same Webber.

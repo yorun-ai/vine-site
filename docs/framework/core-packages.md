@@ -2,18 +2,19 @@
 slug: /core-packages
 title: Public Package Map
 sidebar_label: Public Packages
-description: Find the supported Vine package for an application task and know when to use the lower-level APIs.
+description: The supported Vine package for each application task and the boundary for lower-level APIs.
 ---
 
 # Public Package Map
 
-Vine's public Go API is intentionally organized as a set of facades. Start with
-`app` and the generated contract types used by your application, then import a
-`core/*` or `infra/*` package only for the capability you need.
+Vine keeps its public Go boundary in facade packages. Application code usually
+starts with `app` and generated contract types, then imports a `core/*` or
+`infra/*` package only for the capability it uses.
 
 The authoritative symbol-level reference is
-[`pkg.go.dev/go.yorun.ai/vine`](https://pkg.go.dev/go.yorun.ai/vine). This page
-answers a different question: **which package should application code choose?**
+[`pkg.go.dev/go.yorun.ai/vine`](https://pkg.go.dev/go.yorun.ai/vine). The map
+below answers the question that a symbol index cannot: **which package should
+application code choose?**
 
 :::warning Public boundary
 
@@ -114,7 +115,7 @@ The `util/*` packages are public, framework-independent helpers:
 Use a standard-library function when it is equally clear. These packages are
 most useful when the same helper is already part of a Vine-facing code path.
 
-## Suggested order
+## A practical reading order
 
 1. Learn `app` and one runtime-mode package.
 2. Work through the guide for each capability your application exposes.

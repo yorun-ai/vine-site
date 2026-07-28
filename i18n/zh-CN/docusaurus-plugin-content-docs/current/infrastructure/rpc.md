@@ -5,7 +5,9 @@ sidebar_label: Rpc API
 
 # Rpc API
 
-日常使用请先阅读 [使用 Rpc](../framework/rpc-guide.md)。HTTP 线协议见 [vRPC over HTTP](./vrpc-http.md)。本页列出 `core/rpc` 的 client、server、executor 和服务元信息 API，适合调整底层调用选项或构建自定义接入层时查阅。
+业务代码应先按[使用 Rpc](../framework/rpc-guide.md)里的方式使用生成的 client 和
+server。需要调整调用选项、编写 executor 或接入 transport 时，再查下面的底层 API。
+HTTP 承载格式单独列在 [vRPC over HTTP](./vrpc-http.md)。
 
 `core/rpc` 提供统一的 Rpc 抽象，负责：
 
@@ -313,9 +315,9 @@ type UserServiceServerER interface {
 - ER server 的最后一个返回值固定是 `ex.Error`
 - 普通 server 可以通过 `WrapperERServerCtor` 包成 ER server
 
-## 使用建议
+## 使用底层 API 时
 
-- 优先使用生成的元信息，不要手写完整 spec
-- client 一定显式传入 `Logger`
-- server 端如果需要上下文注入和 filter，优先用 `NewContainerExecutor(...)`
-- 如果你希望自己接住并处理 system error，再显式开启 `ReturnIfSystemError`
+- 服务和方法定义以生成的元信息为准，不要再手写一套完整 spec
+- 构造 client 时传入 `Logger`
+- server 需要 context 注入或 filter 时使用 `NewContainerExecutor(...)`
+- 只有明确要接住并处理 system error 的边界，才设置 `ReturnIfSystemError`

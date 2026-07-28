@@ -2,7 +2,7 @@
 slug: /configuration
 title: 配置
 sidebar_label: 配置
-description: 声明类型化 Vine 配置，并在稳定的实例快照与运行时更新之间做选择。
+description: 类型化 Vine 配置、实例级快照与运行时更新。
 ---
 
 # 配置

@@ -1,80 +1,74 @@
 ---
 title: Version Compatibility
 sidebar_label: Compatibility
-description: Choose compatible Vine, Go, and skelc versions for development and production.
+description: Compatibility and pinning rules for Vine, Go, and skelc.
 slug: /compatibility
 ---
 
-Vine applications depend on three versioned inputs: the Go toolchain, the
-`go.yorun.ai/vine` module, and the `skelc` version that generates contract
-code. Pin all three for reproducible builds.
+Three versions determine a Vine build: Go, `go.yorun.ai/vine`, and the `skelc`
+binary that generated the contract code. Record all three. Upgrading only one
+can leave checked-in generated code out of step with the runtime.
 
-:::warning `next` is the only maintained documentation stream before 1.0
+:::warning What `next` means before 1.0
 
-These pages follow current Vine source and can move ahead of the latest
-release. Vine does not maintain a separate documentation snapshot for each
-pre-1.0 release. Release snapshots begin with `v1.0.0`.
+This site follows current Vine source. It can move ahead of the latest release,
+and there are no per-release documentation snapshots before `v1.0.0`.
 
-For production before 1.0, pin the module and tools to exact release tags, then
-verify examples and behavior against the source for those tags before relying
-on anything documented only in `next`.
+For a released application, pin an exact commit or tag and treat that source as
+the final word when `next` differs.
 
 :::
 
-## Choose a documentation stream
-
-Use `next` to evaluate current source or contribute to Vine. Use exact release
-tags and their source trees as the production baseline until versioned
-documentation begins with `v1.0.0`.
-
-| Use case | Vine source | Documentation | Recommendation |
-| --- | --- | --- | --- |
-| Production | Exact reviewed release tag | `Vine next` plus the selected tag's source | Pin every tool and module, then verify documented behavior against that tag |
-| Current-source development | Current Vine checkout | `Vine next` | Verify examples against the same checkout before relying on them |
+## Documentation before 1.0
 
 Vine is still before 1.0. Patch releases within the same minor line are
 intended to remain backward-compatible, while a new minor release can change
 public APIs, CLI behavior, configuration, Skel integration, or protocols.
-Exact pins keep those upgrades explicit.
 
-## Current compatibility matrix
+- Working from current source: use `next` and the same Vine checkout.
+- Building from a release: pin the release tag and check changed APIs against
+  that tag.
+- Upgrading: update Vine, skelc, and generated code together in one review.
 
-| Vine | Go | Minimum skelc | Recommended pinned skelc |
+## Current source requirements
+
+| Vine documentation | Go | Minimum skelc | skelc to use |
 | --- | --- | --- | --- |
-| `v0.10.0` | `1.26.5` or later | `v0.9.0` | `v0.10.0` |
-| Current source / `Vine next` | `1.26.5` or later | `v0.9.0` | Use the exact reviewed skelc version for your checkout |
+| Current source / `next` | `1.26.5` or later | `v0.9.0` | The exact revision reviewed with the application |
 
-Both Vine `v0.10.0` and the current source report `v0.9.0` from
-`core/skel.MinSkelcVersion()`. This is a lower bound, not a recommendation to
-leave the compiler unpinned. Generated schemas record their compiler version,
-and Vine rejects schemas whose compiler version is missing or lower than the
-runtime minimum.
+Current Vine source reports `v0.9.0` from
+`core/skel.MinSkelcVersion()`. This is a lower bound, not a version-selection
+policy. Generated schemas record their compiler version, and Vine rejects a
+schema whose compiler version is missing or lower than the runtime minimum.
 
 The runtime check does not define an upper compatibility bound for future
 skelc releases. Pin a version that your application has generated, reviewed,
 and tested.
 
-## Pin a production toolchain
+## Pin a reviewed toolchain
 
-For the current stable release, pin the build toolchain, module, and installed
-tools:
+The tutorials use `main` because this site documents current source. For CI or
+a release, replace both values below with reviewed commit hashes or tags:
 
 ```bash
-go mod edit -go=1.26.5 -toolchain=go1.26.5
-go get go.yorun.ai/vine@v0.10.0
+VINE_REVISION=main
+SKELC_REVISION=main
 
-go install go.yorun.ai/vine/cmd/vine@v0.10.0
-go install go.yorun.ai/skelc/cmd/skelc@v0.10.0
+go mod edit -go=1.26.5 -toolchain=go1.26.5
+go get go.yorun.ai/vine@"$VINE_REVISION"
+
+go install go.yorun.ai/vine/cmd/vine@"$VINE_REVISION"
+go install go.yorun.ai/skelc/cmd/skelc@"$SKELC_REVISION"
 ```
 
 The `go` directive records the expected language version, and the `toolchain`
 directive requests the compiler. Also pin the CI image or toolchain
 installation, because an already newer default toolchain can still be
 selected. Commit `go.mod`, `go.sum`, the Skel sources, and the generated-code
-changes. Do not use `@latest` in a production build pipeline because it
-changes the resolved tool version without changing your application source.
+changes. Do not leave `main` or `@latest` in a production build pipeline:
+either can resolve to new code without a change to the application repository.
 
-### Verify installed tools
+### Check the tools CI will use
 
 ```bash
 go version
@@ -110,7 +104,7 @@ func main() {
 }
 ```
 
-For Vine `v0.10.0` and the current source, this prints:
+For current Vine source, this prints:
 
 ```text
 v0.9.0
@@ -121,9 +115,9 @@ against the Vine runtime. The generated schema remains the final runtime
 check, so regenerate and test the application after changing either Vine or
 skelc.
 
-## Upgrade without mixing versions
+## Upgrade the set together
 
-For each upgrade:
+For an upgrade:
 
 1. Change the pinned Vine and skelc versions in one reviewable branch.
 2. Confirm the Go version required by the selected Vine module.
@@ -132,7 +126,7 @@ For each upgrade:
 5. Review generated changes instead of editing generated files.
 6. Run application tests and exercise the deployed topology in a staging
    environment.
-7. Deploy Vine, generated application code, and runtime services as one
+7. Release Vine, generated application code, and runtime services as one
    compatibility change.
 
 ```bash

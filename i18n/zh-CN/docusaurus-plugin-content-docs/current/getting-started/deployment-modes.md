@@ -131,7 +131,7 @@ VINE_LINK_ENDPOINT=http://127.0.0.1:7079 ./hello-app
 Portal 的外部监听、站点规则和 TLS 证书通过 Hub 配置管理。不要把进程分离
 直接等同于高可用；上线前请检查[生产就绪清单](../operations/production-readiness.md)。
 
-## 如何选择
+## 选择拓扑
 
 从 standalone 开始；当需要共享配置、多个应用相互发现或对外暴露入口时，迁移到 linked；当需要独立伸缩、故障隔离或验证完整分布式语义时，使用完全分开部署。
 

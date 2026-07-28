@@ -81,7 +81,11 @@ func main() {
 }
 ```
 
-运行 `go run .` 后，日志中会出现 `message="Hello, Vine"`。调用时，Vine 自动携带 trace、应用身份和 Actor，并由 Link 完成服务发现和转发；standalone 模式会选择进程内 endpoint。
+运行 `go run .` 后，日志中会出现 `message="Hello, Vine"`。这次调用从 module
+发起，不属于某个入站请求，因此 Vine 会创建新的 trace、把 `GreetingApp` 标记为
+client application，并使用 absent Actor。注入 Rpc、Web、Event 或 Task execution
+的 client 则会继承该 execution 的 trace、initiator 和 Actor。两种情况下都由 Link
+完成服务发现和转发；standalone 模式会选择进程内 endpoint。
 
 ```mermaid
 flowchart LR

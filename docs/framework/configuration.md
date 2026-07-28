@@ -2,7 +2,7 @@
 slug: /configuration
 title: Configuration
 sidebar_label: Configuration
-description: Declare typed Vine configuration and choose between stable per-instance snapshots and runtime updates.
+description: Typed Vine configuration, per-instance snapshots, and runtime updates.
 ---
 
 # Configuration

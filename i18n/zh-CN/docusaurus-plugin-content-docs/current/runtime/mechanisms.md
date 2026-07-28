@@ -2,19 +2,19 @@
 slug: /runtime-mechanisms
 title: 运行时架构
 sidebar_label: 架构
-description: 理解 Vine 如何把应用声明转化为配置、发现、路由与交付行为。
+description: Vine 如何把应用声明转化为配置、发现、路由与交付行为。
 ---
 
 # 运行时架构
 
-Vine 把业务行为和令它可被访问的运行时机制分离。应用声明类型化能力；Link 将声明
-转化为可路由、可交付的运行时状态；Hub 分发这些状态；Portal 提供可选的外部入口。
+Vine 把业务代码与负责接入它的运行时分开。应用声明类型化能力；Link 将声明转化为
+可路由、可交付的状态；Hub 分发这些状态；Portal 提供可选的外部入口。
 
-最简洁的心智模型是：
+这四个角色可以用一句话概括：
 
 > **Hub 知道有哪些状态，Link 负责连接应用，Portal 接纳外部流量，应用执行业务代码。**
 
-## 运行时全景
+## 四个运行时角色
 
 ```mermaid
 flowchart LR
@@ -191,7 +191,7 @@ linked 与 standalone 组合会先停止业务应用，再停止共享 Link，�
 `BeforeAppStop` 在注销前执行。可以用它停止应用自有 producer 并开始静默，但在 drain
 完成前，仍要保持在途 handler 所需依赖有效。最终资源应在 `AfterAppStop` 中释放。
 
-## 继续深入
+## 相关指南
 
 - [应用生命周期](./application-lifecycle.md)：构造、hook、readiness、drain 与 bundle 顺序。
 - [依赖与执行模型](./execution-model.md)：应用 singleton、execution scope、filter、context 与释放。

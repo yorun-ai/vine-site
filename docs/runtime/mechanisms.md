@@ -2,22 +2,22 @@
 slug: /runtime-mechanisms
 title: Runtime Architecture
 sidebar_label: Architecture
-description: Understand how Vine turns application declarations into configuration, discovery, routing, and delivery behavior.
+description: How Vine turns application declarations into configuration, discovery, routing, and delivery behavior.
 ---
 
 # Runtime Architecture
 
-Vine separates business behavior from the runtime machinery that makes it
-reachable. An application declares typed capabilities; Link turns those
-declarations into routable and deliverable runtime state; Hub distributes the
-state; Portal provides an optional external entry point.
+Vine keeps business code separate from the runtime that makes it reachable. An
+application declares typed capabilities; Link turns those declarations into
+routable and deliverable state; Hub distributes that state; Portal provides an
+optional external entry point.
 
-The shortest useful mental model is:
+The four roles can be reduced to one sentence:
 
 > **Hub knows what exists, Link connects applications to it, Portal admits
 > external traffic, and the application executes business code.**
 
-## The runtime at a glance
+## The four runtime roles
 
 ```mermaid
 flowchart LR
@@ -224,7 +224,7 @@ producers and begin quiescing, but keep dependencies required by in-flight
 handlers valid until the drain completes. Release final resources in
 `AfterAppStop`.
 
-## Where to go deeper
+## Related guides
 
 - [Application lifecycle](./application-lifecycle.md): construction, hooks,
   readiness, drain, and bundle ordering.
