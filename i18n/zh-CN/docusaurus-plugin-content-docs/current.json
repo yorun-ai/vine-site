@@ -1,4 +1,8 @@
 {
+  "version.label": {
+    "message": "next",
+    "description": "The label for version current"
+  },
   "sidebar.docsSidebar.category.Start Here": {
     "message": "从这里开始",
     "description": "The label for category 'Start Here' in sidebar 'docsSidebar'"
