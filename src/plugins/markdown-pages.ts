@@ -1,4 +1,4 @@
-import {mkdir, readFile, writeFile} from 'node:fs/promises'
+import {mkdir, readFile, rm, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 import type {LoadContext, Plugin} from '@docusaurus/types'
 import type {
@@ -6,10 +6,16 @@ import type {
   LoadedContent,
 } from '@docusaurus/plugin-content-docs'
 import {
-  gettingStarted,
-  guides,
-  type LandingCard,
+  governanceStages,
+  guideGroups,
+  vineMechanisms,
+  type LocalizedCopy,
 } from '../data/developerLanding'
+
+type DocusaurusWebpackConfig = Exclude<
+  ReturnType<NonNullable<Plugin['configureWebpack']>>,
+  void
+>
 
 function withoutFrontMatter(source: string): string {
   return source.replace(
@@ -46,43 +52,149 @@ function markdownOutputPath({
 function overviewMarkdown(
   translate: (id: string, fallback: string) => string,
 ): string {
-  const renderCards = (cards: LandingCard[]) =>
-    cards
-      .map(
-        (card) =>
-          `- [${translate(card.titleId, card.title)}](${card.to.slice(1)}.md) — ${translate(card.descriptionId, card.description)}`,
-      )
-      .join('\n')
+  const copy = ({id, text}: LocalizedCopy) => translate(id, text)
+  const renderStages = governanceStages
+    .map((stage) => `**${copy(stage.title)}** \`${stage.artifact}\``)
+    .join(' → ')
+  const renderMechanisms = vineMechanisms
+    .map((mechanism) => {
+      const markers = mechanism.markers
+        .map((marker) => `\`${marker}\``)
+        .join(' · ')
+      const links = mechanism.links
+        .map((link) => `[${copy(link.title)}](${link.to.slice(1)}.md)`)
+        .join(' · ')
+
+      return [
+        `### ${copy(mechanism.title)}`,
+        '',
+        `**${copy(mechanism.label)}** · ${markers}`,
+        '',
+        copy(mechanism.description),
+        '',
+        links,
+      ].join('\n')
+    })
+    .join('\n\n')
+  const renderGuideGroups = guideGroups
+    .map(
+      (group) =>
+        `### ${copy(group.title)}\n\n${group.links
+          .map(
+            (link) =>
+              `- [${copy(link.title)}](${link.to.slice(1)}.md) — ${copy(link.description)}`,
+          )
+          .join('\n')}`,
+    )
+    .join('\n\n')
 
   return [
-    `# ${translate('homepage.title', 'Vine Developers')}`,
+    `# ${translate('homepage.title', 'Overview')}`,
     '',
     translate(
       'homepage.description',
-      'Build evolvable Go applications with explicit contracts.',
+      'Skel puts domain rules into contracts. Vine carries those rules into application assembly, calls, and runtime behavior.',
+    ),
+    `**${translate('homepage.description.ai', 'Together, they give AI-generated code stronger boundaries than review alone.')}**`,
+    '',
+    `[${translate('homepage.actions.firstContract', 'Create the first contract')}](first-skel-contract.md) · [${translate('homepage.actions.firstApplication', 'Build the first application')}](tutorial-first-app.md) · [${translate('homepage.actions.skel', 'Read the Skel overview')}](https://skel.yorun.ai/docs/overview)`,
+    '',
+    `## ${translate('homepage.sections.mechanisms.title', 'How Vine carries constraints into runtime')}`,
+    '',
+    translate(
+      'homepage.sections.mechanisms.description',
+      'Vine is more than an Rpc wrapper. It gives application composition, lifecycle, execution, routing, and runtime feedback one consistent model.',
     ),
     '',
-    `## ${translate('homepage.sections.gettingStarted', 'Getting started')}`,
+    renderMechanisms,
     '',
-    renderCards(gettingStarted),
+    `## ${translate('homepage.sections.loop.title', 'The contract-to-runtime loop, in brief')}`,
     '',
-    `## ${translate('homepage.sections.guides', 'Build and operate')}`,
+    translate(
+      'homepage.sections.loop.description',
+      'A boundary starts in .skel, becomes generated code, joins ApplicationSpec, and runs through Vine. Tests and runtime signals carry problems back into the next change.',
+    ),
     '',
-    renderCards(guides),
+    renderStages,
+    '',
+    `## ${translate('homepage.sections.guides.title', 'Continue reading')}`,
+    '',
+    translate(
+      'homepage.sections.guides.description',
+      'Start with the part you are changing.',
+    ),
+    '',
+    renderGuideGroups,
+    '',
+    `## ${translate('homepage.status.label', 'Before 1.0')}`,
+    '',
+    `${translate('homepage.status.description', "Vine's public API is still stabilizing. Pin reviewed Vine and skelc revisions, and keep runtime endpoints on a trusted network.")} [${translate('homepage.status.compatibility', 'Compatibility')}](compatibility.md) · [${translate('homepage.status.production', 'Production Checks')}](production-readiness.md)`,
   ].join('\n')
 }
 
 export default function markdownPagesPlugin({
+  baseUrl,
   siteDir,
   codeTranslations,
 }: LoadContext): Plugin {
   let docs: DocMetadata[] = []
+  const developmentOutputDir = path.join(
+    siteDir,
+    '.docusaurus',
+    'vine-markdown-pages',
+  )
+  const isDevelopment = process.env.NODE_ENV === 'development'
   const translate = (id: string, fallback: string) =>
     codeTranslations[id] ?? fallback
+  const markdownForDoc = async (doc: DocMetadata) =>
+    doc.id === 'index'
+      ? overviewMarkdown(translate)
+      : withoutFrontMatter(
+          await readFile(sourcePath(siteDir, doc.source), 'utf8'),
+        ).trim()
+  const writeMarkdownPages = async ({
+    outputBaseUrl,
+    outputDir,
+  }: {
+    outputBaseUrl: string
+    outputDir: string
+  }) => {
+    await Promise.all(
+      docs.map(async (doc) => {
+        const outputPath = markdownOutputPath({
+          baseUrl: outputBaseUrl,
+          outDir: outputDir,
+          permalink: doc.permalink,
+        })
+
+        await mkdir(path.dirname(outputPath), {recursive: true})
+        await writeFile(
+          outputPath,
+          `${await markdownForDoc(doc)}\n`,
+          'utf8',
+        )
+      }),
+    )
+  }
 
   return {
     name: 'vine-markdown-pages',
-    allContentLoaded({allContent}) {
+    configureWebpack() {
+      if (!isDevelopment) return {}
+
+      return {
+        devServer: {
+          static: [
+            {
+              directory: developmentOutputDir,
+              publicPath: baseUrl,
+              watch: false,
+            },
+          ],
+        },
+      } as DocusaurusWebpackConfig
+    },
+    async allContentLoaded({allContent}) {
       const docsContent = allContent[
         'docusaurus-plugin-content-docs'
       ]?.default as LoadedContent | undefined
@@ -90,29 +202,20 @@ export default function markdownPagesPlugin({
       docs =
         docsContent?.loadedVersions.flatMap((version) => version.docs) ??
         []
+
+      if (isDevelopment) {
+        await rm(developmentOutputDir, {force: true, recursive: true})
+        await writeMarkdownPages({
+          outputBaseUrl: baseUrl,
+          outputDir: developmentOutputDir,
+        })
+      }
     },
     async postBuild({baseUrl, outDir}) {
-      await Promise.all(
-        docs.map(async (doc) => {
-          const markdown =
-            doc.id === 'index'
-              ? overviewMarkdown(translate)
-              : withoutFrontMatter(
-                  await readFile(
-                    sourcePath(siteDir, doc.source),
-                    'utf8',
-                  ),
-                ).trim()
-          const outputPath = markdownOutputPath({
-            baseUrl,
-            outDir,
-            permalink: doc.permalink,
-          })
-
-          await mkdir(path.dirname(outputPath), {recursive: true})
-          await writeFile(outputPath, `${markdown}\n`, 'utf8')
-        }),
-      )
+      await writeMarkdownPages({
+        outputBaseUrl: baseUrl,
+        outputDir: outDir,
+      })
     },
   }
 }

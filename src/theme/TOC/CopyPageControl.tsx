@@ -10,8 +10,8 @@ import {
   Copy,
   FileMd,
 } from '@phosphor-icons/react'
+import {useDoc} from '@docusaurus/plugin-content-docs/client'
 import {translate} from '@docusaurus/Translate'
-import {useLocation} from '@docusaurus/router'
 
 const resetDelay = 2000
 
@@ -24,14 +24,14 @@ function markdownPath(pathname: string): string {
 }
 
 export default function CopyPageControl(): ReactNode {
-  const {pathname} = useLocation()
+  const {metadata} = useDoc()
   const rootRef = useRef<HTMLDivElement>(null)
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   )
   const [menuOpen, setMenuOpen] = useState(false)
   const [copyState, setCopyState] = useState<CopyState>('idle')
-  const currentMarkdownPath = markdownPath(pathname)
+  const currentMarkdownPath = markdownPath(metadata.permalink)
 
   const resetCopyStateLater = () => {
     if (resetTimerRef.current) {
@@ -45,7 +45,7 @@ export default function CopyPageControl(): ReactNode {
 
   const copyMarkdown = async () => {
     try {
-      const response = await fetch(currentMarkdownPath)
+      const response = await fetch(currentMarkdownPath, {cache: 'no-store'})
       if (!response.ok) {
         throw new Error(`Markdown request failed: ${response.status}`)
       }

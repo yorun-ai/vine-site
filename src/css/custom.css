@@ -338,7 +338,17 @@ button:not(:disabled),
 }
 
 .navbar__items--right > .navbar-control-dropdown {
-  border-radius: 0.75rem;
+  border-radius: 999px;
+}
+
+.navbar__items--right > .navbar-control--version {
+  display: flex;
+  min-height: 2.25rem;
+  align-items: center;
+  padding: 0.45rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
 .navbar__items--right
@@ -348,7 +358,7 @@ button:not(:disabled),
   min-height: 2.25rem;
   align-items: center;
   padding: 0.45rem 0.65rem;
-  border-radius: 0.75rem;
+  border-radius: 999px;
 }
 
 .navbar-control-dropdown > .navbar-control::after {
@@ -362,10 +372,17 @@ button:not(:disabled),
 }
 
 .navbar-control__value,
+.navbar-control__icon,
 .navbar-control__chevron {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.navbar-control__icon svg,
+.navbar-control__value svg {
+  width: 0.95rem;
+  height: 0.95rem;
 }
 
 .navbar-control__value {
@@ -373,6 +390,10 @@ button:not(:disabled),
 }
 
 .navbar-control-dropdown .navbar-control svg {
+  display: block;
+}
+
+.navbar-control--version svg {
   display: block;
 }
 
@@ -462,7 +483,7 @@ button:not(:disabled),
   top: calc(100% + 0.55rem);
   right: 0;
   display: grid;
-  width: 17.5rem;
+  width: 18rem;
   gap: 0.2rem;
   padding: 0.4rem;
   border: 1px solid var(--border);
@@ -524,6 +545,7 @@ button:not(:disabled),
   color: var(--muted-foreground);
   font-size: 0.78rem;
   line-height: 1.35;
+  white-space: nowrap;
 }
 
 .navbar__items--right > .navbar-github-link {
@@ -1190,7 +1212,7 @@ div[class*='codeBlockContainer'] code {
 .theme-doc-toc-desktop .copy-page-menu {
   right: auto;
   left: 0;
-  width: 15rem;
+  width: 18rem;
 }
 
 .table-of-contents {

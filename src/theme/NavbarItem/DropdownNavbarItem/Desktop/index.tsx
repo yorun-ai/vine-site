@@ -5,19 +5,26 @@ import React, {
   useState,
 } from 'react'
 import clsx from 'clsx'
-import {CaretDown} from '@phosphor-icons/react'
+import {CaretDown, Tag} from '@phosphor-icons/react'
 import {translate} from '@docusaurus/Translate'
 import NavbarNavLink from '@theme/NavbarItem/NavbarNavLink'
 import NavbarItem from '@theme/NavbarItem'
 import type {Props} from '@theme/NavbarItem/DropdownNavbarItem/Desktop'
 
 function ValueControl({
+  icon,
   label,
 }: {
+  icon?: ReactNode
   label: ReactNode
 }): ReactNode {
   return (
     <span className="navbar-control__content">
+      {icon ? (
+        <span aria-hidden="true" className="navbar-control__icon">
+          {icon}
+        </span>
+      ) : null}
       <span className="navbar-control__value">{label}</span>
       <span className="navbar-control__chevron">
         <CaretDown aria-hidden="true" size={11} weight="bold" />
@@ -91,7 +98,14 @@ export default function DropdownNavbarItemDesktop({
         {...props}
         label={
           controlType ? (
-            <ValueControl label={props.label} />
+            <ValueControl
+              icon={
+                controlType === 'version' ? (
+                  <Tag size={16} weight="regular" />
+                ) : null
+              }
+              label={props.label}
+            />
           ) : (
             props.children ?? props.label
           )

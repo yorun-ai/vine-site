@@ -116,13 +116,11 @@
 
 @media (min-width: 997px) {
   :global(.docs-doc-page) .switcher {
-    --switcher-edge-offset: -1rem;
-
     width: 100%;
   }
 
   :global(.docs-doc-page) .menu {
-    right: -1rem;
+    right: 0;
     width: auto;
   }
 }
