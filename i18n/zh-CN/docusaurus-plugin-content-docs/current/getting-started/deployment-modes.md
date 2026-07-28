@@ -5,7 +5,14 @@ sidebar_label: 部署
 
 # 部署
 
-Vine 可按开发和生产需求选择不同的运行拓扑。区别不在业务应用的写法，而在 Hub、Portal、Link 和业务应用是否位于同一进程，以及组件之间使用 inproc 还是网络连接。
+Vine 为开发和生产提供不同的运行拓扑，而且不需要为生产环境另写一套应用实现。
+同一个 `ApplicationSpec`、component、module 和 Rpc/Web/Event/Task 代码，既可以
+组成单机单进程应用，也可以接入 Kubernetes 中独立部署的运行时服务。变化只发生在
+很薄的启动入口、进程边界与 endpoint 配置。
+
+这得益于业务代码声明的是“具备什么能力”，而不是“服务位于哪个地址”。注册、发现和
+转发由 Link 负责，Hub 与 Portal 也位于应用之外。背后的机制见
+[架构](../runtime/mechanisms.md)。
 
 ## 模式对比
 
@@ -15,7 +22,8 @@ Vine 可按开发和生产需求选择不同的运行拓扑。区别不在业务
 | linked | Hub、Portal 独立；Link 与应用同进程 | 与 Link 同进程 | 本地开发、少量服务、简化应用部署 |
 | 分开部署 | Hub、Portal、Link 均独立 | 独立进程 | 生产环境、独立扩缩容、故障验证 |
 
-无论选择哪种模式，业务应用的 `ApplicationSpec`、Rpc、Web、Event 和 Task 定义保持不变；改变的是启动入口和 endpoint 配置。
+无论选择哪种模式，业务应用的 `ApplicationSpec`、Rpc、Web、Event 和 Task 定义
+保持不变；变化的只有部署装配与 endpoint 配置。
 
 ## Standalone
 
