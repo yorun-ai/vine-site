@@ -1,5 +1,5 @@
 import React, {type ReactNode, useEffect, useRef, useState} from 'react'
-import {Stack} from '@phosphor-icons/react'
+import {DotsNine} from '@phosphor-icons/react'
 
 import styles from './styles.module.css'
 
@@ -47,7 +47,7 @@ export default function NavbarLogo(): ReactNode {
         type="button">
         <span aria-hidden="true" className="navbar__logo" />
         <span className="navbar__title">Vine Framework</span>
-        <Stack
+        <DotsNine
           aria-hidden="true"
           className={styles.switchIcon}
           weight={open ? 'fill' : 'regular'}
