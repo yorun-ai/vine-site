@@ -38,8 +38,25 @@ import styles from './styles.module.css'
 
 const categoryAnimation = {duration: 140, easing: 'ease-out'}
 
+function getCategoryStructureId(item: Props['item']): string {
+  if (item.key) {
+    return item.key
+  }
+
+  for (const child of item.items) {
+    if (child.type === 'link' && child.docId) {
+      return child.docId
+    }
+    if (child.type === 'category') {
+      return getCategoryStructureId(child)
+    }
+  }
+
+  return item.href ?? item.label
+}
+
 function getCategoryStateId(item: Props['item'], level: number): string {
-  return `vine.docs.sidebarCategory.v1:${level}:${item.href ?? item.label}`
+  return `vine.docs.sidebarCategory.v2:${level}:${getCategoryStructureId(item)}`
 }
 
 function useAutoExpandActiveCategory({

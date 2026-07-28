@@ -40,7 +40,8 @@ import type {Props} from '@theme/DocSidebarItem/Link'
 import styles from './styles.module.css'
 
 function iconForHref(href: string): PhosphorIcon {
-  if (/\/docs\/?$/.test(href)) return House
+  if (/\/docs(?:\/(?:next|\d+(?:\.\d+)*))?\/?$/.test(href)) return House
+  if (href.includes('compatibility')) return WarningCircle
   if (href.includes('tutorial-first-app')) return Play
   if (href.includes('first-skel-contract')) return FileCode
   if (href.includes('getting-started')) return RocketLaunch
@@ -61,6 +62,10 @@ function iconForHref(href: string): PhosphorIcon {
   if (href.includes('redis') || href.endsWith('/rdb')) return Database
   if (href.includes('logging-and-testing')) return ListBullets
   if (href.includes('runtime-mechanisms')) return Graph
+  if (href.includes('application-lifecycle')) return Timer
+  if (href.includes('execution-model')) return FlowArrow
+  if (href.includes('request-routing')) return ShareNetwork
+  if (href.includes('production-readiness')) return ListBullets
   if (href.endsWith('/hub')) return HardDrives
   if (href.endsWith('/link')) return PlugsConnected
   if (href.endsWith('/portal')) return ShareNetwork
@@ -103,13 +108,17 @@ export default function DocSidebarItemLink({
           onClick: onItemClick ? () => onItemClick(item) : undefined,
         })}
         {...props}>
-        <ItemIcon
-          aria-hidden="true"
-          className={styles.itemIcon}
-          size={18}
-          weight="fill"
-        />
-        <span className={styles.linkLabel}>{label}</span>
+        {level > 1 && (
+          <ItemIcon
+            aria-hidden="true"
+            className={styles.itemIcon}
+            size={16}
+            weight="fill"
+          />
+        )}
+        <span className={styles.linkLabel} title={label}>
+          {label}
+        </span>
         {!isInternalLink && <IconExternalLink />}
       </Link>
     </li>

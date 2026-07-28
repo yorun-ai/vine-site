@@ -1,5 +1,6 @@
 ---
 slug: /filetree
+sidebar_label: 项目结构
 ---
 
 # 项目结构
@@ -66,4 +67,4 @@ demo/
 └── skeled/               # 可选：skelc 生成代码
 ```
 
-生成目录不要手工修改。完整流程见[创建第一个 Skel 契约](/docs/first-skel-contract)。
+生成目录不要手工修改。完整流程见[创建第一个 Skel 契约](./first-contract.md)。

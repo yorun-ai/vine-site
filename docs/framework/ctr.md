@@ -1,5 +1,6 @@
 ---
 slug: /ctr
+sidebar_label: Containers & Filters
 ---
 
 # Containers & Filters (CTR)

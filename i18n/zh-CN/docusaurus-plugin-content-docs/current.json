@@ -1,23 +1,19 @@
 {
-  "version.label": {
-    "message": "Vine 开发版",
-    "description": "The label for version current"
+  "sidebar.docsSidebar.category.Start Here": {
+    "message": "从这里开始",
+    "description": "The label for category 'Start Here' in sidebar 'docsSidebar'"
   },
-  "sidebar.docsSidebar.category.Get Started": {
-    "message": "快速开始",
-    "description": "The label for category 'Get Started' in sidebar 'docsSidebar'"
+  "sidebar.docsSidebar.category.Build with Vine": {
+    "message": "使用 Vine 构建",
+    "description": "The label for category 'Build with Vine' in sidebar 'docsSidebar'"
   },
-  "sidebar.docsSidebar.category.Core Concepts": {
-    "message": "核心概念",
-    "description": "The label for category 'Core Concepts' in sidebar 'docsSidebar'"
+  "sidebar.docsSidebar.category.How Vine Works": {
+    "message": "Vine 的工作机制",
+    "description": "The label for category 'How Vine Works' in sidebar 'docsSidebar'"
   },
-  "sidebar.docsSidebar.category.Application Capabilities": {
-    "message": "应用能力",
-    "description": "The label for category 'Application Capabilities' in sidebar 'docsSidebar'"
-  },
-  "sidebar.docsSidebar.category.Runtime and Deployment": {
-    "message": "运行时与部署",
-    "description": "The label for category 'Runtime and Deployment' in sidebar 'docsSidebar'"
+  "sidebar.docsSidebar.category.Deploy and Operate": {
+    "message": "部署与运维",
+    "description": "The label for category 'Deploy and Operate' in sidebar 'docsSidebar'"
   },
   "sidebar.docsSidebar.category.Reference": {
     "message": "参考",

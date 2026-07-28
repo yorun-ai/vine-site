@@ -1,10 +1,11 @@
 ---
 slug: /redis
+sidebar_label: Redis API
 ---
 
 # Redis API
 
-For day-to-day integration, start with [Using Redis](/docs/guide/redis). This page documents the complete configuration, dependency injection, Cache, and Locker APIs provided by `infra/redis`.
+For day-to-day integration, start with [Using Redis](../framework/redis-guide.md). This page documents the complete configuration, dependency injection, Cache, and Locker APIs provided by `infra/redis`.
 
 The top-level `infra/redis` package exposes public types including `Option`, `TypeAdder`, `RedisSpec`, `Redis`, `Locker`, `Lock`, `Cache[T]`, and `NewCache[T](...)`.
 
@@ -126,7 +127,8 @@ The Redis client is created when the component starts and closed after the appli
 An injectable locker must:
 
 - Embed `redis.Locker`.
-- Implement `KeyPrefix() string`.
+- Optionally override `KeyPrefix() string` when it needs an explicit shared
+  namespace.
 
 For example:
 
@@ -136,7 +138,7 @@ type UserLocker struct {
 }
 
 func (*UserLocker) KeyPrefix() string {
-    return "lock:user"
+    return "user"
 }
 ```
 
@@ -166,7 +168,7 @@ type UserService struct {
 If you do not want to declare a locker type for injection, create one directly:
 
 ```go
-locker := cacheRedis.NewLocker(ctx, "lock:user")
+locker := cacheRedis.NewLocker(ctx, "user")
 ```
 
 You can also provide a concrete type at runtime:
@@ -238,6 +240,13 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 Finally, inject and use the locker in business code:
 
+:::caution
+
+The `IsBroken()` check in this example is best effort. It is not atomic with
+`Unlock()`, which can still panic if the lock breaks between the two calls.
+
+:::
+
 ```go
 package demo
 
@@ -250,15 +259,14 @@ func (s *UserService) RebuildUser(userID string) {
     if !ok {
         return
     }
-    defer lock.Unlock()
-
-    select {
-    case <-lock.Context().Done():
+    if !s.rebuildWhileOwned(lock.Context(), userID) {
         return
-    default:
     }
-
-    // do work
+    if lock.IsBroken() {
+        return
+    }
+    // Fail-fast if ownership changes after the pre-check.
+    lock.Unlock()
 }
 
 ```
@@ -300,10 +308,10 @@ if !ok {
 }
 ```
 
-The corresponding Redis key is:
+If this locker uses `KeyPrefix() == "user"`, the corresponding Redis key is:
 
 ```text
-vine:lock:lock:user:1
+vine:lock:user:1
 ```
 
 If you pass an empty key:
@@ -315,7 +323,7 @@ lock, ok := userLocker.Lock("")
 The final Redis key is:
 
 ```text
-vine:lock:lock:user:
+vine:lock:user:
 ```
 
 ### Default Lock
@@ -368,8 +376,16 @@ If refresh ultimately fails, the `Lock` enters the `broken` state.
 At that point:
 
 - `IsBroken() == true`.
-- You cannot call `Unlock()` again.
+- Calling `Unlock()` panics.
 - The `Lock` cannot recover.
+
+`IsBroken()` reports a snapshot. It does not reserve the lock or synchronize a
+following `Unlock()`: refresh can mark the lock broken between the two calls.
+The current public API has no atomic `TryUnlock`. Keep the critical section
+bounded, stop work when `Lock.Context()` is canceled, and treat `Unlock()` as a
+fail-fast boundary. If lock loss must be handled as an ordinary error, put this
+API behind a narrowly scoped application recovery/error boundary or use a lock
+implementation with that contract.
 
 ### One-Shot Semantics
 
@@ -439,6 +455,11 @@ user = s.UserCache.GetOrLoad("1", time.Minute, func() *User {
 })
 ```
 
+`GetOrLoad` is a convenience sequence of get, load, and set. It does not
+singleflight concurrent misses: several executions can run `load` for the same
+key at once. Add application-level request coalescing or another cache-stampede
+strategy when duplicate loads are expensive.
+
 ### Creating a Cache Directly
 
 If you do not want to declare a cache type for injection, create one directly:
@@ -479,3 +500,5 @@ The default `KeyPrefix()` rules match those for `Locker`:
 - Declare injectable caches through `InitCaches(...)`, or create one directly with `NewCache(...)`.
 - Listen to `lock.Context()` when you need to detect lock invalidation.
 - Once a `Lock` is broken, discard it and acquire a new one through `Locker.Lock(...)`.
+- Do not treat `IsBroken()` followed by `Unlock()` as an atomic safe-unlock
+  operation.

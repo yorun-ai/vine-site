@@ -1,5 +1,6 @@
 ---
 slug: /guide/rdb
+sidebar_label: Databases
 ---
 
 # Relational Database
@@ -27,6 +28,16 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 }
 ```
 
+:::warning Schema migrations
+
+Vine opens the database and constructs DAOs; it does not call GORM
+`AutoMigrate` or create application tables. Run reviewed migrations as an
+explicit deployment step before instances begin serving. The
+`standalone.Option.SQLiteFile` belongs to Hub and is unrelated to this business
+database.
+
+:::
+
 Embed `rdb.Model` for soft deletion or `rdb.DeletableModel` for physical deletion. A DAO uses a pointer to its model as the generic argument:
 
 ```go title="user.go"
@@ -48,4 +59,4 @@ func (s *UserService) Create(name string) *User {
 }
 ```
 
-The connection is established when the component starts and released after the application stops. Components with the same `ConnURL` share the underlying connection pool. See the [RDB Reference](/docs/rdb) for Model, Query, Patch, and deletion semantics.
+The connection is established when the component starts and released after the application stops. Components with the same `ConnURL` share the underlying connection pool. See the [RDB Reference](../infrastructure/rdb.md) for Model, Query, Patch, and deletion semantics.

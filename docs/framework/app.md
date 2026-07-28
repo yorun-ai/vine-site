@@ -1,5 +1,6 @@
 ---
 slug: /app
+sidebar_label: App API
 ---
 
 # App API
@@ -76,7 +77,9 @@ type ApplicationSpec interface {
 
 Its methods are:
 
-- `Name()`: returns the application name, which cannot be empty or contain `@`.
+- `Name()`: returns the application name. It must match
+  `^[a-z]+(?:\.[a-z]+)*$`: one or more lowercase-letter segments separated by
+  dots, such as `demo.checkout`.
 - `InitComponents(...)`: declares component types.
 - `InitModules(...)`: declares module types.
 - `BindCommon(...)`: registers application-wide dependencies.
@@ -119,6 +122,11 @@ func (*DemoApp) Name() string {
 ```go
 instance := app.New[*DemoApp]()
 ```
+
+`New` constructs and validates the application specification immediately. It
+is not a lazy factory: injected fields and `DIInit()` on the spec run during
+this call, and the root context and listen address are captured before
+`Start()`.
 
 The following rules apply:
 
@@ -170,14 +178,22 @@ Its behavior is:
 - When `Context == nil`, it falls back to `context.Background()`.
 - The framework creates a default `RunFlag` even when one is not provided explicitly.
 
-Inside an application, inject `AppFlag` to read or adjust runtime options:
+Inside an application, `AppFlag` exposes the resolved run options. Prefer
+setting them at construction:
 
 ```go
-type DemoApp struct {
-    app.Application
-}
+instance := app.New[*DemoApp](
+    app.With(&app.RunFlag{ListenAddr: ":18080"}),
+)
+```
 
-func (a *DemoApp) BindCommon(b *di.Binder) {
+`BindCommon` runs during `Start()`, after Vine has captured `ListenAddr`, so
+changing `AppFlag.ListenAddr` there does not move the application listener. If
+the application type must own a default, implement `DIInit()` on the
+application spec; it runs during `New`, after `AppFlag` injection:
+
+```go
+func (a *DemoApp) DIInit() {
     if a.AppFlag.ListenAddr == "" {
         a.AppFlag.ListenAddr = ":18080"
     }
@@ -412,6 +428,11 @@ In `linked` mode, the outer application waits for the business application to co
 
 In standalone and bundled standalone modes, business applications are stopped gracefully in reverse order before the embedded Link, Portal, Hub, and other runtime components stop.
 
+Registration begins before `AfterAppStart`. Do not put readiness-critical work
+in that hook. Startup-hook failure panics and does not run an automatic rollback
+of already constructed resources. See [Application lifecycle](../runtime/application-lifecycle.md)
+for exact boundaries and hook responsibilities.
+
 ## DI visibility
 
 Dependencies commonly visible inside an application include:
@@ -432,7 +453,10 @@ In particular:
 ## Recommendations
 
 - Always override `Name()` in a business application.
-- Prefer supplying the listen address through `RunFlag`; adjust it inside the application only when necessary.
+- Supply the listen address through
+  `app.With(&app.RunFlag{ListenAddr: "..."})` at construction time. If an
+  application must choose its own default, set the injected flag in the
+  specification's `DIInit()`; `BindCommon(...)` is too late.
 - Declare components and modules as pointer types.
 - Keep `BindCommon(...)` limited to common dependencies; do not put routing logic there.
 - Keep Web routing under a single `WebberSpec`. If you need more routes, add multiple handlers to the same Webber.

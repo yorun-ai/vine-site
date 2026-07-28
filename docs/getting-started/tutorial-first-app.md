@@ -1,5 +1,6 @@
 ---
 sidebar_position: 1
+sidebar_label: First Application
 slug: /tutorial-first-app
 ---
 
@@ -7,11 +8,12 @@ slug: /tutorial-first-app
 
 In this tutorial, you will create a minimal Vine application and run it in standalone mode. Standalone starts Hub, Portal, Link, and the business application in the same process, making it suitable for first-time evaluation, local development, and integration testing.
 
-When you finish, you will have a Vine application that starts, shuts down gracefully, and stores its data in a local SQLite database file.
+When you finish, you will have a Vine application that starts, shuts down
+gracefully, and stores its embedded Hub runtime state in a local SQLite file.
 
 ## Prerequisites
 
-- Go 1.26 or later.
+- Go 1.26.5 or later.
 - Vine is installed, or the project can access the `go.yorun.ai/vine` module.
 
 Create an empty directory and initialize a Go module:
@@ -20,7 +22,7 @@ Create an empty directory and initialize a Go module:
 mkdir vine-hello
 cd vine-hello
 go mod init example.com/vine-hello
-go get go.yorun.ai/vine@latest
+go get go.yorun.ai/vine@v0.10.0
 ```
 
 ## Define the Application
@@ -31,17 +33,17 @@ Create `main.go`:
 package main
 
 import (
-    "go.yorun.ai/vine/app"
+	"go.yorun.ai/vine/app"
 	"go.yorun.ai/vine/app/standalone"
-    "go.yorun.ai/vine/core/logger"
+	"go.yorun.ai/vine/core/logger"
 )
 
 type HelloModule struct {
-    app.BaseModule
+	app.BaseModule
 }
 
 func (*HelloModule) AfterAppStart() {
-    logger.Info("hello from Vine")
+	logger.Info("hello from Vine")
 }
 
 type HelloApp struct {
@@ -53,7 +55,7 @@ func (*HelloApp) Name() string {
 }
 
 func (*HelloApp) InitModules(add app.TypeAdder) {
-    add(app.T[*HelloModule]())
+	add(app.T[*HelloModule]())
 }
 
 func main() {
@@ -66,7 +68,10 @@ func main() {
 This code introduces three concepts you need to understand:
 
 1. Embed `app.Application` to get the default implementation of the application specification.
-2. `Name()` returns a globally unique application name. The name cannot be empty or contain `@`.
+2. `Name()` returns the logical application name. It must contain one or more
+   lowercase-letter segments separated by dots, such as `demo.hello`.
+   Replicas of the same application share this name and have different instance
+   IDs; two different applications in one process cannot use the same name.
 3. `HelloModule` starts with the application and writes a verifiable log message after startup completes.
 
 `StartAndWait()` starts the runtime and waits for `SIGINT` or `SIGTERM`. After you press `Ctrl+C`, the application shuts down gracefully in reverse startup order.
@@ -99,16 +104,20 @@ flowchart LR
 
 - **Hub** stores configuration and registration information and provides in-process Redis.
 - **Portal** subscribes to entry, site, and endpoint configuration.
-- **Link** registers `HelloApp` and provides configuration, service discovery, and request forwarding.
+- **Link** owns the connection to `HelloApp` and provides configuration,
+  discovery, and forwarding. This minimal App declares no public capability, so
+  it has nothing to advertise yet.
 - **HelloApp** is your business application. You can later add components, modules, and Rpc, Web, Event, or Task capabilities to it.
 
 In standalone, the management connections between Hub and Link use the inproc transport and do not open additional management ports. Portal can still listen on business HTTP/HTTPS ports according to its entry rules. This mode does not simulate heartbeat, TTL expiration, or network disconnection. Use linked mode when you need to validate these behaviors.
 
 ## Connect to an Existing Hub
 
-First, start Hub separately:
+Install the matching Vine CLI, then start Hub separately:
 
 ```bash
+go install go.yorun.ai/vine/cmd/vine@v0.10.0
+
 vine hub serve \
   --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite
@@ -125,13 +134,16 @@ func main() {
 }
 ```
 
-The business application and a Link now run in the same process. Link connects to the independent Hub and registers the application capabilities with it. `HubEndpoint` and `IngressListen` can also be supplied through `VINE_HUB_ENDPOINT` and `VINE_INGRESS_LISTEN`, respectively.
+The business application and a Link now run in the same process. Link connects
+to the independent Hub and registers any application capabilities you declare.
+`HubEndpoint` and `IngressListen` can also be supplied through
+`VINE_HUB_ENDPOINT` and `VINE_INGRESS_LISTEN`, respectively.
 
 To run Link and the business application in separate processes, start the business application with `app.New` and use `--link-endpoint` or `VINE_LINK_ENDPOINT` to specify the API endpoint of an existing Link.
 
 ## Next Steps
 
-- Complete [your first Skel contract](/docs/first-skel-contract) to generate type-safe business code.
-- Read [App](/docs/app) to learn the complete lifecycle of applications, components, and modules.
-- Read [Hub](/docs/hub), [Link](/docs/link), and [Portal](/docs/portal) to understand responsibility boundaries in multi-process deployments.
-- Read [Using Rpc](/docs/guide/rpc) to start declaring and calling services.
+- Complete [your first Skel contract](./first-contract.md) to generate type-safe business code.
+- Read [App](../framework/app.md) to learn the complete lifecycle of applications, components, and modules.
+- Read [Hub](../runtime/hub.md), [Link](../runtime/link.md), and [Portal](../runtime/portal.md) to understand responsibility boundaries in multi-process deployments.
+- Read [Using Rpc](../framework/rpc-guide.md) to start declaring and calling services.

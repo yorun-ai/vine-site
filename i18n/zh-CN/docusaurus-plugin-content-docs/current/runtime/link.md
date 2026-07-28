@@ -1,5 +1,6 @@
 ---
 slug: /link
+sidebar_label: Link 运行时
 ---
 
 # Link
@@ -9,7 +10,8 @@ Link 是部署在应用侧的 runtime 接入层。它将本地应用注册到 Hu
 ```mermaid
 flowchart LR
   App["本地应用"] <--> Link["Link"] <--> Hub["Hub"]
-  Link --> RpcWeb["Rpc / Web：发现并转发"]
+  Link --> Rpc["Rpc：发现并转发"]
+  Link --> Web["Web：投递给本地 App"]
   Link --> EventTask["Event / Task：消费并派发"]
   Link --> Config["Config：订阅配置变更"]
 ```
@@ -19,7 +21,9 @@ flowchart LR
 - **应用注册**：保存本地应用实例事实，向 Hub 注册能力，并在退出时注销。
 - **健康与租约**：普通模式下对实例进行健康检查并向 Hub 发送 heartbeat。
 - **配置读取**：提供配置快照，并监听 Hub Redis 的变更事件。
-- **服务发现与转发**：Rpc 和 Web 请求根据注册信息路由到本地或远端实例。
+- **Rpc 发现与转发**：选择一个已注册的本地或远端 Rpc 实例并转发调用。
+- **Web 投递**：接收 Portal 已选定的 Web 请求，并转发给请求中指定的本地应用
+  实例。
 - **异步消息派发**：消费 NATS 消息，投递给本地声明的事件监听器和任务执行器。
 
 Link 是本地应用能力的唯一 owner。Rpc、Web、事件、任务和配置模块只从它派生各自的运行时索引，不直接维护另一份应用实例状态。
@@ -48,11 +52,18 @@ vine link serve \
 
 ### Rpc
 
-应用发起 Rpc 调用时，请求先进入 Link 的 `rpcproxy`。它根据服务发现判断目标位于本地还是远端，再选择本地调用或经远端 Link 转发。外部进入 Link ingress 的 Rpc 请求也会经过该代理后到达本地应用。
+应用发起 Rpc 调用时，请求先进入 Link 的 `rpcproxy`。proxy 对当前 service
+registration 执行 round-robin，选择下一条注册。注册属于本地应用时，Link 直接调用其
+应用 endpoint；否则经目标 Link 转发。本地性只改变转发路径，不构成选择优先级。完成
+选择后发生的失败，也不会让该次调用自动改试另一条注册。
 
 ### Web
 
-`webproxy` 维护本地 Web handler 索引与远端发现结果，并采用与 Rpc 相同的“本地优先、远端可达”的转发模型。
+`webproxy` 只索引当前 Link 所拥有应用的 Web handler。分布式 Web endpoint
+快照和 round-robin 选择由 Portal 负责；Portal 把请求发送给选中实例所属的
+Link，目标 Link 再校验本地实例与 handler，并调用应用 endpoint。Link 不会从
+自己的 discovery index 中选择远端 Web 目标。Portal 选择、发现新鲜度与失败
+边界见[请求路由](./request-routing.md)。
 
 ### Event 与 Task
 
@@ -60,12 +71,14 @@ vine link serve \
 
 ## Inproc 模式
 
-`linked.New(...)` 会让 Link 与业务应用同进程，但 Hub 仍是外部服务。Link 会开放 ingress、向 Hub 注册并继续执行 heartbeat 与应用健康检查。
+`linked.New(...)` 会让 Link 与业务应用同进程，但 Hub 仍是外部服务。Link 会
+开放 ingress、向 Hub 注册并继续向 Hub 发送 heartbeat。进程内 App 与 Link
+生命周期绑定，因此独立的应用 healthcheck 会被禁用。
 
 standalone 才会把 Hub、Portal、Link 和应用全部放入同一进程，并使用进程内 Redis 与 endpoint；这种模式不执行 heartbeat。要验证租约和网络故障，可使用 linked 或完全分开部署。
 
 ## 相关文档
 
-- [Hub](/docs/hub)：配置与注册信息的来源。
-- [Portal](/docs/portal)：对外请求进入应用的网关。
-- [App](/docs/app)：以 linked 或 standalone 方式装配应用。
+- [Hub](./hub.md)：配置与注册信息的来源。
+- [Portal](./portal.md)：对外请求进入应用的网关。
+- [App](../framework/app.md)：以 linked 或 standalone 方式装配应用。

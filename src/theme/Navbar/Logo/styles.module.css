@@ -27,17 +27,18 @@
   text-align: left;
 }
 
-.chevron {
+.switchIcon {
   width: 0.875rem;
   height: 0.875rem;
   flex: 0 0 auto;
   margin-left: auto;
   color: var(--muted-foreground);
-  transition: transform 140ms ease-out;
+  transition: color 140ms ease-out;
 }
 
-.trigger[aria-expanded='true'] .chevron {
-  transform: rotate(180deg);
+.trigger:hover .switchIcon,
+.trigger[aria-expanded='true'] .switchIcon {
+  color: var(--primary);
 }
 
 .menu {

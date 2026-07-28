@@ -1,102 +1,124 @@
 ---
 slug: /core-packages
+title: Public Package Map
+sidebar_label: Public Packages
+description: Find the supported Vine package for an application task and know when to use the lower-level APIs.
 ---
 
-# Framework Architecture
+# Public Package Map
 
-This page explains how Vine's application assembly, dependency injection, configuration, context, request execution, and message delivery capabilities work together. Package paths help locate each capability; everyday business development does not need to depend on these internal packages directly.
+Vine's public Go API is intentionally organized as a set of facades. Start with
+`app` and the generated contract types used by your application, then import a
+`core/*` or `infra/*` package only for the capability you need.
 
-> Business code should prefer public packages such as `app`, `core/rpc`, `core/web`, `core/event`, `core/task`, and `core/skel`. Consult this internal capability map only when you need to understand advanced behavior or troubleshoot a problem.
+The authoritative symbol-level reference is
+[`pkg.go.dev/go.yorun.ai/vine`](https://pkg.go.dev/go.yorun.ai/vine). This page
+answers a different question: **which package should application code choose?**
 
-```mermaid
-flowchart TB
-  App["Application assembly\napp / runtime / link"] --> Foundation["Foundation\ndi / conf / meta / logger / ex / ctr"]
-  App --> Capabilities["Business capabilities\nrpc / web / event / task"]
-  Capabilities --> Protocol["Protocols and contracts\nskel / specs / skeled"]
-  Capabilities --> Transport["Transport and ingress\nHTTP / inproc / proxy"]
-  Foundation --> Protocol
+:::warning Public boundary
 
-  classDef app fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e,stroke-width:2px;
-  classDef foundation fill:#f3e8ff,stroke:#9333ea,color:#581c87,stroke-width:2px;
-  classDef capability fill:#cffafe,stroke:#0891b2,color:#164e63,stroke-width:2px;
-  classDef protocol fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:2px;
-  classDef transport fill:#ffedd5,stroke:#ea580c,color:#7c2d12,stroke-width:2px;
+Packages under `internal/` are implementation details. They may explain a stack
+trace, but application code must not import or mirror them. Public behavior is
+defined by the packages below and by the runtime contracts documented on this
+site.
 
-  class App app;
-  class Foundation foundation;
-  class Capabilities capability;
-  class Protocol protocol;
-  class Transport transport;
+:::
+
+## Application assembly
+
+| Task | Package | Start here |
+| --- | --- | --- |
+| Declare an application, components, modules, capabilities, and lifecycle hooks | [`app`](https://pkg.go.dev/go.yorun.ai/vine/app) | [Application model](./application-model.md) |
+| Run one or more applications with an embedded Hub, Link, and Portal | [`app/standalone`](https://pkg.go.dev/go.yorun.ai/vine/app/standalone) | [First application](../getting-started/tutorial-first-app.md) |
+| Run one or more applications with an in-process Link connected to an external Hub | [`app/linked`](https://pkg.go.dev/go.yorun.ai/vine/app/linked) | [Deployment topologies](../getting-started/deployment-modes.md) |
+| Test application behavior with a controlled standalone runtime | [`app/testkit`](https://pkg.go.dev/go.yorun.ai/vine/app/testkit) | [Logging and testing](./logging-testing.md) |
+
+Most `main` packages need only one runtime-mode constructor:
+
+```go
+standalone.NewWithOption[*CheckoutApp](standalone.Option{
+    SQLiteFile: "./vine.sqlite",
+}).StartAndWait()
 ```
 
-## Application and runtime
+Keep application assembly in the application spec. Avoid constructing
+lower-level servers or transports in `main`.
 
-| Package | Responsibility | Main collaborators |
+## Application capabilities
+
+| Capability | Package | What application code normally uses |
 | --- | --- | --- |
-| `internal/core/app` | Defines the endpoints, muted implementations, and application-side Skel contracts required by the application runtime; lifecycle assembly lives in `internal/app`. | `runtime`, `link`, `app/skeled` |
-| `internal/core/app/skeled` | Skel-generated internal application data models, schemas, and service definitions. | `app`, `skel`, Rpc |
-| `internal/core/runtime` | Represents the identity, build information, Go runtime environment, and diagnostic data of a running application. | `app`, `meta`, `logger` |
-| `internal/core/link` | Defines the `Linker` abstraction required when an application connects to Link, exposing Rpc proxy, Event, Task, and other endpoints to the application runtime. | `app`, Link daemon, Rpc/Event/Task |
-| `internal/core/link/ingressinproc` | Registers and resolves in-process Link ingress handlers, allowing standalone and linked modes to bypass network transport. | `link`, Portal, Web/Rpc forwarding |
-| `internal/core/link/skeled` | Generated data, schemas, and service definitions for Link's internal protocol, including application registration and capability declarations. | Link daemon, `link`, `skel` |
+| Configuration | [`core/conf`](https://pkg.go.dev/go.yorun.ai/vine/core/conf) | Generated config types injected into modules or executions |
+| Rpc | [`core/rpc`](https://pkg.go.dev/go.yorun.ai/vine/core/rpc) | Generated service clients and server implementations |
+| Web | [`core/web`](https://pkg.go.dev/go.yorun.ai/vine/core/web) | Generated Web handler, router, assets server, or reverse proxy |
+| Event | [`core/event`](https://pkg.go.dev/go.yorun.ai/vine/core/event) | Generated emitter and listener |
+| Task | [`core/task`](https://pkg.go.dev/go.yorun.ai/vine/core/task) | Generated launcher and runner |
+| Skel runtime types | [`core/skel`](https://pkg.go.dev/go.yorun.ai/vine/core/skel) | Generated scalar/schema helpers and `MinSkelcVersion()` |
 
-## Application foundation
+Generated code already connects these packages to its type-safe facade. Prefer
+the generated client, handler, listener, or runner over manually constructing a
+`ServiceSpec`, `WebSpec`, `EventSpec`, or `TaskSpec`.
 
-| Package | Responsibility | Main collaborators |
+Use the low-level constructors in these packages only when building framework
+integration code, a custom executor, or a transport adapter. The corresponding
+reference pages describe those advanced APIs:
+
+- [Rpc API](../infrastructure/rpc.md)
+- [vRPC over HTTP](../infrastructure/vrpc-http.md)
+- [App API](./app.md)
+
+## Execution foundations
+
+| Concern | Package | Use it when |
 | --- | --- | --- |
-| `internal/core/di` | Dependency injection container supporting bindings, scopes, field injection, method invocation, execution child injectors, and seeds. | `app`, `ctr`, all capabilities |
-| `internal/core/ctr` | Method execution container with a filter chain; organizes arguments, DI, and results within one execution. | `di`, Rpc/Web/Event/Task executors |
-| `internal/core/conf` | Registers configuration types, reads configuration, and obtains typed configuration snapshots. | `app`, Link configuration subscriptions |
-| `internal/core/meta` | Application identity, trace, initiator, actor, and contexts carrying this metadata. | Rpc/Web/Event/Task, `runtime` |
-| `internal/core/logger` | Framework logger based on `slog`, including global options, standard-library log bridging, and call-site handling. | All runtime packages |
-| `internal/core/redact` | Architecture-independent sensitive-field masking, bounded JSON-safe projection, and binary summaries. Its public entry point is `core/redact`. | Rpc/Event/Task logs, application diagnostics |
-| `internal/core/ex` | Unified error codes, error objects, and recognizable exception semantics. | Boundaries, Rpc/Web/Event/Task |
+| Dependency bindings and scopes | [`core/di`](https://pkg.go.dev/go.yorun.ai/vine/core/di) | Binding common dependencies or writing custom integration code |
+| Filtered method execution | [`core/ctr`](https://pkg.go.dev/go.yorun.ai/vine/core/ctr) | Implementing filters or a custom execution pipeline |
+| Context, trace, application identity, and Actor | [`core/meta`](https://pkg.go.dev/go.yorun.ai/vine/core/meta) | Reading identity/context or starting an explicit call context |
+| Structured framework errors | [`core/ex`](https://pkg.go.dev/go.yorun.ai/vine/core/ex) | Returning stable error codes across a boundary |
+| Structured logging | [`core/logger`](https://pkg.go.dev/go.yorun.ai/vine/core/logger) | Writing application logs with Vine categories and context fields |
+| Sensitive-data projection | [`core/redact`](https://pkg.go.dev/go.yorun.ai/vine/core/redact) | Redacting generated or application data before diagnostics |
+| Process runtime and executable identity | [`core/runtime`](https://pkg.go.dev/go.yorun.ai/vine/core/runtime) | Reading the process-level runtime name, version, instance ID, or build details; not identifying an individual App inside a bundle |
+| Build metadata | [`buildinfo`](https://pkg.go.dev/go.yorun.ai/vine/buildinfo) | Adding or reading release-time linker metadata |
 
-## Rpc
+For ordinary Rpc, Web, Event, and Task handlers, Vine creates the execution
+container and seeds the correct context automatically. Read
+[Dependency and execution model](../runtime/execution-model.md) before retaining a
+dependency outside the handler that received it.
 
-| Package | Responsibility | Main collaborators |
-| --- | --- | --- |
-| `internal/core/rpc/spec` | Core Rpc contracts: service and method registration, requests and responses, handlers, contexts, argument validation, and in-process endpoint definitions. | Rpc client/server, generated code |
-| `internal/core/rpc/client` | Creates clients, organizes call arguments, selects an invoker, and initiates Rpc requests. | `rpc/spec`, Link Rpc proxy |
-| `internal/core/rpc/server` | Maps Rpc handlers to HTTP handlers and provides direct or `ctr`-container-based executors. | `rpc/spec`, `ctr`, `di` |
-| `internal/core/rpc/transport/http` | Rpc HTTP encoding, decoding, and round-trip implementation. | `rpc/client`, `rpc/server` |
-| `internal/core/rpc/transport/inproc` | In-process Rpc endpoint registry and round-trip implementation. | standalone/linked runtime, `rpc/spec` |
-| `internal/core/rpc/log` | Configuration, recording, and muted implementations for Rpc call logs. | `rpc/client`, `rpc/server`, `logger` |
+## Infrastructure components
 
-## Web
+| Need | Package | Guide | Reference |
+| --- | --- | --- | --- |
+| Relational database, GORM connection, typed DAO/query | [`infra/rdb`](https://pkg.go.dev/go.yorun.ai/vine/infra/rdb) | [RDB guide](./rdb-guide.md) | [RDB API](../infrastructure/rdb.md) |
+| Redis client, typed cache, distributed locker | [`infra/redis`](https://pkg.go.dev/go.yorun.ai/vine/infra/redis) | [Redis guide](./redis-guide.md) | [Redis API](../infrastructure/redis.md) |
 
-| Package | Responsibility | Main collaborators |
-| --- | --- | --- |
-| `internal/core/web/spec` | Contracts for Web handlers, routes, request contexts, request models, and registries. | Web server, application Webber |
-| `internal/core/web/server` | Executes routes and handlers based on `web/spec`, mapping requests into execution contexts. | `ctr`, `di`, `web/spec` |
-| `internal/core/web/inproc` | Registers and accesses in-process Web endpoints. | standalone/linked runtime, Portal forwarding |
-| `internal/core/web/proxy` | Reverse-proxy utilities that forward Web requests to target endpoints. | Link, Portal, Web gateway |
-| `internal/core/web/assets` | Embedded asset archives, static asset serving, and archive access. | Hub Dashboard, Web server |
+Declare these as application components. This lets Vine create their
+dependencies before business modules, expose them through DI, and stop them
+after business modules finish.
 
-## Event
+## Reusable utilities
 
-| Package | Responsibility | Main collaborators |
-| --- | --- | --- |
-| `internal/core/event/spec` | Event messages, listener declarations, contexts, implementation types, and registries. | Event emitter/server, generated code |
-| `internal/core/event` | Creates emitters, receives messages, and invokes local listeners through an executor. | `event/spec`, `ctr`, Link/NATS |
-| `internal/core/event/log` | Logs Event delivery and processing. | `event`, `logger` |
+The `util/*` packages are public, framework-independent helpers:
 
-## Task
+| Package | Purpose |
+| --- | --- |
+| [`util/vcode`](https://pkg.go.dev/go.yorun.ai/vine/util/vcode) | JSON, CBOR, YAML, compression, and Base58 helpers |
+| [`util/vfile`](https://pkg.go.dev/go.yorun.ai/vine/util/vfile) | File path, read, and write helpers |
+| [`util/vmap`](https://pkg.go.dev/go.yorun.ai/vine/util/vmap) | Map collection, search, stream, and concurrent-map helpers |
+| [`util/vmath`](https://pkg.go.dev/go.yorun.ai/vine/util/vmath) | Graph and numeric helpers |
+| [`util/vnet`](https://pkg.go.dev/go.yorun.ai/vine/util/vnet) | Address, IP, and URL helpers |
+| [`util/vpre`](https://pkg.go.dev/go.yorun.ai/vine/util/vpre) | Framework-style precondition checks |
+| [`util/vslice`](https://pkg.go.dev/go.yorun.ai/vine/util/vslice) | Slice collection, set, search, stream, and concurrency helpers |
+| [`util/vstring`](https://pkg.go.dev/go.yorun.ai/vine/util/vstring) | String and delimited-value helpers |
 
-| Package | Responsibility | Main collaborators |
-| --- | --- | --- |
-| `internal/core/task/spec` | Task messages, runner declarations, trigger information, contexts, implementation types, and registries. | Task launcher/server, generated code |
-| `internal/core/task` | Creates launchers, receives Tasks, and runs local Task runners through an executor. | `task/spec`, `ctr`, Link/NATS |
-| `internal/core/task/log` | Logs Task delivery, execution, and failures. | `task`, `logger` |
+Use a standard-library function when it is equally clear. These packages are
+most useful when the same helper is already part of a Vine-facing code path.
 
-## Contracts and code generation
+## Suggested order
 
-| Package | Responsibility | Main collaborators |
-| --- | --- | --- |
-| `internal/core/skel` | Skel runtime scalar types, schema registration, actor/auth helpers, generated-code identifiers, and minimum compiler version constraints. | All `skeled` packages, Rpc/Web/Event/Task |
-
-## Suggested reading path
-
-1. Start with [App](/docs/app), [Dependency Injection](/docs/di), [Execution Container](/docs/ctr), and [Context Metadata](/docs/meta) to understand how an application processes one request.
-2. Continue with the Rpc, Web, Event, or Task capability guide as needed.
-3. Read [Link](/docs/link), [Hub](/docs/hub), and [Portal](/docs/portal) to understand how services collaborate in a multi-process deployment.
+1. Learn `app` and one runtime-mode package.
+2. Work through the guide for each capability your application exposes.
+3. Read the execution foundations when writing filters, custom bindings, or
+   context-sensitive infrastructure.
+4. Use the symbol reference for exact signatures and the reference section on
+   this site for wire behavior and framework defaults.

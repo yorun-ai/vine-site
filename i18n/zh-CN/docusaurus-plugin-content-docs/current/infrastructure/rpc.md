@@ -1,10 +1,11 @@
 ---
 slug: /rpc
+sidebar_label: Rpc API
 ---
 
 # Rpc API
 
-日常使用请先阅读 [使用 Rpc](/docs/guide/rpc)。HTTP 线协议见 [vRPC over HTTP](/docs/vrpc-http)。本页列出 `core/rpc` 的 client、server、executor 和服务元信息 API，适合调整底层调用选项或构建自定义接入层时查阅。
+日常使用请先阅读 [使用 Rpc](../framework/rpc-guide.md)。HTTP 线协议见 [vRPC over HTTP](./vrpc-http.md)。本页列出 `core/rpc` 的 client、server、executor 和服务元信息 API，适合调整底层调用选项或构建自定义接入层时查阅。
 
 `core/rpc` 提供统一的 Rpc 抽象，负责：
 

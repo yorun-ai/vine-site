@@ -1,5 +1,6 @@
 ---
 slug: /deployment-modes
+sidebar_label: Deployment
 ---
 
 # Runtime & Deployment
@@ -38,7 +39,7 @@ The startup order is Hub → Portal → Link → business application. Shutdown 
 
 ### Characteristics and Limitations
 
-- You only need to start one business binary, which makes this the best mode for the [first application tutorial](/docs/tutorial-first-app).
+- You only need to start one business binary, which makes this the best mode for the [first application tutorial](./tutorial-first-app.md).
 - Use `standalone.Option` to configure SQLite/PostgreSQL, a seed YAML file, and the Dashboard URL.
 - Hub and Link do not start heartbeat, TTL lease renewal, or the registry sweeper. Registrations are removed explicitly when the application stops.
 - Hub and Link do not expose separate management ports. Portal can still listen on business HTTP/HTTPS ports according to its entry rules.
@@ -125,7 +126,13 @@ You can omit the endpoint from the code and set an environment variable instead:
 VINE_LINK_ENDPOINT=http://127.0.0.1:7079 ./hello-app
 ```
 
-In this mode, Link registers applications with Hub and maintains heartbeats. The application, Link, Portal, and Hub can be released, restarted, and scaled independently. External Portal listeners, site rules, and TLS certificates are managed through Hub configuration.
+In this mode, Link registers applications with Hub and maintains heartbeats.
+The application, Link, Portal, and Hub have independent process lifecycles,
+although each role has different scaling and availability boundaries. External
+Portal listeners, site rules, and TLS certificates are managed through Hub
+configuration. Review the
+[Production Readiness Checklist](../operations/production-readiness.md) before treating
+process separation as high availability.
 
 ## How to Choose
 
@@ -139,7 +146,9 @@ Start with standalone. Move to linked when you need shared configuration, discov
 
 ## Related Documentation
 
-- [Hub](/docs/hub): Configuration, registration, and lease management.
-- [Link](/docs/link): Application registration, discovery, and request forwarding.
-- [Portal](/docs/portal): External entry points and gateway rules.
-- [Application model](/docs/application-model): Application construction and lifecycle.
+- [Hub](../runtime/hub.md): Configuration, registration, and lease management.
+- [Link](../runtime/link.md): Application registration, discovery, and request forwarding.
+- [Portal](../runtime/portal.md): External entry points and gateway rules.
+- [Application model](../framework/application-model.md): Application construction and lifecycle.
+- [Production readiness](../operations/production-readiness.md): Security, persistence,
+  shutdown, failure, and scaling boundaries.

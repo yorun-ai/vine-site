@@ -1,10 +1,16 @@
 ---
 slug: /components
+sidebar_label: Components & Modules
 ---
 
 # Components & Modules
 
-Components and modules split an application into functional units that can be initialized, injected, and stopped independently. Vine creates them and injects their dependencies when the application starts, then releases their resources in reverse order when the application stops.
+Components and modules split an application into functional units that can be
+initialized, injected, and stopped independently. `app.New` creates the App
+shell, constructs and validates its specification, and captures runtime inputs;
+it does not yet construct declared components or modules. `Start` constructs
+and injects them and runs their startup hooks. `Stop` runs shutdown hooks in
+reverse order.
 
 ## Capability overview
 
@@ -13,24 +19,24 @@ Application-side capabilities are declared by the App and enabled as needed:
 | Capability | What it provides | Entry point |
 | --- | --- | --- |
 | Module | Organizes domain services, background work, and lifecycle resources | `InitModules`, `app.BaseModule` |
-| Config | Obtains `eternal` or `instant` configuration | [Application Configuration](/docs/configuration) |
-| Rpc | Provides and calls type-safe services | [Using Rpc](/docs/guide/rpc) |
-| Web | Registers HTTP routes, static assets, and reverse proxies | [Web](/docs/web) |
-| Event | Publishes facts and notifies multiple consumers asynchronously | [Events and Tasks](/docs/events-and-tasks) |
-| Task | Triggers specific work or schedules it with Cron | [Events and Tasks](/docs/events-and-tasks) |
-| RDB | Connects to PostgreSQL or SQLite and injects DAOs | [Relational Database](/docs/guide/rdb) |
-| Redis | Injects Redis, caches, and distributed lockers | [Redis](/docs/guide/redis) |
-| Logger / testkit | Provides structured logging and standalone integration testing | [Logging and Testing](/docs/logging-and-testing) |
+| Config | Obtains `eternal` or `instant` configuration | [Application Configuration](./configuration.md) |
+| Rpc | Provides and calls type-safe services | [Using Rpc](./rpc-guide.md) |
+| Web | Registers HTTP routes, static assets, and reverse proxies | [Web](./web.md) |
+| Event | Publishes facts and notifies multiple consumers asynchronously | [Events and Tasks](./event-task.md) |
+| Task | Triggers specific work or schedules it with Cron | [Events and Tasks](./event-task.md) |
+| RDB | Connects to PostgreSQL or SQLite and injects DAOs | [Relational Database](./rdb-guide.md) |
+| Redis | Injects Redis, caches, and distributed lockers | [Redis](./redis-guide.md) |
+| Logger / testkit | Provides structured logging and standalone integration testing | [Logging and Testing](./logging-testing.md) |
 
 Three components collaborate in a multi-process runtime:
 
 | Component | Responsibility | Documentation |
 | --- | --- | --- |
-| Hub | Distributes configuration, registrations, and runtime state | [Hub](/docs/hub) |
-| Link | Connects applications, discovers and forwards services, and dispatches messages | [Link](/docs/link) |
-| Portal | Provides the external HTTP, HTTPS, Rpc, and Web gateway | [Portal](/docs/portal) |
+| Hub | Distributes configuration, registrations, and runtime state | [Hub](../runtime/hub.md) |
+| Link | Connects applications, discovers and forwards services, and dispatches messages | [Link](../runtime/link.md) |
+| Portal | Provides the external HTTP, HTTPS, Rpc, and Web gateway | [Portal](../runtime/portal.md) |
 
-See [Component Runtime Mechanisms](/docs/runtime-mechanisms) and [Deployment Topologies](/docs/deployment-modes) for how these pieces form standalone, linked, and fully separated deployments.
+See [Component Runtime Mechanisms](../runtime/mechanisms.md) and [Deployment Topologies](../getting-started/deployment-modes.md) for how these pieces form standalone, linked, and fully separated deployments.
 
 ## When to use a module
 
@@ -76,17 +82,23 @@ Objects exposed by components enter the dependency injection container. Modules,
 
 ```mermaid
 flowchart LR
-  Create["Create and inject"] --> BeforeStart["BeforeAppStart"] --> Start["Application starts serving"] --> AfterStart["AfterAppStart"]
-  AfterStart --> BeforeStop["BeforeAppStop"] --> Stop["Stop serving"] --> AfterStop["AfterAppStop"]
+  Create["Start: create and inject"] --> BeforeStart["BeforeAppStart"] --> Start["Start endpoint and register"] --> AfterStart["AfterAppStart"]
+  AfterStart --> BeforeStop["BeforeAppStop"] --> Stop["Unregister, drain, and stop"] --> AfterStop["AfterAppStop"]
 ```
 
-- `BeforeAppStart`: establish connections, warm data, or verify dependencies; returning an error prevents the application from starting.
-- `AfterAppStart`: runs after the application is ready to serve.
-- `BeforeAppStop`: stops accepting new work and begins draining.
+- `BeforeAppStart`: establish connections, warm data, or verify dependencies
+  before registration. An error aborts startup and is surfaced as a panic; Vine
+  does not automatically roll back hooks that already ran.
+- `AfterAppStart`: runs after the endpoint has started and registration has
+  begun. Requests may already arrive, so do not put readiness work here.
+- `BeforeAppStop`: stop producers and prepare for the unregister-and-drain
+  phase.
 - `AfterAppStop`: releases connections and other resources.
 
 At startup, Vine runs infrastructure components in declaration order, followed by modules. During shutdown, it stops modules in reverse order before stopping components. This lets business modules use database and Redis resources that are already ready during startup, and gives them a chance to clean up before those connections are released.
 
 Do not declare the same module or component type more than once. To share dependencies, bind them in the application's `BindCommon` method or in the object's own `Bind` method. Leave per-request context dependencies to the execution scope.
 
-See [Dependency Injection](/docs/di) for binding options and [Runtime Mechanisms](/docs/runtime-mechanisms) for the complete startup sequence.
+See [Dependency Injection](./di.md) for binding options and
+[Application Lifecycle](../runtime/application-lifecycle.md) for the complete startup
+and shutdown sequence.

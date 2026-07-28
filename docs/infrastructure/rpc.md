@@ -1,10 +1,11 @@
 ---
 slug: /rpc
+sidebar_label: Rpc API
 ---
 
 # Rpc API
 
-For day-to-day use, start with [Using Rpc](/docs/guide/rpc). See [vRPC over HTTP](/docs/vrpc-http) for the wire protocol. This page documents the client, server, executor, and service metadata APIs provided by `core/rpc`. Use it when you need to tune low-level invocation options or build a custom integration layer.
+For day-to-day use, start with [Using Rpc](../framework/rpc-guide.md). See [vRPC over HTTP](./vrpc-http.md) for the wire protocol. This page documents the client, server, executor, and service metadata APIs provided by `core/rpc`. Use it when you need to tune low-level invocation options or build a custom integration layer.
 
 `core/rpc` provides a unified Rpc abstraction. It is responsible for:
 

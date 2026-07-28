@@ -1,5 +1,6 @@
 ---
 slug: /di
+sidebar_label: Dependency Injection
 ---
 
 # Dependency Injection (DI)

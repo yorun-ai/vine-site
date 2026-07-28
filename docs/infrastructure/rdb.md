@@ -1,10 +1,11 @@
 ---
 slug: /rdb
+sidebar_label: Database API
 ---
 
 # RDB API
 
-For day-to-day integration, start with [Using Relational Databases](/docs/guide/rdb). This page documents the complete connection, DAO, Query, and model APIs provided by `infra/rdb`.
+For day-to-day integration, start with [Using Relational Databases](../framework/rdb-guide.md). This page documents the complete connection, DAO, Query, and model APIs provided by `infra/rdb`.
 
 The top-level `infra/rdb` package exposes public types including `Option`, `TypeAdder`, `DatabaseSpec`, `Database`, `Dao`, `Query`, `Model`, `DeletableModel`, and `Patch`.
 

@@ -31,14 +31,18 @@ source; do not present planned APIs as available.
 - Node.js 20 or later
 - pnpm 11.15.1
 
-Install dependencies and start the default English site:
+Install dependencies and start the bilingual hot-reload development server:
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Use `pnpm dev:zh` to preview the Simplified Chinese site.
+This command serves both locales from one local address, so edits refresh
+automatically and locale switching remains available. To use fewer resources
+while editing one locale, run `pnpm dev:en` or `pnpm dev:zh`; those commands
+intentionally compile only one locale, and their language switcher cannot
+navigate to the other locale.
 
 ## Documentation Layout
 

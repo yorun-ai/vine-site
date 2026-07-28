@@ -1,5 +1,6 @@
 ---
 slug: /di
+sidebar_label: 依赖注入
 ---
 
 # 依赖注入（DI）

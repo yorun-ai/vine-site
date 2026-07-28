@@ -1,5 +1,5 @@
 import React, {type ReactNode, useEffect, useRef, useState} from 'react'
-import {ChevronDown} from 'lucide-react'
+import {DotsNine} from '@phosphor-icons/react'
 
 import styles from './styles.module.css'
 
@@ -47,10 +47,10 @@ export default function NavbarLogo(): ReactNode {
         type="button">
         <span aria-hidden="true" className="navbar__logo" />
         <span className="navbar__title">Vine Framework</span>
-        <ChevronDown
+        <DotsNine
           aria-hidden="true"
-          className={styles.chevron}
-          strokeWidth={1.75}
+          className={styles.switchIcon}
+          weight={open ? 'fill' : 'regular'}
         />
       </button>
 
