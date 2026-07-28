@@ -205,7 +205,7 @@
     "message": "复制页面选项"
   },
   "vine.copyPage.copyDescription": {
-    "message": "以 Markdown 格式复制，便于提供给 LLM"
+    "message": "以 Markdown 格式复制页面"
   },
   "vine.copyPage.viewMarkdown": {
     "message": "以 Markdown 查看 ↗"
