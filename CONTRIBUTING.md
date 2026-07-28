@@ -29,7 +29,7 @@ source; do not present planned APIs as available.
 ## Prerequisites
 
 - Node.js 20 or later
-- pnpm 11.15.1
+- pnpm 11.17.0
 
 Install dependencies and start the bilingual hot-reload development server:
 

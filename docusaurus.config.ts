@@ -2,9 +2,9 @@ import type {Config, Plugin} from '@docusaurus/types'
 import type * as Preset from '@docusaurus/preset-classic'
 import {themes as prismThemes} from 'prism-react-renderer'
 
-const devLocale = process.env.VINE_DEV_LOCALE
+const devLocale = process.env.YORUN_DEV_LOCALE
 const devWebSocketPath = devLocale
-  ? `/__vine_hmr_${devLocale.replace(/-/g, '_')}`
+  ? `/__yorun_hmr_${devLocale.replace(/-/g, '_')}`
   : undefined
 type DocusaurusWebpackConfig = Exclude<
   ReturnType<NonNullable<Plugin['configureWebpack']>>,
@@ -29,7 +29,7 @@ const config: Config = {
       rspackBundler: true,
       // Two locale-specific dev servers run concurrently behind the local
       // bilingual proxy. Do not let them write to the same persistent cache.
-      rspackPersistentCache: process.env.VINE_MULTILINGUAL_DEV !== '1',
+      rspackPersistentCache: process.env.YORUN_MULTILINGUAL_DEV !== '1',
       ssgWorkerThreads: false,
       gitEagerVcs: true,
     },
@@ -66,6 +66,10 @@ const config: Config = {
           path: './docs',
           routeBasePath: 'docs',
           sidebarPath: './sidebars.ts',
+          editUrl: ({locale, docPath}) =>
+            locale === 'zh-CN'
+              ? `https://github.com/yorun-ai/vine-site/tree/main/i18n/zh-CN/docusaurus-plugin-content-docs/current/${docPath}`
+              : `https://github.com/yorun-ai/vine-site/tree/main/docs/${docPath}`,
           showLastUpdateAuthor: false,
           showLastUpdateTime: false,
           versions: {
@@ -89,7 +93,7 @@ const config: Config = {
     ...(devWebSocketPath
       ? [
           () => ({
-            name: 'vine-multilingual-dev',
+            name: 'yorun-multilingual-dev',
             configureWebpack: () =>
               // Docusaurus merges this into webpack-dev-server at runtime,
               // although its public webpack config type omits devServer.
