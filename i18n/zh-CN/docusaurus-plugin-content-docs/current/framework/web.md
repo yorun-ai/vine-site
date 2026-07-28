@@ -3,7 +3,7 @@ slug: /web
 sidebar_label: Web 应用
 ---
 
-# Web
+# Web 应用
 
 Web 能力用于为应用注册 HTTP 路由、静态资源或反向代理入口。`.skel` 负责声明 Web 名称和允许访问的 Actor，Go handler 负责具体路由。
 

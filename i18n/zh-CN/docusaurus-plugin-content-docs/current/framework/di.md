@@ -3,7 +3,7 @@ slug: /di
 sidebar_label: 依赖注入
 ---
 
-# 依赖注入（DI）
+# 依赖注入
 
 Vine 通过 DI 创建模块、handler、listener 和 runner。日常代码先使用字段上的
 `inject:""`；接口需要指定实现、构造过程需要 factory，或对象确实需要明确生命周期时，

@@ -3,7 +3,7 @@ slug: /trace-timeout
 sidebar_label: 追踪与超时
 ---
 
-# Trace 与 Timeout
+# 追踪与超时
 
 请求进入 Vine 后，trace 会贯穿 Portal、auth/check、Rpc/Web handler 和后续下游调用；timeout 会从入口开始计时，并在每次转发时换算成剩余时间继续传递。业务代码通常不需要手工解析这些 header，只要继续使用当前注入的上下文发起下游调用即可。
 

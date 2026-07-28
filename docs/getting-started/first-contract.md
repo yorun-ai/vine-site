@@ -3,7 +3,7 @@ slug: /first-skel-contract
 sidebar_label: First Contract
 ---
 
-# First Skel Contract
+# First Contract
 
 Begin with one Greeting service. `skelc` checks the contract and generates its
 Go types, server interface, and client. The generated code is the handoff point

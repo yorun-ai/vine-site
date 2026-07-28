@@ -3,7 +3,7 @@ slug: /request-routing
 sidebar_label: Routing & Readiness
 ---
 
-# Request Routing & Readiness
+# Routing & Readiness
 
 Vine routes by declared capabilities, not by addresses embedded in business
 code. An application publishes the Rpc services and Web handlers it can serve;

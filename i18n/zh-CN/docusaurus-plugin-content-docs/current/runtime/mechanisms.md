@@ -1,11 +1,11 @@
 ---
 slug: /runtime-mechanisms
-title: 运行时架构
+title: 架构
 sidebar_label: 架构
 description: Vine 如何把应用声明转化为配置、发现、路由与交付行为。
 ---
 
-# 运行时架构
+# 架构
 
 Vine 把业务代码与负责接入它的运行时分开。应用声明类型化能力；Link 将声明转化为
 可路由、可交付的状态；Hub 分发这些状态；Portal 提供可选的外部入口。

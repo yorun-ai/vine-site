@@ -3,7 +3,7 @@ slug: /application-lifecycle
 sidebar_label: 生命周期
 ---
 
-# 应用生命周期
+# 生命周期
 
 Vine 应用分两步准备：通过 `New(...)` 构造，再通过 `Start()` 激活。构造并非惰性操作，
 但应用的大部分依赖图要到 `Start()` 时才会装配。

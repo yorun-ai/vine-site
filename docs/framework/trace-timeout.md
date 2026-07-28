@@ -3,7 +3,7 @@ slug: /trace-timeout
 sidebar_label: Tracing & Timeouts
 ---
 
-# Trace & Timeout
+# Tracing & Timeouts
 
 When a request enters Vine, trace context follows it through Portal, auth/check, Rpc/Web handlers, and downstream calls. Timeout starts at the entry point and is converted to the remaining time before each forward. Application code usually does not need to parse these headers manually; it should keep using the injected context for downstream calls.
 

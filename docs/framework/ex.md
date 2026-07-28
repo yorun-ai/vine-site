@@ -3,7 +3,7 @@ slug: /ex
 sidebar_label: Error Handling
 ---
 
-# Errors (EX)
+# Error Handling
 
 Vine uses `core/ex` to carry stable error codes across Rpc, Web, Event, Task, and business code. Callers can branch on `Code`, while logs retain the message, reason, detail, and original cause.
 

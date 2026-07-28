@@ -1,11 +1,11 @@
 ---
 slug: /getting-started
-title: Getting Started
+title: Start with Vine
 sidebar_label: Start with Vine
 description: A first Vine application, the main capability guides, and the runtime boundaries that matter later.
 ---
 
-# Getting Started
+# Start with Vine
 
 Vine brings lifecycle, dependency injection, configuration, Rpc, Web, Event,
 Task, Redis, and relational databases under one Go application model. Start

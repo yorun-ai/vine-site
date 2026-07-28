@@ -3,7 +3,7 @@ slug: /guide/rdb
 sidebar_label: 数据库
 ---
 
-# 关系型数据库
+# 数据库
 
 RDB 组件负责连接 PostgreSQL 或 SQLite，并把类型安全的 DAO 注入业务对象。每个数据库组件声明一个连接和一组 DAO。
 

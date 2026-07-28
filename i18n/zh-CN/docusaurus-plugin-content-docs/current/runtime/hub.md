@@ -3,7 +3,7 @@ slug: /hub
 sidebar_label: Hub 控制
 ---
 
-# Hub
+# Hub 控制
 
 Hub 是 Vine runtime 的控制面。它保存配置和注册信息，并将面向运行时的快照与变更事件分发给 Link 和 Portal。
 
