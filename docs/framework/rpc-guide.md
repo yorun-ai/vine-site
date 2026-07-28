@@ -1,5 +1,6 @@
 ---
 slug: /guide/rpc
+sidebar_label: Rpc Services
 ---
 
 # Rpc
@@ -87,4 +88,4 @@ flowchart LR
   Client["Generated Client"] --> LinkA["Caller Link"] --> Discovery["Service discovery"] --> LinkB["Target Link"] --> Server["GreetingService"]
 ```
 
-See the [Rpc Reference](/docs/rpc) for timeout, error-return, and low-level client/server options.
+See the [Rpc Reference](../infrastructure/rpc.md) for timeout, error-return, and low-level client/server options.

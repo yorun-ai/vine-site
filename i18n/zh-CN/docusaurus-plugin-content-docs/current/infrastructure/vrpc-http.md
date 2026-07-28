@@ -1,5 +1,6 @@
 ---
 slug: /vrpc-http
+sidebar_label: vRPC over HTTP
 ---
 
 # vRPC over HTTP
@@ -201,4 +202,4 @@ curl 'https://api.example.com/invoke/demo.greeting.GreetingService/hello' \
   --data '{"params":{"name":"Vine"}}'
 ```
 
-如需了解 Go 侧的 client、server 与 method metadata，见 [Rpc API 参考](/docs/rpc)；trace 和剩余 timeout 的跨层传播见 [Trace 与 Timeout](/docs/trace-timeout)。
+如需了解 Go 侧的 client、server 与 method metadata，见 [Rpc API 参考](./rpc.md)；trace 和剩余 timeout 的跨层传播见 [Trace 与 Timeout](../framework/trace-timeout.md)。

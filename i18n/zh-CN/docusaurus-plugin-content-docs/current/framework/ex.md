@@ -1,5 +1,6 @@
 ---
 slug: /ex
+sidebar_label: 错误处理
 ---
 
 # 错误（EX）

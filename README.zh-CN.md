@@ -12,10 +12,15 @@ Skel 语言和 skelc 文档由 [`skel-site`](https://github.com/yorun-ai/skel-si
 
 ```bash
 pnpm install
-pnpm dev:zh
+pnpm dev
 ```
 
-使用 `pnpm dev` 或 `pnpm dev:en` 启动默认的英文站点。验证两个语言版本：
+`pnpm dev` 会在同一个本地地址启动两个语言版本并启用热更新，因此修改后页面会
+自动刷新，语言切换器的行为也与生产环境一致。如需占用更少资源，可使用
+`pnpm dev:en` 或 `pnpm dev:zh` 启动单语言服务器；此时不能通过语言切换器
+离开当前编译的语言。
+
+验证两个语言版本：
 
 ```bash
 pnpm typecheck

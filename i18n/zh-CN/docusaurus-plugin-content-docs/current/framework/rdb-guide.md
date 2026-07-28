@@ -1,5 +1,6 @@
 ---
 slug: /guide/rdb
+sidebar_label: 数据库
 ---
 
 # 关系型数据库
@@ -27,6 +28,14 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 }
 ```
 
+:::warning Schema 迁移
+
+Vine 会打开数据库并构造 DAO，但不会调用 GORM `AutoMigrate`，也不会创建应用
+数据表。应在实例开始服务前，把经过审查的迁移作为显式部署步骤执行。
+`standalone.Option.SQLiteFile` 属于 Hub，与这里的业务数据库无关。
+
+:::
+
 模型嵌入 `rdb.Model`（软删除）或 `rdb.DeletableModel`（物理删除）；DAO 使用模型指针作为泛型参数：
 
 ```go title="user.go"
@@ -48,4 +57,4 @@ func (s *UserService) Create(name string) *User {
 }
 ```
 
-连接在组件启动时建立，在应用停止后释放。使用同一 `ConnURL` 的组件共享底层连接池。Model、Query、Patch 和删除语义见 [RDB 参考](/docs/rdb)。
+连接在组件启动时建立，在应用停止后释放。使用同一 `ConnURL` 的组件共享底层连接池。Model、Query、Patch 和删除语义见 [RDB 参考](../infrastructure/rdb.md)。

@@ -1,5 +1,6 @@
 ---
 slug: /application-model
+sidebar_label: 应用模型
 ---
 
 # 应用模型
@@ -18,7 +19,9 @@ func (*CheckoutApp) Name() string {
 }
 ```
 
-应用名称用于服务注册和调用链识别，同一进程中必须唯一。
+应用名必须匹配 `^[a-z]+(?:\.[a-z]+)*$`，例如 `demo.checkout`。同一个
+进程中的不同 App 规格必须使用不同名称；同一个逻辑应用的多个副本应使用相同
+名称，这也会让它们作为同一个 Event consumer group 竞争消息。
 
 ## 应用可以声明什么
 
@@ -53,4 +56,6 @@ app.NewWithOption[*CheckoutApp](app.Option{
 }).StartAndWait()
 ```
 
-三种模式的取舍见 [运行模式与部署拓扑](/docs/deployment-modes)。生命周期和能力注册的细节见 [组件运行机制](/docs/runtime-mechanisms)。
+三种模式的取舍见 [运行模式与部署拓扑](../getting-started/deployment-modes.md)，精确的构造与
+hook 时序见[应用生命周期](../runtime/application-lifecycle.md)，能力注册细节见
+[运行时架构](../runtime/mechanisms.md)。

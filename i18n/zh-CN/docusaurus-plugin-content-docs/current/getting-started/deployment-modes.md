@@ -1,5 +1,6 @@
 ---
 slug: /deployment-modes
+sidebar_label: 部署
 ---
 
 # 运行与部署
@@ -38,7 +39,7 @@ standalone.NewWithOption[*HelloApp](standalone.Option{
 
 ### 特点与限制
 
-- 只需启动一个业务 binary，最适合 [第一个应用教程](/docs/tutorial-first-app)。
+- 只需启动一个业务 binary，最适合 [第一个应用教程](./tutorial-first-app.md)。
 - 使用 `standalone.Option` 配置 SQLite / PostgreSQL、seed YAML 和 Dashboard URL。
 - Hub 与 Link 不启动 heartbeat、TTL 续租和 registry sweeper；应用停止时靠显式注销清理注册。
 - Hub 和 Link 不开放独立管理端口；Portal 仍可按入口规则监听业务 HTTP/HTTPS 端口。
@@ -125,7 +126,10 @@ app.NewWithOption[*HelloApp](app.Option{
 VINE_LINK_ENDPOINT=http://127.0.0.1:7079 ./hello-app
 ```
 
-此模式下，Link 负责向 Hub 注册应用并维持 heartbeat；应用、Link、Portal 与 Hub 可以独立发布、重启和扩缩容。Portal 的外部监听、站点规则和 TLS 证书均由 Hub 配置管理。
+此模式下，Link 负责向 Hub 注册应用并维持 heartbeat。应用、Link、Portal
+和 Hub 具有独立的进程生命周期，但各角色的扩缩容与可用性边界并不相同。
+Portal 的外部监听、站点规则和 TLS 证书通过 Hub 配置管理。不要把进程分离
+直接等同于高可用；上线前请检查[生产就绪清单](../operations/production-readiness.md)。
 
 ## 如何选择
 
@@ -139,7 +143,8 @@ VINE_LINK_ENDPOINT=http://127.0.0.1:7079 ./hello-app
 
 ## 相关文档
 
-- [Hub](/docs/hub)：配置、注册与租约管理。
-- [Link](/docs/link)：应用注册、发现和请求转发。
-- [Portal](/docs/portal)：外部访问入口与网关规则。
-- [应用模型](/docs/application-model)：应用构造入口与生命周期。
+- [Hub](../runtime/hub.md)：配置、注册与租约管理。
+- [Link](../runtime/link.md)：应用注册、发现和请求转发。
+- [Portal](../runtime/portal.md)：外部访问入口与网关规则。
+- [应用模型](../framework/application-model.md)：应用构造入口与生命周期。
+- [生产就绪](../operations/production-readiness.md)：安全、持久化、停机、故障与扩缩容边界。

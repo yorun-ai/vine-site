@@ -1,5 +1,6 @@
 ---
 slug: /meta
+sidebar_label: Context & Identity
 ---
 
 # Context & Identity (Meta)

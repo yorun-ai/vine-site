@@ -1,5 +1,6 @@
 ---
 slug: /app
+sidebar_label: App API
 ---
 
 # App API
@@ -76,7 +77,8 @@ type ApplicationSpec interface {
 
 其中：
 
-- `Name()`：应用名，不能为空，且不能包含 `@`
+- `Name()`：应用名，必须匹配 `^[a-z]+(?:\.[a-z]+)*$`，即由点号分隔的一个或
+  多个纯小写字母段，例如 `demo.checkout`
 - `InitComponents(...)`：声明组件类型
 - `InitModules(...)`：声明模块类型
 - `BindCommon(...)`：注册应用级公共依赖
@@ -119,6 +121,10 @@ func (*DemoApp) Name() string {
 ```go
 instance := app.New[*DemoApp]()
 ```
+
+`New` 会立即构造并校验 application spec，它不是 lazy factory。spec 的注入字段和
+`DIInit()` 会在该调用中执行；root context 与 listen address 也会在 `Start()` 前被
+捕获。
 
 行为如下：
 
@@ -170,14 +176,20 @@ type RunFlag struct {
 - `Context == nil` 时回退到 `context.Background()`
 - 即使没有显式传入 `RunFlag`，框架也会自动补一个默认实例
 
-应用内部通常通过注入 `AppFlag` 读取或修正运行参数：
+应用内部可以通过 `AppFlag` 读取最终运行参数。更推荐在构造时设置：
 
 ```go
-type DemoApp struct {
-    app.Application
-}
+instance := app.New[*DemoApp](
+    app.With(&app.RunFlag{ListenAddr: ":18080"}),
+)
+```
 
-func (a *DemoApp) BindCommon(b *di.Binder) {
+`BindCommon` 在 `Start()` 期间运行，此时 Vine 已经捕获 `ListenAddr`，因此在其中修改
+`AppFlag.ListenAddr` 不会改变应用 listener。如果必须由应用类型提供默认值，应在
+application spec 上实现 `DIInit()`；它会在 `New` 期间、`AppFlag` 注入后执行：
+
+```go
+func (a *DemoApp) DIInit() {
     if a.AppFlag.ListenAddr == "" {
         a.AppFlag.ListenAddr = ":18080"
     }
@@ -412,6 +424,10 @@ inproc 下会注册：
 
 在 `standalone` / bundled standalone 模式下，会先按逆序优雅停止业务 apps，再停止 Link、Portal、Hub 等内置运行时组件。
 
+注册会在 `AfterAppStart` 之前开始，因此不要把 readiness 关键工作放进该 hook。
+启动 hook 失败会 panic，也不会自动回滚已经构造的资源。精确边界和 hook 职责见
+[应用生命周期](../runtime/application-lifecycle.md)。
+
 ## DI 可见性
 
 应用内部常见可见依赖包括：
@@ -432,7 +448,9 @@ inproc 下会注册：
 ## 建议
 
 - 业务 app 一定要覆写 `Name()`
-- 监听地址优先通过 `RunFlag` 传入，必要时再在 app 内修正
+- 在构造时通过 `app.With(&app.RunFlag{ListenAddr: "..."})` 提供监听地址。
+  如果 app 必须自行选择默认值，应在 specification 的 `DIInit()` 中修改注入的
+  flag；到 `BindCommon(...)` 再修改已经太晚
 - 组件和模块都用指针类型声明
 - `BindCommon(...)` 只放公共依赖，不要把 route 逻辑塞进这里
 - web 路由入口收敛到单个 `WebberSpec`，如果需要更多路由，放在同一个 weber 下追加多个 handler

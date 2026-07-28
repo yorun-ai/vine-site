@@ -1,5 +1,6 @@
 ---
 slug: /cli
+sidebar_label: Vine CLI
 ---
 
 # Vine CLI
@@ -27,7 +28,7 @@ vine hub serve --help
 从已发布版本安装：
 
 ```bash
-go install go.yorun.ai/vine/cmd/vine@latest
+go install go.yorun.ai/vine/cmd/vine@v0.10.0
 ```
 
 确认安装结果：
@@ -36,6 +37,9 @@ go install go.yorun.ai/vine/cmd/vine@latest
 which vine
 vine version
 ```
+
+CLI 应与应用 module 固定到同一个经过审查的发行版。升级前请查看
+[版本兼容性](./compatibility.md)。
 
 ## hub
 

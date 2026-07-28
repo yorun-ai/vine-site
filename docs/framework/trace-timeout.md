@@ -1,5 +1,6 @@
 ---
 slug: /trace-timeout
+sidebar_label: Tracing & Timeouts
 ---
 
 # Trace & Timeout

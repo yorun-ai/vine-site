@@ -15,7 +15,12 @@ pnpm install
 pnpm dev
 ```
 
-Use `pnpm dev:zh` for Simplified Chinese. Validate both locales with:
+`pnpm dev` starts both locales with hot reload behind one local address, so
+edits refresh automatically and the language switcher works as it does in
+production. Use `pnpm dev:en` or `pnpm dev:zh` for a lower-overhead,
+single-locale server; its language switcher cannot leave the compiled locale.
+
+Validate both locales with:
 
 ```bash
 pnpm typecheck

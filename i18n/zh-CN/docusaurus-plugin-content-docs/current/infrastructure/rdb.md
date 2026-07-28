@@ -1,10 +1,11 @@
 ---
 slug: /rdb
+sidebar_label: 数据库 API
 ---
 
 # RDB API
 
-日常接入请先阅读 [使用关系型数据库](/docs/guide/rdb)。本页说明 `infra/rdb` 的完整连接、DAO、Query 和模型 API。
+日常接入请先阅读 [使用关系型数据库](../framework/rdb-guide.md)。本页说明 `infra/rdb` 的完整连接、DAO、Query 和模型 API。
 
 顶层 `infra/rdb` 暴露 `Option`、`TypeAdder`、`DatabaseSpec`、`Database`、`Dao`、`Query`、`Model`、`DeletableModel`、`Patch` 等公共类型。
 

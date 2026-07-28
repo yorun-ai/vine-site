@@ -1,10 +1,11 @@
 ---
 slug: /redis
+sidebar_label: Redis API
 ---
 
 # Redis API
 
-日常接入请先阅读 [使用 Redis](/docs/guide/redis)。本页说明 `infra/redis` 的完整配置、依赖注入、Cache 和 Locker API。
+日常接入请先阅读 [使用 Redis](../framework/redis-guide.md)。本页说明 `infra/redis` 的完整配置、依赖注入、Cache 和 Locker API。
 
 顶层 `infra/redis` 暴露 `Option`、`TypeAdder`、`RedisSpec`、`Redis`、`Locker`、`Lock`、`Cache[T]` 和 `NewCache[T](...)` 等公共类型。
 
@@ -126,7 +127,7 @@ Redis client 在组件启动时创建，在应用停止后关闭。Cache、Locke
 注入式 locker 需要：
 
 - 嵌入 `redis.Locker`
-- 实现 `KeyPrefix() string`
+- 只在需要显式共享命名空间时覆盖 `KeyPrefix() string`
 
 例如：
 
@@ -136,7 +137,7 @@ type UserLocker struct {
 }
 
 func (*UserLocker) KeyPrefix() string {
-    return "lock:user"
+    return "user"
 }
 ```
 
@@ -166,7 +167,7 @@ type UserService struct {
 如果不想通过注入声明 locker 类型，也可以直接：
 
 ```go
-locker := cacheRedis.NewLocker(ctx, "lock:user")
+locker := cacheRedis.NewLocker(ctx, "user")
 ```
 
 如果需要运行时传入具体类型，也可以直接：
@@ -238,6 +239,13 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 最后在业务里注入并使用：
 
+:::caution
+
+示例中的 `IsBroken()` 检查只是 best effort，与 `Unlock()` 并不原子。如果锁在
+两次调用之间失效，`Unlock()` 仍会 panic。
+
+:::
+
 ```go
 package demo
 
@@ -250,15 +258,14 @@ func (s *UserService) RebuildUser(userID string) {
     if !ok {
         return
     }
-    defer lock.Unlock()
-
-    select {
-    case <-lock.Context().Done():
+    if !s.rebuildWhileOwned(lock.Context(), userID) {
         return
-    default:
     }
-
-    // do work
+    if lock.IsBroken() {
+        return
+    }
+    // 如果所有权在预检查后变化，这里会 fail-fast。
+    lock.Unlock()
 }
 
 ```
@@ -300,10 +307,10 @@ if !ok {
 }
 ```
 
-对应的 Redis key 是：
+如果这个 locker 使用 `KeyPrefix() == "user"`，对应的 Redis key 是：
 
 ```text
-vine:lock:lock:user:1
+vine:lock:user:1
 ```
 
 如果传空 key：
@@ -315,7 +322,7 @@ lock, ok := userLocker.Lock("")
 最终 Redis key 会是：
 
 ```text
-vine:lock:lock:user:
+vine:lock:user:
 ```
 
 ### 默认锁
@@ -368,8 +375,15 @@ ctx := lock.Context()
 此时：
 
 - `IsBroken() == true`
-- 不能再 `Unlock()`
+- 调用 `Unlock()` 会 panic
 - 这个 `Lock` 已经不可恢复
+
+`IsBroken()` 报告的只是一次状态快照；它不会保留锁，也不会与紧随其后的
+`Unlock()` 原子同步。refresh 可能在两次调用之间把锁标记为 broken，当前公共
+API 也没有原子的 `TryUnlock`。应限制临界区时长，在 `Lock.Context()` 取消后
+立即停止工作，并把 `Unlock()` 视为 fail-fast 边界。如果业务必须把失锁当作
+普通 error 处理，应在应用自己的窄作用域 recovery/error 边界中封装此 API，
+或使用具备该契约的锁实现。
 
 ### 一次性语义
 
@@ -439,6 +453,10 @@ user = s.UserCache.GetOrLoad("1", time.Minute, func() *User {
 })
 ```
 
+`GetOrLoad` 只是依次执行 get、load 和 set，并不会合并同一个 key 的并发 miss；
+多个 execution 可能同时执行 `load`。如果重复回源代价较高，应在应用层增加
+singleflight 或其他防止缓存击穿的机制。
+
 ### 直接创建 cache
 
 如果不想通过注入声明 cache 类型，也可以直接：
@@ -479,3 +497,4 @@ vine:cache:user:1
 - 需要缓存时，通过 `InitCaches(...)` 声明注入式 cache，或用 `NewCache(...)` 直接创建
 - 需要感知锁失效时，监听 `lock.Context()`
 - `Lock` 一旦 broken，就丢弃它并重新走一次新的 `Locker.Lock(...)`
+- 不要把 `IsBroken()` 后紧接 `Unlock()` 当成原子的安全解锁操作

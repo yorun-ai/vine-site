@@ -186,6 +186,33 @@
     "message": "选择语言",
     "description": "The label for the mobile language switcher dropdown"
   },
+  "vine.navbar.versionSwitcher.ariaLabel": {
+    "message": "选择文档版本"
+  },
+  "vine.navbar.localeSwitcher.ariaLabel": {
+    "message": "选择语言"
+  },
+  "vine.copyPage.label": {
+    "message": "复制页面"
+  },
+  "vine.copyPage.copied": {
+    "message": "已复制"
+  },
+  "vine.copyPage.error": {
+    "message": "复制失败"
+  },
+  "vine.copyPage.menuAriaLabel": {
+    "message": "复制页面选项"
+  },
+  "vine.copyPage.copyDescription": {
+    "message": "以 Markdown 格式复制，便于提供给 LLM"
+  },
+  "vine.copyPage.viewMarkdown": {
+    "message": "以 Markdown 查看 ↗"
+  },
+  "vine.copyPage.viewDescription": {
+    "message": "以纯文本形式查看此页面"
+  },
   "theme.NotFound.p1": {
     "message": "我们找不到您要找的页面。",
     "description": "The first paragraph of the 404 page"
@@ -336,7 +363,7 @@
     "message": "开始使用"
   },
   "homepage.sections.guides": {
-    "message": "指南"
+    "message": "构建与运维"
   },
   "homepage.cards.quickStart.title": {
     "message": "快速开始"
@@ -356,11 +383,11 @@
   "homepage.cards.dependencyInjection.description": {
     "message": "通过显式、可测试的依赖关系连接各项能力。"
   },
-  "homepage.cards.example.title": {
-    "message": "示例应用"
+  "homepage.cards.compatibility.title": {
+    "message": "版本与兼容性"
   },
-  "homepage.cards.example.description": {
-    "message": "从完整教程开始了解 Vine 的开发约定。"
+  "homepage.cards.compatibility.description": {
+    "message": "开始构建前，先固定相互兼容的 Vine、Go 与 skelc 版本。"
   },
   "homepage.cards.rpc.title": {
     "message": "Rpc 服务"
@@ -385,6 +412,12 @@
   },
   "homepage.cards.runtime.description": {
     "message": "从本地进程平滑演进到分布式 Vine 运行时。"
+  },
+  "homepage.cards.production.title": {
+    "message": "生产就绪"
+  },
+  "homepage.cards.production.description": {
+    "message": "检查安全、停机、可观测性与故障语义。"
   },
   "homepage.cards.packages.title": {
     "message": "包参考"

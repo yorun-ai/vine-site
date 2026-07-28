@@ -1,14 +1,29 @@
 ---
 slug: /configuration
+title: Configuration
+sidebar_label: Configuration
+description: Declare typed Vine configuration and choose between stable per-instance snapshots and runtime updates.
 ---
 
 # Configuration
 
-Vine configuration is declared in `.skel`, stored by Hub, distributed by Link, and provided to the application through dependency injection. Applications do not need to poll the configuration center themselves.
+Vine configuration is declared in Skel, stored by Hub, distributed through
+Link, and resolved as a typed Go dependency. Application code does not poll Hub
+or decode configuration JSON itself.
 
-## Declare configuration
+The important design choice is not only the fields in a configuration. It is
+also **when an application instance is allowed to observe a new value**.
 
-```skel title="config.skel"
+## Declare typed configuration
+
+```skel title="skel/domain.skel"
+@desc("Checkout application")
+domain demo.checkout
+```
+
+```skel title="skel/config.skel"
+domain demo.checkout
+
 config CheckoutConfig eternal {
     timeoutMs: int
     currency: string
@@ -19,20 +34,72 @@ config FeatureFlagsConfig instant {
 }
 ```
 
-- `eternal`: read when the application starts; suitable for connection settings and behavior determined at startup.
-- `instant`: can be updated while the application is running; suitable for feature flags and dynamically adjustable business settings. Objects created for new executions read the updated value, while configuration already injected into existing objects does not change in place.
+Run the normal Skel check and generation workflow:
 
-After you run `skelc gen go`, the generated configuration types are registered with Vine. Business objects can inject configuration just like any other dependency:
+```bash
+skelc check --skel-in ./skel
+skelc gen go --skel-in ./skel --go-out ./skeled
+```
 
-```go title="service.go"
+The generated types register their Skel name, Go type, and lifecycle with Vine.
+Inject them like any other dependency:
+
+```go title="checkout_service.go"
 type CheckoutService struct {
     Config *skeled.CheckoutConfig `inject:""`
 }
 ```
 
-## Provide initial values
+Do not register generated configuration types by hand.
 
-Hub seed files use each configuration's fully qualified Skel name and encode its value as a JSON string:
+## Choose the lifecycle
+
+| Lifecycle | What Link retains | What application code observes | Good fit |
+| --- | --- | --- | --- |
+| `eternal` | The value captured when this application instance first reads the config | The same snapshot for the rest of that application instance | Connection settings, schema choices, startup policy |
+| `instant` | A watched snapshot that changes when Hub publishes an update | A newly decoded value on a later DI resolution | Feature flags, limits, and behavior that may change at runtime |
+
+Both lifecycles are lazy: the first read happens when DI first needs the
+generated type. A module or component that injects the configuration is usually
+constructed during application startup. A configuration used only by a request
+handler may not be read until the first matching execution.
+
+### Instant does not mutate an existing object
+
+An instant update changes Link's snapshot. It does not modify a Go pointer that
+was already injected:
+
+```mermaid
+sequenceDiagram
+  participant Hub
+  participant RuntimeLink as Link
+  participant Existing as Existing consumer
+  participant Next as Later execution
+  Hub-->>RuntimeLink: publish new instant value
+  Note over Existing: keeps its existing pointer
+  Next->>RuntimeLink: resolve configuration
+  RuntimeLink-->>Next: decode a new pointer from the latest snapshot
+```
+
+This has a direct DI consequence:
+
+- A normal Rpc, Web, Event, or Task handler is created for an execution. A
+  configuration it injects is resolved for that execution and can observe the
+  latest instant snapshot.
+- A module and an application component are application-lifetime singletons.
+  If one stores an instant configuration in a field, that pointer remains the
+  value from construction time.
+- Any explicitly singleton dependency that captures an instant configuration
+  has the same behavior.
+
+If a long-lived object must react to updates, keep the update-sensitive logic
+in a newly created execution dependency or design an explicit refresh boundary.
+Do not assume field injection is a live reference.
+
+## Provide values
+
+Hub seed files identify a configuration by its fully qualified Skel name. The
+`value` field contains JSON encoded as a YAML string:
 
 ```yaml title="seed.yaml"
 appConfigs:
@@ -42,24 +109,89 @@ appConfigs:
     value: '{"newCheckout":true}'
 ```
 
-A standalone application can import the file at startup:
+For standalone mode:
 
 ```go title="main.go"
 standalone.NewWithOption[*CheckoutApp](standalone.Option{
-    SQLiteFile:   "./vine.sqlite",
+    SQLiteFile:   "./hub.sqlite",
     SeedYAMLFile: "./seed.yaml",
 }).StartAndWait()
 ```
 
-Field names and types must match the generated configuration schema. Linked and fully separated deployments use the same seed format; import the file with `vine hub serve --seed-yaml-file ./seed.yaml`.
+`SQLiteFile` here is **Hub's database**. It does not configure a business
+`infra/rdb` component. If the application also owns a relational database,
+declare that database separately.
 
-## How configuration reaches an application
+For an independently running Hub:
+
+```bash
+vine hub serve \
+  --db-sqlite-file ./hub.sqlite \
+  --mq-embedded-nats \
+  --seed-yaml-file ./seed.yaml
+```
+
+The seed is imported into Hub's database. The database remains the source of
+truth after import.
+
+## How a value reaches an execution
 
 ```mermaid
 flowchart LR
-  Admin["Admin or seed YAML"] --> Hub["Hub"] --> Redis["Configuration snapshots and changes"] --> Link["Link"] --> App["Application configuration objects"]
+  Source["Hub database / seed"] --> Hub["Hub"]
+  Hub --> Redis["Runtime snapshot + change event"]
+  Redis --> Link["Link config reader"]
+  Link --> DI["Application DI factory"]
+  DI --> Object["Typed Go value"]
 ```
 
-Standalone mode uses Hub and Link in the same process, but the configuration access model remains unchanged. In linked or fully separated deployments, Link connects to a remote Hub. If a configuration update fails, first verify the data in Hub, the connection between Link and Hub, and whether the configuration schema matches the generated code.
+1. Hub stores the configured JSON and publishes the runtime representation.
+2. Link loads the value. For instant configuration, it also subscribes when the
+   value is first referenced.
+3. Vine's DI binding asks Link for the snapshot and decodes it into a new
+   generated Go value.
+4. The consumer receives that value through field or factory injection.
 
-See [Skel Syntax](https://skel.yorun.ai/docs/syntax) for configuration syntax and [Hub](/docs/hub) for Hub startup and seed files.
+Standalone follows the same steps through in-process connections.
+
+## Failure behavior
+
+Resolving a configuration is a strict operation:
+
+- The generated configuration must be registered in the process.
+- Hub and Link must have a non-empty value for its fully qualified Skel name.
+- The JSON must decode into the generated Go type.
+
+If one of these conditions is not met, resolution fails rather than silently
+returning a zero-value configuration. Where the failure appears depends on the
+first consumer: a module can fail application startup, while a handler-only
+configuration can first fail during a request.
+
+When diagnosing a missing value:
+
+1. Confirm the generated package is imported by the application.
+2. Confirm the fully qualified name and JSON field names in Hub.
+3. Confirm the application's Link can reach Hub's API and Redis distribution
+   endpoint.
+4. Confirm the deployed generated schema and configuration value were released
+   together.
+5. For instant configuration, create a new execution before concluding that an
+   already injected singleton should have changed.
+
+## Design guidance
+
+- Use `eternal` when changing the value without recreating the application
+  would leave resources or invariants inconsistent.
+- Use `instant` only when each new execution can safely choose behavior from a
+  newer snapshot.
+- Keep configuration values declarative. Do not use a value update as an
+  imperative job trigger; use a Task for that.
+- Make related fields backward-compatible during a rolling deployment, because
+  different application versions can temporarily read the same Hub value.
+- Keep credentials and private keys inside the current trusted-runtime network
+  boundary. Review the [production readiness checklist](../operations/production-readiness.md)
+  before distributing sensitive values.
+
+See the [Skel configuration syntax](https://skel.yorun.ai/docs/syntax) for
+language rules and [Dependency injection](./di.md) for binding and scope
+details.

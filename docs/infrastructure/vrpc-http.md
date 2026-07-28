@@ -1,5 +1,6 @@
 ---
 slug: /vrpc-http
+sidebar_label: vRPC over HTTP
 ---
 
 # vRPC over HTTP
@@ -201,4 +202,4 @@ curl 'https://api.example.com/invoke/demo.greeting.GreetingService/hello' \
   --data '{"params":{"name":"Vine"}}'
 ```
 
-For Go client, server, and method metadata APIs, see [Rpc API Reference](/docs/rpc). For trace and remaining-timeout propagation, see [Trace and Timeout](/docs/trace-timeout).
+For Go client, server, and method metadata APIs, see [Rpc API Reference](./rpc.md). For trace and remaining-timeout propagation, see [Trace and Timeout](../framework/trace-timeout.md).

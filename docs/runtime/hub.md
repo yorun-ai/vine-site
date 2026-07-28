@@ -1,5 +1,6 @@
 ---
 slug: /hub
+sidebar_label: Hub Control
 ---
 
 # Hub
@@ -80,6 +81,6 @@ Inproc mode does not use TTLs, heartbeats, or the registry sweeper. A registrati
 
 ## Related Documentation
 
-- [Link](/docs/link): application-side registration, configuration subscriptions, and service discovery.
-- [Portal](/docs/portal): reads Hub configuration and provides the external gateway.
-- [CLI](/docs/cli): complete options and environment variables.
+- [Link](./link.md): application-side registration, configuration subscriptions, and service discovery.
+- [Portal](./portal.md): reads Hub configuration and provides the external gateway.
+- [CLI](../getting-started/cli.md): complete options and environment variables.

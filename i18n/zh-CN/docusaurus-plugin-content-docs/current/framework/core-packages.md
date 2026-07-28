@@ -1,102 +1,114 @@
 ---
 slug: /core-packages
+title: 公共 Package 导航
+sidebar_label: 公共 Package
+description: 按应用任务找到受支持的 Vine package，并判断何时需要使用底层 API。
 ---
 
-# 框架架构
+# 公共 Package 导航
 
-本页帮助你理解 Vine 的应用装配、依赖注入、配置、上下文、请求执行和消息投递如何协作。包路径用于定位对应能力；日常业务开发不需要直接依赖这些内部包。
+Vine 的公共 Go API 被有意组织为一组 facade。先从 `app` 与应用使用的生成 contract
+类型开始，再按需引入对应的 `core/*` 或 `infra/*` package。
 
-> 业务代码应优先使用顶层 `app`、`core/rpc`、`core/web`、`core/event`、`core/task`、`core/skel` 等公开包。只有在需要理解高级行为或排查问题时，再参考本页的内部能力映射。
+精确到 symbol 的权威参考是
+[`pkg.go.dev/go.yorun.ai/vine`](https://pkg.go.dev/go.yorun.ai/vine)。本页回答的是另一个
+问题：**应用代码应该选择哪个 package？**
 
-```mermaid
-flowchart TB
-  App["应用装配\napp / runtime / link"] --> Foundation["基础能力\ndi / conf / meta / logger / ex / ctr"]
-  App --> Capabilities["业务能力\nrpc / web / event / task"]
-  Capabilities --> Protocol["协议与契约\nskel / 各 spec / skeled"]
-  Capabilities --> Transport["传输与接入\nHTTP / inproc / proxy"]
-  Foundation --> Protocol
+:::warning 公共边界
 
-  classDef app fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e,stroke-width:2px;
-  classDef foundation fill:#f3e8ff,stroke:#9333ea,color:#581c87,stroke-width:2px;
-  classDef capability fill:#cffafe,stroke:#0891b2,color:#164e63,stroke-width:2px;
-  classDef protocol fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:2px;
-  classDef transport fill:#ffedd5,stroke:#ea580c,color:#7c2d12,stroke-width:2px;
+`internal/` 下的 package 属于实现细节。它们或许能帮助理解 stack trace，但应用代码
+不得导入或复制这些实现。公共行为由下列 package 和本站记录的运行时 contract 定义。
 
-  class App app;
-  class Foundation foundation;
-  class Capabilities capability;
-  class Protocol protocol;
-  class Transport transport;
+:::
+
+## 应用装配
+
+| 任务 | Package | 从这里开始 |
+| --- | --- | --- |
+| 声明应用、component、module、能力与生命周期 hook | [`app`](https://pkg.go.dev/go.yorun.ai/vine/app) | [应用模型](./application-model.md) |
+| 用内嵌 Hub、Link、Portal 运行一个或多个应用 | [`app/standalone`](https://pkg.go.dev/go.yorun.ai/vine/app/standalone) | [第一个应用](../getting-started/tutorial-first-app.md) |
+| 用进程内 Link 连接外部 Hub 并运行一个或多个应用 | [`app/linked`](https://pkg.go.dev/go.yorun.ai/vine/app/linked) | [部署拓扑](../getting-started/deployment-modes.md) |
+| 在可控的 standalone 运行时中测试应用行为 | [`app/testkit`](https://pkg.go.dev/go.yorun.ai/vine/app/testkit) | [日志与测试](./logging-testing.md) |
+
+大多数 `main` package 只需要选择一个运行模式 constructor：
+
+```go
+standalone.NewWithOption[*CheckoutApp](standalone.Option{
+    SQLiteFile: "./vine.sqlite",
+}).StartAndWait()
 ```
 
-## 应用与运行
+应用装配应留在 application spec 中，不要在 `main` 里手工构造底层 server 或 transport。
 
-| 包 | 职责 | 主要协作对象 |
+## 应用能力
+
+| 能力 | Package | 应用代码通常使用的对象 |
 | --- | --- | --- |
-| `internal/core/app` | 定义应用运行时需要的 endpoint、静默实现和应用侧 skel 契约；具体的生命周期装配在 `internal/app`。 | `runtime`、`link`、`app/skeled` |
-| `internal/core/app/skeled` | 由 skel 生成的应用内部数据模型、schema 与服务定义。 | `app`、`skel`、Rpc |
-| `internal/core/runtime` | 表示运行中的应用身份、构建信息、Go 运行环境与诊断信息。 | `app`、`meta`、`logger` |
-| `internal/core/link` | 定义应用连接 Link 时需要的 `Linker` 抽象，向应用运行时提供 Rpc proxy、Event、Task 等 endpoint。 | `app`、Link daemon、Rpc/Event/Task |
-| `internal/core/link/ingressinproc` | 注册和查找进程内 Link ingress handler，使 standalone / linked 模式可绕过网络连接。 | `link`、Portal、Web/Rpc 转发 |
-| `internal/core/link/skeled` | Link 内部协议的生成数据、schema 与服务定义，例如应用注册和能力声明。 | Link daemon、`link`、`skel` |
+| 配置 | [`core/conf`](https://pkg.go.dev/go.yorun.ai/vine/core/conf) | 注入 module 或 execution 的生成配置类型 |
+| Rpc | [`core/rpc`](https://pkg.go.dev/go.yorun.ai/vine/core/rpc) | 生成的服务 client 与 server 实现 |
+| Web | [`core/web`](https://pkg.go.dev/go.yorun.ai/vine/core/web) | 生成的 Web handler、router、assets server 或 reverse proxy |
+| Event | [`core/event`](https://pkg.go.dev/go.yorun.ai/vine/core/event) | 生成的 emitter 与 listener |
+| Task | [`core/task`](https://pkg.go.dev/go.yorun.ai/vine/core/task) | 生成的 launcher 与 runner |
+| Skel 运行时类型 | [`core/skel`](https://pkg.go.dev/go.yorun.ai/vine/core/skel) | 生成的 scalar/schema 辅助类型与 `MinSkelcVersion()` |
 
-## 应用基础能力
+生成代码已经把这些 package 接入类型安全 facade。应优先使用生成的 client、handler、
+listener 或 runner，不要手工构造 `ServiceSpec`、`WebSpec`、`EventSpec` 或 `TaskSpec`。
 
-| 包 | 职责 | 主要协作对象 |
+只有在构建框架集成、自定义 executor 或 transport adapter 时，才需要这些 package
+中的底层 constructor。对应参考页记录了这些高级 API：
+
+- [Rpc API](../infrastructure/rpc.md)
+- [基于 HTTP 的 vRPC](../infrastructure/vrpc-http.md)
+- [App API](./app.md)
+
+## 执行基础
+
+| 关注点 | Package | 何时使用 |
 | --- | --- | --- |
-| `internal/core/di` | 依赖注入容器：绑定、scope、字段注入、方法调用、execution 子 injector 与 seed。 | `app`、`ctr`、所有 capability |
-| `internal/core/ctr` | 带 filter 链的方法执行容器；在一次 execution 中组织参数、DI 和执行结果。 | `di`、Rpc/Web/Event/Task executor |
-| `internal/core/conf` | 配置类型注册、配置读取和按类型获取配置快照。 | `app`、Link 配置订阅 |
-| `internal/core/meta` | 应用身份、trace、initiator、actor 与带元信息的 context。 | Rpc/Web/Event/Task、`runtime` |
-| `internal/core/logger` | 基于 `slog` 的框架日志器、全局选项、标准库日志桥接和调用位置。 | 所有 runtime 包 |
-| `internal/core/redact` | 与框架架构无关的敏感字段遮蔽、有界 JSON 安全投影和二进制摘要。公开入口为 `core/redact`。 | Rpc/Event/Task 日志、业务诊断代码 |
-| `internal/core/ex` | 统一错误码、错误对象和可识别的异常语义。 | 边界层、Rpc/Web/Event/Task |
+| 依赖绑定与 scope | [`core/di`](https://pkg.go.dev/go.yorun.ai/vine/core/di) | 绑定公共依赖或编写自定义集成 |
+| 带 filter 的方法执行 | [`core/ctr`](https://pkg.go.dev/go.yorun.ai/vine/core/ctr) | 实现 filter 或自定义执行管线 |
+| Context、trace、应用身份与 Actor | [`core/meta`](https://pkg.go.dev/go.yorun.ai/vine/core/meta) | 读取身份/context 或显式创建调用 context |
+| 结构化框架错误 | [`core/ex`](https://pkg.go.dev/go.yorun.ai/vine/core/ex) | 跨边界返回稳定错误码 |
+| 结构化日志 | [`core/logger`](https://pkg.go.dev/go.yorun.ai/vine/core/logger) | 使用 Vine category 与 context 字段记录应用日志 |
+| 敏感数据投影 | [`core/redact`](https://pkg.go.dev/go.yorun.ai/vine/core/redact) | 在诊断输出前遮蔽生成类型或应用数据 |
+| 进程 runtime 与 executable 身份 | [`core/runtime`](https://pkg.go.dev/go.yorun.ai/vine/core/runtime) | 读取进程级 runtime 名称、版本、instance ID 或构建信息；它不标识 bundle 中的某一个 App |
+| 构建元数据 | [`buildinfo`](https://pkg.go.dev/go.yorun.ai/vine/buildinfo) | 写入或读取发布时的 linker 元数据 |
 
-## Rpc
+对于普通 Rpc、Web、Event 与 Task handler，Vine 会自动创建 execution container 并注入
+正确 context。把依赖保留到接收它的 handler 之外前，请先阅读
+[依赖与执行模型](../runtime/execution-model.md)。
 
-| 包 | 职责 | 主要协作对象 |
-| --- | --- | --- |
-| `internal/core/rpc/spec` | Rpc 的核心契约：服务/方法注册、请求响应、handler、上下文、参数校验及 inproc endpoint 定义。 | Rpc client/server、生成代码 |
-| `internal/core/rpc/client` | 创建 client、组织调用参数、选择 invoker 并发起 Rpc 请求。 | `rpc/spec`、Link Rpc proxy |
-| `internal/core/rpc/server` | 将 Rpc handler 映射为 HTTP handler；提供直接执行或经 `ctr` 容器执行的 executor。 | `rpc/spec`、`ctr`、`di` |
-| `internal/core/rpc/transport/http` | Rpc 的 HTTP 编解码与 round-trip 实现。 | `rpc/client`、`rpc/server` |
-| `internal/core/rpc/transport/inproc` | 进程内 Rpc endpoint 注册表和 round-trip 实现。 | standalone / linked runtime、`rpc/spec` |
-| `internal/core/rpc/log` | Rpc 调用日志的设置、记录和静默实现。 | `rpc/client`、`rpc/server`、`logger` |
+## 基础设施 Component
 
-## Web
+| 需求 | Package | 指南 | 参考 |
+| --- | --- | --- | --- |
+| 关系型数据库、GORM 连接、类型化 DAO/query | [`infra/rdb`](https://pkg.go.dev/go.yorun.ai/vine/infra/rdb) | [RDB 指南](./rdb-guide.md) | [RDB API](../infrastructure/rdb.md) |
+| Redis client、类型化 cache、分布式 locker | [`infra/redis`](https://pkg.go.dev/go.yorun.ai/vine/infra/redis) | [Redis 指南](./redis-guide.md) | [Redis API](../infrastructure/redis.md) |
 
-| 包 | 职责 | 主要协作对象 |
-| --- | --- | --- |
-| `internal/core/web/spec` | Web handler、路由、请求上下文、请求模型和注册表契约。 | Web server、应用 Webber |
-| `internal/core/web/server` | 基于 `web/spec` 执行路由和 handler，并将请求映射到执行上下文。 | `ctr`、`di`、`web/spec` |
-| `internal/core/web/inproc` | 进程内 Web endpoint 的注册与访问。 | standalone / linked runtime、Portal 转发 |
-| `internal/core/web/proxy` | 反向代理工具，用于将 Web 请求转发到目标 endpoint。 | Link、Portal、Web gateway |
-| `internal/core/web/assets` | 嵌入资源归档、静态资源服务与 archive 读取。 | Hub Dashboard、Web server |
+应将它们声明为应用 component。这样 Vine 会在业务 module 之前创建依赖，通过 DI
+公开它们，并在业务 module 结束后再停止它们。
 
-## Event
+## 可复用工具
 
-| 包 | 职责 | 主要协作对象 |
-| --- | --- | --- |
-| `internal/core/event/spec` | 事件消息、监听声明、上下文、实现类型与注册表。 | Event emitter/server、生成代码 |
-| `internal/core/event` | 创建 emitter、接收消息并通过 executor 调用本地监听器。 | `event/spec`、`ctr`、Link/NATS |
-| `internal/core/event/log` | 事件投递与处理过程的日志记录和静默实现。 | `event`、`logger` |
+`util/*` 是不依赖框架运行时的公共辅助 package：
 
-## Task
+| Package | 用途 |
+| --- | --- |
+| [`util/vcode`](https://pkg.go.dev/go.yorun.ai/vine/util/vcode) | JSON、CBOR、YAML、压缩与 Base58 辅助 |
+| [`util/vfile`](https://pkg.go.dev/go.yorun.ai/vine/util/vfile) | 文件路径、读写辅助 |
+| [`util/vmap`](https://pkg.go.dev/go.yorun.ai/vine/util/vmap) | Map collection、查找、stream 与并发 map |
+| [`util/vmath`](https://pkg.go.dev/go.yorun.ai/vine/util/vmath) | 图与数值辅助 |
+| [`util/vnet`](https://pkg.go.dev/go.yorun.ai/vine/util/vnet) | 地址、IP 与 URL 辅助 |
+| [`util/vpre`](https://pkg.go.dev/go.yorun.ai/vine/util/vpre) | 框架风格的前置条件检查 |
+| [`util/vslice`](https://pkg.go.dev/go.yorun.ai/vine/util/vslice) | Slice collection、set、查找、stream 与并发辅助 |
+| [`util/vstring`](https://pkg.go.dev/go.yorun.ai/vine/util/vstring) | 字符串与分隔值辅助 |
 
-| 包 | 职责 | 主要协作对象 |
-| --- | --- | --- |
-| `internal/core/task/spec` | 任务消息、runner 声明、触发信息、上下文、实现类型和注册表。 | Task launcher/server、生成代码 |
-| `internal/core/task` | 创建 launcher、接收任务并通过 executor 运行本地 task runner。 | `task/spec`、`ctr`、Link/NATS |
-| `internal/core/task/log` | 任务投递、运行和失败处理的日志记录与静默实现。 | `task`、`logger` |
+标准库函数同样清晰时，应优先使用标准库。这些 package 最适合已经处于 Vine 相关调用
+路径中的通用操作。
 
-## 契约与代码生成
+## 推荐顺序
 
-| 包 | 职责 | 主要协作对象 |
-| --- | --- | --- |
-| `internal/core/skel` | skel 运行时的标量类型、schema 注册、actor/auth 辅助、生成代码标识与最低编译器版本约束。 | 所有 `skeled`、Rpc/Web/Event/Task |
-
-## 阅读路径
-
-1. 从 [App](/docs/app)、[依赖注入](/docs/di)、[执行容器](/docs/ctr) 和 [上下文元信息](/docs/meta) 开始，了解应用如何处理一次请求。
-2. 按需要继续阅读 [Rpc](/docs/rpc)、Web、Event 或 Task 的能力说明。
-3. 阅读 [Link](/docs/link)、[Hub](/docs/hub) 和 [Portal](/docs/portal)，了解多进程部署时各服务如何协作。
+1. 先学习 `app` 与一个运行模式 package。
+2. 按应用实际暴露的能力逐一阅读对应指南。
+3. 编写 filter、自定义绑定或 context-sensitive 基础设施时，再阅读执行基础部分。
+4. 用 symbol reference 查询精确签名，用本站 Reference 部分查询 wire 行为与框架默认值。

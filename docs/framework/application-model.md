@@ -1,5 +1,6 @@
 ---
 slug: /application-model
+sidebar_label: Application Model
 ---
 
 # Application Model
@@ -18,7 +19,10 @@ func (*CheckoutApp) Name() string {
 }
 ```
 
-The application name identifies the application in service registration and call chains, and it must be unique within a process.
+The name must match `^[a-z]+(?:\.[a-z]+)*$`, for example
+`demo.checkout`. Different App specifications in one process need different
+names. Replicas of one logical application use the same name; among other
+things, that makes them compete as one Event consumer group.
 
 ## What an application can declare
 
@@ -53,4 +57,7 @@ app.NewWithOption[*CheckoutApp](app.Option{
 }).StartAndWait()
 ```
 
-See [Runtime Modes and Deployment Topologies](/docs/deployment-modes) for the tradeoffs among these modes and [Component Runtime Mechanisms](/docs/runtime-mechanisms) for lifecycle and capability registration details.
+See [Runtime Modes and Deployment Topologies](../getting-started/deployment-modes.md) for the
+tradeoffs among these modes, [Application Lifecycle](../runtime/application-lifecycle.md)
+for exact construction and hook timing, and
+[Runtime Architecture](../runtime/mechanisms.md) for capability registration.

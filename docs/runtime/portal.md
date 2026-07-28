@@ -1,5 +1,6 @@
 ---
 slug: /portal
+sidebar_label: Portal Gateway
 ---
 
 # Portal
@@ -54,6 +55,6 @@ This mode can verify routing, schema subscriptions, admission, and gateway forwa
 
 ## Related Documentation
 
-- [Hub](/docs/hub): manages Portal entries, rules, sites, and certificates.
-- [Link](/docs/link): hosts target application ingress and endpoint registrations.
-- [Rpc](/docs/rpc): the Rpc abstraction used inside applications.
+- [Hub](./hub.md): manages Portal entries, rules, sites, and certificates.
+- [Link](./link.md): hosts target application ingress and endpoint registrations.
+- [Rpc](../infrastructure/rpc.md): the Rpc abstraction used inside applications.

@@ -1,5 +1,6 @@
 ---
 slug: /logging-and-testing
+sidebar_label: 日志与测试
 ---
 
 # 日志与测试

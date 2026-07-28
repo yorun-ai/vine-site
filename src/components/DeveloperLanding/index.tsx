@@ -2,109 +2,52 @@ import React, {type ComponentType} from 'react';
 import Link from '@docusaurus/Link';
 import Translate from '@docusaurus/Translate';
 import useBaseUrl from '@docusaurus/useBaseUrl';
+import {useDocsVersion} from '@docusaurus/plugin-content-docs/client';
 import {
+  BadgeCheck,
   Blocks,
   Braces,
-  Code2,
   Layers3,
   Network,
   PackageOpen,
   Rocket,
   ServerCog,
+  ShieldCheck,
   SquareTerminal,
 } from 'lucide-react';
+import {
+  gettingStarted,
+  guides,
+  type LandingCard,
+  type LandingIcon,
+} from '../../data/developerLanding';
 import styles from './styles.module.css';
 
-type LandingCard = {
-  titleId: string;
-  title: string;
-  descriptionId: string;
-  description: string;
-  to: string;
-  icon: ComponentType<{size?: number; strokeWidth?: number}>;
+const icons: Record<
+  LandingIcon,
+  ComponentType<{size?: number; strokeWidth?: number}>
+> = {
+  'badge-check': BadgeCheck,
+  blocks: Blocks,
+  braces: Braces,
+  layers: Layers3,
+  network: Network,
+  package: PackageOpen,
+  rocket: Rocket,
+  server: ServerCog,
+  shield: ShieldCheck,
+  terminal: SquareTerminal,
 };
 
-const gettingStarted: LandingCard[] = [
-  {
-    titleId: 'homepage.cards.quickStart.title',
-    title: 'Quick start',
-    descriptionId: 'homepage.cards.quickStart.description',
-    description: 'Create a minimal Vine application and learn its core structure.',
-    to: '/docs/tutorial-first-app',
-    icon: Rocket,
-  },
-  {
-    titleId: 'homepage.cards.applicationModel.title',
-    title: 'Application model',
-    descriptionId: 'homepage.cards.applicationModel.description',
-    description: 'Understand applications, components, modules, and lifecycle.',
-    to: '/docs/application-model',
-    icon: Layers3,
-  },
-  {
-    titleId: 'homepage.cards.dependencyInjection.title',
-    title: 'Dependency injection',
-    descriptionId: 'homepage.cards.dependencyInjection.description',
-    description: 'Connect capabilities through explicit, testable dependencies.',
-    to: '/docs/di',
-    icon: Network,
-  },
-  {
-    titleId: 'homepage.cards.example.title',
-    title: 'Example application',
-    descriptionId: 'homepage.cards.example.description',
-    description: 'Explore a complete application built with Vine conventions.',
-    to: '/docs/getting-started',
-    icon: Code2,
-  },
-];
-
-const guides: LandingCard[] = [
-  {
-    titleId: 'homepage.cards.rpc.title',
-    title: 'RPC services',
-    descriptionId: 'homepage.cards.rpc.description',
-    description: 'Define and call services with consistent runtime contracts.',
-    to: '/docs/guide/rpc',
-    icon: Braces,
-  },
-  {
-    titleId: 'homepage.cards.web.title',
-    title: 'Web applications',
-    descriptionId: 'homepage.cards.web.description',
-    description: 'Build HTTP endpoints while keeping business code independent.',
-    to: '/docs/web',
-    icon: SquareTerminal,
-  },
-  {
-    titleId: 'homepage.cards.events.title',
-    title: 'Events and tasks',
-    descriptionId: 'homepage.cards.events.description',
-    description: 'Run asynchronous workflows using events and background tasks.',
-    to: '/docs/events-and-tasks',
-    icon: Blocks,
-  },
-  {
-    titleId: 'homepage.cards.runtime.title',
-    title: 'Runtime and deployment',
-    descriptionId: 'homepage.cards.runtime.description',
-    description: 'Move from a local process to distributed Vine runtimes.',
-    to: '/docs/runtime-mechanisms',
-    icon: ServerCog,
-  },
-  {
-    titleId: 'homepage.cards.packages.title',
-    title: 'Package reference',
-    descriptionId: 'homepage.cards.packages.description',
-    description: 'Browse the framework packages and their responsibilities.',
-    to: '/docs/core-packages',
-    icon: PackageOpen,
-  },
-];
-
 function Card({card}: {card: LandingCard}) {
-  const Icon = card.icon;
-  const localizedPath = useBaseUrl(card.to);
+  const Icon = icons[card.icon];
+  const {isLast, version} = useDocsVersion();
+  const docsBase = isLast
+    ? '/docs'
+    : version === 'current'
+      ? '/docs/next'
+      : `/docs/${version}`;
+  const localizedPath = useBaseUrl(`${docsBase}${card.to}`);
 
   return (
     <Link className={styles.card} to={localizedPath}>
@@ -159,7 +102,7 @@ export default function DeveloperLanding(): React.JSX.Element {
 
       <section className={styles.section}>
         <h2>
-          <Translate id="homepage.sections.guides">Guides</Translate>
+          <Translate id="homepage.sections.guides">Build and operate</Translate>
         </h2>
         <CardGrid cards={guides} />
       </section>

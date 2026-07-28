@@ -1,5 +1,6 @@
 ---
 slug: /web
+sidebar_label: Web Apps
 ---
 
 # Web
@@ -55,4 +56,4 @@ flowchart LR
 
 Standalone mode uses the same matching and forwarding behavior, but its endpoint is an in-process connection. Use `web.NewAssetsServer` to serve static assets, or `web.NewReverseProxy` to forward to an existing backend.
 
-See [Portal](/docs/portal) for Portal configuration and [Skel Syntax](https://skel.yorun.ai/docs/syntax) for Actor and Web syntax.
+See [Portal](../runtime/portal.md) for Portal configuration and [Skel Syntax](https://skel.yorun.ai/docs/syntax) for Actor and Web syntax.

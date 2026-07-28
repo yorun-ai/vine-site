@@ -5,8 +5,8 @@
   "license": "Apache-2.0",
   "packageManager": "pnpm@11.17.0",
   "scripts": {
-    "start": "docusaurus serve --build --no-open",
-    "dev": "docusaurus start --locale en",
+    "start": "pnpm build && docusaurus serve --no-open",
+    "dev": "node ./scripts/dev-multilingual.mjs",
     "dev:zh": "docusaurus start --locale zh-CN",
     "dev:en": "docusaurus start --locale en",
     "build": "node ./scripts/build-isolated.mjs",

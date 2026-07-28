@@ -1,5 +1,6 @@
 ---
 slug: /trace-timeout
+sidebar_label: 追踪与超时
 ---
 
 # Trace 与 Timeout

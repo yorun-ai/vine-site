@@ -1,5 +1,6 @@
 ---
 slug: /guide/rpc
+sidebar_label: Rpc 服务
 ---
 
 # Rpc
@@ -87,4 +88,4 @@ flowchart LR
   Client["生成的 Client"] --> LinkA["调用方 Link"] --> Discovery["服务发现"] --> LinkB["目标 Link"] --> Server["GreetingService"]
 ```
 
-超时、错误返回和底层 client/server 选项见 [Rpc 参考](/docs/rpc)。
+超时、错误返回和底层 client/server 选项见 [Rpc 参考](../infrastructure/rpc.md)。

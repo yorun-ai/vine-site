@@ -1,5 +1,6 @@
 ---
 slug: /first-skel-contract
+sidebar_label: First Contract
 ---
 
 # First Skel Contract
@@ -9,11 +10,22 @@ In this tutorial, you will define a Greeting service and use `skelc` to validate
 ## Install skelc
 
 ```bash
-go install go.yorun.ai/skelc/cmd/skelc@latest
+go install go.yorun.ai/skelc/cmd/skelc@v0.10.0
 skelc version
 ```
 
+This tutorial pins the generator so that its output is reproducible. Check
+[Version Compatibility](./compatibility.md) before changing Vine, Go, or
+`skelc`.
+
 ## Create the Contract Directory
+
+From the parent directory where you want the example:
+
+```bash
+mkdir -p greeting/skel
+cd greeting
+```
 
 ```text
 greeting/
@@ -74,7 +86,13 @@ skelc gen go \
   --go-out ./skeled
 ```
 
-The output directory contains data models, schemas, and service code. Implement the server with the generated `GreetingServiceServer` interface, and make calls with the generated client. Generated files are updated the next time the command runs, so do not edit them manually.
+The output directory contains data models, schemas, and service code. Implement
+the server with the generated `GreetingServiceServer` interface, and make calls
+with the generated client. When the implementation is outside the generated
+package, embed `DefaultGreetingServiceServer`; the interface includes a
+package-private seal method and cannot be implemented directly from another
+package. Generated files are updated the next time the command runs, so do not
+edit them manually.
 
 ```mermaid
 flowchart LR
@@ -83,6 +101,6 @@ flowchart LR
 
 ## Next Steps
 
-- Read [Using Rpc](/docs/guide/rpc) to register the generated service implementation with a Vine App.
+- Read [Using Rpc](../framework/rpc-guide.md) to register the generated service implementation with a Vine App.
 - Read [Skel syntax](https://skel.yorun.ai/docs/syntax) to continue defining actors, permissions, events, Web endpoints, and tasks.
 - When you need separate regular/pub modules, see the [skelc guide](https://skel.yorun.ai/docs/getting-started).

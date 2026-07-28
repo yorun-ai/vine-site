@@ -1,5 +1,6 @@
 ---
 slug: /guide/redis
+sidebar_label: Redis
 ---
 
 # Redis
@@ -16,13 +17,9 @@ type UserCache struct {
     redis.Cache[*User]
 }
 
-func (*UserCache) KeyPrefix() string { return "user" }
-
 type UserLocker struct {
     redis.Locker
 }
-
-func (*UserLocker) KeyPrefix() string { return "user" }
 
 type MainRedis struct {
     redis.Redis
@@ -49,6 +46,14 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 Business objects can inject `*MainRedis` to execute ordinary Redis commands, or inject a dedicated Cache or Locker:
 
+:::caution Fail-fast unlock
+
+The pre-check below is best effort, not an atomic safe-unlock operation.
+`Unlock()` can still panic if refresh marks the lock broken after `IsBroken()`
+returns. The current API has no `TryUnlock`.
+
+:::
+
 ```go title="service.go"
 type UserService struct {
     Cache  *UserCache  `inject:""`
@@ -64,10 +69,30 @@ func (s *UserService) Rebuild(userID string) {
     if !ok {
         return
     }
-    defer lock.Unlock()
 
-    // Update user data
+    // Return false when the lock context is canceled.
+    if !s.rebuildWhileOwned(lock.Context(), userID) {
+        return
+    }
+    if lock.IsBroken() {
+        return
+    }
+    // Best-effort pre-check only: ownership can still change here.
+    lock.Unlock()
 }
 ```
 
-Locks have a TTL and refresh while held by default. `Lock.Context()` is canceled when the lock becomes invalid, so long-running work should monitor that context. See the [Redis Reference](/docs/redis) for Cache, KeyPrefix, lock states, and direct construction.
+Cache and Locker prefixes are derived from their full Go types by default. Override
+`KeyPrefix` only when two types intentionally need the same Redis namespace.
+
+Locks have a TTL and refresh while held by default. `Lock.Context()` is canceled
+when ownership becomes invalid, so long-running work must stop on that context.
+A broken lock is no longer owned and `Unlock` will panic; avoid an unconditional
+`defer lock.Unlock()` around work that can outlive the lease. `IsBroken` is a
+state observation, not an atomic promise that a following `Unlock` cannot
+panic—the lock can break between those calls, and the current API has no
+`TryUnlock`. If that fail-fast contract is not acceptable, isolate it behind
+an application-owned recovery/error boundary or choose a lock API with the
+required semantics. Redis locks are coordination leases, not fencing tokens.
+See the [Redis Reference](../infrastructure/redis.md) for Cache, KeyPrefix, lock states, and
+direct construction.

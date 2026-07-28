@@ -1,60 +1,240 @@
 ---
 slug: /runtime-mechanisms
+title: Runtime Architecture
+sidebar_label: Architecture
+description: Understand how Vine turns application declarations into configuration, discovery, routing, and delivery behavior.
 ---
 
-# Runtime Mechanisms
+# Runtime Architecture
 
-Vine separates application capabilities into a control plane and a request plane. Hub stores desired state and registration data, Link connects applications and provides discovery and delivery, and Portal accepts external requests. Business code only needs to declare capabilities and implement handlers.
+Vine separates business behavior from the runtime machinery that makes it
+reachable. An application declares typed capabilities; Link turns those
+declarations into routable and deliverable runtime state; Hub distributes the
+state; Portal provides an optional external entry point.
 
-## Application Startup
+The shortest useful mental model is:
 
-```mermaid
-sequenceDiagram
-  participant App as Business application
-  participant RuntimeLink as Link
-  participant Hub
-  App->>App: Create configuration, components, and modules
-  App->>App: Run BeforeAppStart
-  App->>RuntimeLink: Register Rpc, Web, Event, and Task capabilities
-  RuntimeLink->>Hub: Publish application and endpoints
-  App->>App: Begin serving and run AfterAppStart
-```
+> **Hub knows what exists, Link connects applications to it, Portal admits
+> external traffic, and the application executes business code.**
 
-If startup fails, the application does not enter a serving state. Components should return meaningful errors from `BeforeAppStart` instead of continuing with missing dependencies.
-
-## Service Discovery and Request Forwarding
+## The runtime at a glance
 
 ```mermaid
 flowchart LR
-  Caller["Caller"] --> LocalLink["Local Link"] --> Discovery["Hub registration snapshot"]
-  LocalLink --> TargetLink["Target Link"] --> TargetApp["Target application"]
-  Portal["Portal"] --> TargetLink
+  External["External client"] --> Portal["Portal<br/>entry and policy"]
+  Caller["Calling application"] --> CallerLink["Caller Link"]
+  Portal --> TargetLink["Target Link"]
+  CallerLink --> TargetLink
+  TargetLink --> Target["Target application"]
+
+  Hub["Hub<br/>configuration and registry"] -. snapshots and changes .-> Portal
+  Hub -. snapshots and changes .-> CallerLink
+  Hub -. snapshots and changes .-> TargetLink
+  CallerLink <--> NATS["NATS<br/>Event and Task delivery"]
+  TargetLink <--> NATS
 ```
 
-Link selects a target instance from service registrations. When an application starts, stops, or loses its lease, Hub publishes a change and Link and Portal update their local endpoint views.
+| Participant | Owns | On a synchronous business request path? |
+| --- | --- | --- |
+| Application | Components, modules, handlers, listeners, runners, and business state | Yes, as caller or target |
+| Link | Local application state, configuration reads, discovery snapshots, forwarding, Event/Task consumers, health and drain | Yes |
+| Hub | Configuration, registry state, Portal configuration, schemas, and runtime distribution | No; Link and Portal use synchronized state |
+| Portal | External listeners, sites, TLS, admission policy, and endpoint selection | Only for external traffic |
+| NATS | Event and Task messages | Only for asynchronous delivery |
 
-## Configuration Updates
+This separation matters during an outage: a component can be essential to
+control-plane convergence without sitting on every request. It also determines
+which process must remain alive during startup and graceful shutdown.
 
-Hub writes configuration to its Redis distribution layer. Link reads an initial snapshot and subscribes to changes. Applications receive configuration objects that match the generated schema. Instant configuration can change while the application is running, while eternal configuration is intended for startup state.
+## Control, entry, and execution
 
-## Event and Task
+### Control plane: Hub
 
-Link writes messages from senders to NATS and creates consumers on the receiving side from application declarations. Concurrency, timeout, retry, and Cron settings come from application registration; business listeners and runners do not manage NATS consumers directly.
+Hub uses its database as the source of truth for managed configuration such as
+application config, Portal sites, rules, and certificates. It exposes runtime
+snapshots and change notifications through its Redis distribution layer.
 
-## Graceful Shutdown
+Link publishes application registration and lease state to Hub. Link and Portal
+then read or subscribe to the parts they need. Hub is therefore a control-plane
+dependency, not an extra proxy hop in an ordinary Rpc or Web invocation.
+
+### Application access layer: Link
+
+Each application connects to a Link. Link has two kinds of knowledge:
+
+- **Local source state** reported directly by applications connected to that
+  Link.
+- **Distributed snapshots** loaded from Hub for configuration and remote
+  discovery.
+
+Link uses these views to forward Rpc and Web requests, deliver configuration,
+create Event and Task consumers, maintain registration leases, and drain an
+application during shutdown.
+
+### External entry: Portal
+
+Portal is northbound infrastructure. It watches Hub for entry rules, sites,
+certificates, schemas, and available endpoints, then accepts external HTTP or
+HTTPS traffic. Portal can authenticate and authorize a request according to the
+generated schemas and site policy before forwarding it to a target Link.
+
+Application-to-application calls do not go through Portal. Portal is also not a
+replacement for Link: its selected destination is a Link ingress endpoint, not
+an application handler discovered independently of Link.
+
+### Execution: the application
+
+The application creates its components, modules, and capability servers. Each
+Rpc, Web, Event, or Task delivery enters an execution container that supplies
+the correct context and dependencies before calling business code.
+
+Read [Dependency and execution model](./execution-model.md) for the scope and
+filter rules inside that boundary.
+
+## From declaration to discoverable capability
 
 ```mermaid
 sequenceDiagram
-  participant App as Business application
+  participant App as Application
   participant RuntimeLink as Link
   participant Hub
-  App->>App: Run BeforeAppStop
-  App->>RuntimeLink: Unregister the application and its capabilities
-  RuntimeLink->>Hub: Delete registration data
-  App->>App: Stop servers and wait for in-flight requests
-  App->>App: Cancel context and run AfterAppStop
+  participant Peer as Other Link / Portal
+
+  App->>App: construct components, modules, and capability servers
+  App->>App: run BeforeAppStart
+  App->>App: start HTTP or in-process endpoints
+  App->>RuntimeLink: register identity, endpoints, schemas, and capabilities
+  RuntimeLink->>RuntimeLink: install local routing and delivery state
+  RuntimeLink->>Hub: publish distributed registration
+  Hub-->>Peer: registration snapshot/change
+  App->>App: run AfterAppStart
 ```
 
-In standalone and linked modes, Vine stops business applications before stopping the in-process Link so that the unregistration path remains available. In a separated deployment, allow the application to complete graceful shutdown before terminating Link.
+A registration describes only declared runtime facts: the application identity
+and endpoint plus its Rpc services, Web handlers, Event listeners, Task
+runners, and domain schemas. Business data does not enter the registry.
 
-For configuration and behavior of individual components, see [Components and Modules](/docs/components), [Hub](/docs/hub), [Link](/docs/link), and [Portal](/docs/portal).
+An application that only owns modules and exposes none of these capabilities
+can run normally, but it has nothing to advertise through service discovery.
+
+### Readiness implication
+
+The endpoint starts and registration completes **before** `AfterAppStart`
+hooks run. Requests can therefore arrive while an `AfterAppStart` hook is
+running. Put every readiness-critical check or resource initialization in
+`BeforeAppStart`; reserve `AfterAppStart` for work that is safe after the
+application is visible.
+
+The complete order and hook guidance are in
+[Application lifecycle](./application-lifecycle.md).
+
+## Four runtime flows
+
+| Flow | Source | Runtime path | Delivery model |
+| --- | --- | --- | --- |
+| Configuration | Hub database or seed | Hub → Redis snapshot/change → Link → application DI | Eternal per-instance snapshot or watched instant snapshot |
+| Internal Rpc | Generated client in an application | Caller Link → selected local app or target Link → target app | Synchronous request/response |
+| External Rpc or Web | External client | Portal → selected Link → target app | Synchronous gateway forwarding |
+| Event or Task | Generated emitter or launcher | Sender Link → NATS → consumer Link → target app | Asynchronous, retryable delivery |
+
+### Rpc selection and Web gateway routing
+
+For application-to-application Rpc, the caller's Link builds a current service
+set from registration data and selects a registered instance. A target owned
+by that Link is invoked locally; otherwise the call enters the target Link
+before reaching the application.
+
+Web selection has a different owner. Portal matches the external entry and
+site, selects from its distributed Web endpoint snapshot, and sends the request
+to the Link that owns the chosen application. The target Link's `webproxy`
+indexes only its local applications and performs the final handler lookup and
+delivery.
+
+Neither path is a durable workflow engine. A selected target failing does not
+imply that the same request is transparently moved to another target. See
+[Registration, discovery, and request routing](./request-routing.md) before
+designing retries.
+
+### Event and Task
+
+Link publishes generated Event and Task messages to NATS and creates consumers
+from registered listeners and runners. Application code does not create those
+consumers.
+
+Event and Task have different grouping semantics and can redeliver work after a
+failure. Read [Events and Tasks](../framework/event-task.md) before relying on
+broadcast, ordering, retry, or identity propagation behavior.
+
+### Configuration
+
+Link provides the application-facing configuration read boundary. Eternal
+configuration freezes on the application's first read; instant configuration
+starts a watch on first read and updates the snapshot used by later DI
+resolutions. An already injected pointer is not mutated.
+
+See [Configuration](../framework/configuration.md) for the consistency model.
+
+## Same responsibilities, different topology
+
+| Mode | Processes | Transport changes | What it is good for |
+| --- | --- | --- | --- |
+| Standalone | Hub, Portal, Link, and applications share one process | Management and application endpoints can be in-process | First use, local development, integration tests |
+| Linked | An external Hub; Link and one or more apps share a process | App-to-Link is in-process; Hub and Link ingress use the network | Shared development/runtime control plane |
+| Separated | Hub, Portal, Link, and apps can run independently | Runtime boundaries use network endpoints | Production topology and distributed-failure testing |
+
+Application capability code does not change between these modes. The important
+caveat is that in-process transport preserves routing and subscription
+semantics, not distributed failure semantics:
+
+- Standalone registrations have no TTL and Link sends no heartbeat.
+- Standalone does not model an independently crashed process or network
+  partition.
+- In-process health checks and endpoint reachability cannot prove that a
+  production listener, firewall, DNS path, or TLS configuration works.
+- Portal may still open business HTTP/HTTPS listeners when its Hub
+  configuration defines them.
+
+Use a separated setup to validate lease expiry, independent restarts, real
+network reachability, and TLS.
+
+## Graceful removal
+
+```mermaid
+sequenceDiagram
+  participant App as Application
+  participant RuntimeLink as Link
+  participant Hub
+
+  App->>App: run BeforeAppStop in reverse order
+  App->>RuntimeLink: unregister
+  RuntimeLink->>Hub: remove distributed registration
+  RuntimeLink->>RuntimeLink: stop new work and drain in-flight work
+  RuntimeLink-->>App: unregister returns
+  App->>App: stop endpoint and cancel root context
+  App->>App: run AfterAppStop in reverse order
+```
+
+In linked and standalone composition, business applications stop before their
+shared Link so that unregister and drain remain available. In separated
+deployments, preserve the same operational order: stop or drain applications
+before terminating the Link that owns them.
+
+`BeforeAppStop` runs before unregister. Use it to stop application-owned
+producers and begin quiescing, but keep dependencies required by in-flight
+handlers valid until the drain completes. Release final resources in
+`AfterAppStop`.
+
+## Where to go deeper
+
+- [Application lifecycle](./application-lifecycle.md): construction, hooks,
+  readiness, drain, and bundle ordering.
+- [Dependency and execution model](./execution-model.md): application
+  singletons, execution scope, filters, context, and disposal.
+- [Request routing](./request-routing.md): registration watches, instance
+  selection, local/remote forwarding, and failure behavior.
+- [Trace and timeout](../framework/trace-timeout.md): metadata, deadlines, cancellation,
+  and downstream calls.
+- [Deployment topologies](../getting-started/deployment-modes.md): choose standalone, linked,
+  or separated operation.
+- [Production readiness](../operations/production-readiness.md): network boundary,
+  persistence, lifecycle, and failure testing.

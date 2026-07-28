@@ -1,5 +1,6 @@
 ---
 slug: /portal
+sidebar_label: Portal 网关
 ---
 
 # Portal
@@ -54,6 +55,6 @@ Portal 可随 standalone runtime 在同一进程内启动。它的模块划分�
 
 ## 相关文档
 
-- [Hub](/docs/hub)：管理 Portal entry、rule、site 与证书配置。
-- [Link](/docs/link)：承载目标应用的 ingress 与 endpoint 注册。
-- [Rpc](/docs/rpc)：应用内部的 Rpc 抽象。
+- [Hub](./hub.md)：管理 Portal entry、rule、site 与证书配置。
+- [Link](./link.md)：承载目标应用的 ingress 与 endpoint 注册。
+- [Rpc](../infrastructure/rpc.md)：应用内部的 Rpc 抽象。

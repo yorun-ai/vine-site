@@ -9,6 +9,7 @@ import clsx from 'clsx'
 import TOCItems from '@theme/TOCItems'
 import type {Props} from '@theme/TOC'
 
+import CopyPageControl from './CopyPageControl'
 import styles from './styles.module.css'
 
 const linkClassName = 'table-of-contents__link toc-highlight'
@@ -41,6 +42,7 @@ const hiddenIndicator: IndicatorPosition = {
 }
 
 export default function TOC({className, ...props}: Props): ReactNode {
+  const shellRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const animationFrameRef = useRef<number | null>(null)
   const dockFrameRef = useRef<number | null>(null)
@@ -124,15 +126,15 @@ export default function TOC({className, ...props}: Props): ReactNode {
   }, [updateIndicator, updateScrollHints])
 
   const updateDockPosition = useCallback(() => {
-    const container = containerRef.current
-    const column = container?.parentElement
-    const layoutContainer = container?.closest<HTMLElement>(
+    const shell = shellRef.current
+    const column = shell?.parentElement
+    const layoutContainer = shell?.closest<HTMLElement>(
       'main > .container',
     )
     const navbar = document.querySelector<HTMLElement>('.navbar')
 
     if (
-      !container ||
+      !shell ||
       !column ||
       !layoutContainer ||
       window.innerWidth <= 996
@@ -183,12 +185,12 @@ export default function TOC({className, ...props}: Props): ReactNode {
   }, [updateDockPosition])
 
   useEffect(() => {
-    const container = containerRef.current
-    const column = container?.parentElement
-    const layoutContainer = container?.closest<HTMLElement>(
+    const shell = shellRef.current
+    const column = shell?.parentElement
+    const layoutContainer = shell?.closest<HTMLElement>(
       'main > .container',
     )
-    if (!container || !column || !layoutContainer) {
+    if (!shell || !column || !layoutContainer) {
       return undefined
     }
 
@@ -373,7 +375,17 @@ export default function TOC({className, ...props}: Props): ReactNode {
       links.forEach((link) => {
         link.classList.toggle(linkActiveClassName, link === activeLink)
       })
-      keepActiveLinkVisible(activeLink)
+      if (isAtPageBottom) {
+        container.scrollTo({
+          top: Math.max(
+            0,
+            container.scrollHeight - container.clientHeight,
+          ),
+          behavior: 'auto',
+        })
+      } else {
+        keepActiveLinkVisible(activeLink)
+      }
       scheduleIndicatorUpdate()
     }
 
@@ -455,14 +467,8 @@ export default function TOC({className, ...props}: Props): ReactNode {
 
   return (
     <div
-      ref={containerRef}
-      className={clsx(
-        styles.tableOfContents,
-        scrollHints.top && styles.canScrollUp,
-        scrollHints.bottom && styles.canScrollDown,
-        'thin-scrollbar',
-        className,
-      )}
+      ref={shellRef}
+      className={clsx(styles.tocShell, className)}
       style={
         dockPosition
           ? {
@@ -474,21 +480,31 @@ export default function TOC({className, ...props}: Props): ReactNode {
             }
           : undefined
       }>
-      <span
-        aria-hidden="true"
-        className={styles.activeIndicator}
-        style={{
-          height: indicator.height,
-          left: indicator.left,
-          opacity: indicator.visible ? 1 : 0,
-          top: indicator.top,
-        }}
-      />
-      <TOCItems
-        {...props}
-        linkClassName={linkClassName}
-        linkActiveClassName={linkActiveClassName}
-      />
+      <CopyPageControl />
+      <div
+        ref={containerRef}
+        className={clsx(
+          styles.tableOfContents,
+          scrollHints.top && styles.canScrollUp,
+          scrollHints.bottom && styles.canScrollDown,
+          'thin-scrollbar',
+        )}>
+        <span
+          aria-hidden="true"
+          className={styles.activeIndicator}
+          style={{
+            height: indicator.height,
+            left: indicator.left,
+            opacity: indicator.visible ? 1 : 0,
+            top: indicator.top,
+          }}
+        />
+        <TOCItems
+          {...props}
+          linkClassName={linkClassName}
+          linkActiveClassName={linkActiveClassName}
+        />
+      </div>
     </div>
   )
 }

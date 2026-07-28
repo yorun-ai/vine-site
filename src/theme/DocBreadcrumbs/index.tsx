@@ -71,6 +71,7 @@ export default function DocBreadcrumbs(): ReactNode {
 
   return (
     <div
+      className="doc-breadcrumbs-bar"
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       ref={wrapperRef}>

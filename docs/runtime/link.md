@@ -1,5 +1,6 @@
 ---
 slug: /link
+sidebar_label: Link Runtime
 ---
 
 # Link
@@ -9,7 +10,8 @@ Link is the runtime access layer deployed alongside applications. It registers l
 ```mermaid
 flowchart LR
   App["Local application"] <--> Link["Link"] <--> Hub["Hub"]
-  Link --> RpcWeb["Rpc / Web: discover and forward"]
+  Link --> Rpc["Rpc: discover and forward"]
+  Link --> Web["Web: deliver to a local App"]
   Link --> EventTask["Event / Task: consume and dispatch"]
   Link --> Config["Config: subscribe to changes"]
 ```
@@ -19,7 +21,10 @@ flowchart LR
 - **Application registration**: stores the facts for local application instances, registers their capabilities with Hub, and unregisters them on exit.
 - **Health and leases**: performs instance health checks and sends heartbeats to Hub in normal mode.
 - **Configuration reads**: provides configuration snapshots and watches Hub Redis for change events.
-- **Service discovery and forwarding**: routes Rpc and Web requests to local or remote instances based on registration data.
+- **Rpc discovery and forwarding**: selects a registered local or remote Rpc
+  instance and forwards the call.
+- **Web delivery**: accepts a Portal-selected Web request and forwards it to
+  the locally owned application instance named by that request.
 - **Asynchronous message dispatch**: consumes NATS messages and delivers them to locally declared event listeners and task runners.
 
 Link is the sole owner of local application capability state. The Rpc, Web, event, task, and configuration modules derive their runtime indexes from Link rather than maintaining separate copies of application instance state.
@@ -48,11 +53,23 @@ The corresponding environment variables are `VINE_API_LISTEN`, `VINE_INGRESS_LIS
 
 ### Rpc
 
-When an application makes an Rpc call, the request first enters Link's `rpcproxy`. The proxy uses service discovery to determine whether the target is local or remote, then invokes it locally or forwards the request through the remote Link. Rpc requests entering through external Link ingress follow the same proxy path before reaching the local application.
+When an application makes an Rpc call, the request first enters Link's
+`rpcproxy`. The proxy selects the next current service registration using
+round-robin. If that registration belongs to a local application, Link invokes
+its application endpoint directly; otherwise it forwards through the target
+Link. Locality changes the forwarding path, not selection priority. A failure
+after selection does not make that invocation automatically try another
+registration.
 
 ### Web
 
-`webproxy` maintains indexes for local Web handlers and remote discovery results. It uses the same model as Rpc: prefer an available local target and reach remote targets through their Link.
+`webproxy` indexes Web handlers only for applications owned by this Link. Portal
+owns the distributed Web endpoint snapshot and round-robin selection; it sends
+the request to the Link that owns the selected instance. That target Link
+verifies the local instance and handler, then invokes the application endpoint.
+Link does not select a remote Web target from its own discovery index. See
+[Request routing](./request-routing.md) for Portal selection, discovery
+freshness, and failure boundaries.
 
 ### Event and Task
 
@@ -60,12 +77,15 @@ The `event` and `task` modules create NATS consumers from the declarations of lo
 
 ## Inproc Mode
 
-`linked.New(...)` runs Link and the business application in the same process, while Hub remains an external service. Link still opens ingress, registers with Hub, and continues heartbeats and application health checks.
+`linked.New(...)` runs Link and the business application in the same process,
+while Hub remains an external service. Link still opens ingress, registers
+with Hub, and continues Hub heartbeats. The in-process App is coupled to the
+Link lifecycle, so its separate application health check is disabled.
 
 Only standalone mode runs Hub, Portal, Link, and the application in a single process and uses in-process Redis and endpoints. Standalone mode does not send heartbeats. Use linked mode or a fully separated deployment to test leases and network failures.
 
 ## Related Documentation
 
-- [Hub](/docs/hub): the source of configuration and registration data.
-- [Portal](/docs/portal): the gateway through which external requests enter applications.
-- [App](/docs/app): assembles applications in linked or standalone mode.
+- [Hub](./hub.md): the source of configuration and registration data.
+- [Portal](./portal.md): the gateway through which external requests enter applications.
+- [App](../framework/app.md): assembles applications in linked or standalone mode.

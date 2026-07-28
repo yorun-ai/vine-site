@@ -1,5 +1,6 @@
 ---
 slug: /ex
+sidebar_label: Error Handling
 ---
 
 # Errors (EX)

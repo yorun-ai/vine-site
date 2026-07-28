@@ -1,5 +1,6 @@
 ---
 slug: /logging-and-testing
+sidebar_label: Logging & Testing
 ---
 
 # Logging & Testing

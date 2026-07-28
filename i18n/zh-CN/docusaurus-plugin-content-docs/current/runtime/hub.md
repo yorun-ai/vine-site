@@ -1,5 +1,6 @@
 ---
 slug: /hub
+sidebar_label: Hub 控制
 ---
 
 # Hub
@@ -77,6 +78,6 @@ inproc 模式不使用 TTL、heartbeat 或 registry sweeper；注册会一直保
 
 ## 相关文档
 
-- [Link](/docs/link)：应用侧注册、配置订阅和服务发现。
-- [Portal](/docs/portal)：读取 Hub 配置并提供外部网关。
-- [命令行](/docs/cli)：完整参数与环境变量。
+- [Link](./link.md)：应用侧注册、配置订阅和服务发现。
+- [Portal](./portal.md)：读取 Hub 配置并提供外部网关。
+- [命令行](../getting-started/cli.md)：完整参数与环境变量。
