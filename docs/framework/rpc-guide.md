@@ -81,7 +81,12 @@ func main() {
 }
 ```
 
-After running `go run .`, the logs contain `message="Hello, Vine"`. Vine automatically carries trace, application identity, and Actor information with the call, while Link performs service discovery and forwarding. Standalone mode selects an in-process endpoint.
+After running `go run .`, the logs contain `message="Hello, Vine"`. Because
+this call starts in a module rather than an incoming request, Vine creates a new
+trace, identifies `GreetingApp` as the client application, and sends an absent
+Actor. A client injected into an Rpc, Web, Event, or Task execution instead
+inherits that execution's trace, initiator, and Actor. Link handles discovery
+and forwarding in both cases; standalone selects an in-process endpoint.
 
 ```mermaid
 flowchart LR

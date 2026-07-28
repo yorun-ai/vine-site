@@ -6,15 +6,16 @@ slug: /tutorial-first-app
 
 # First Vine Application
 
-In this tutorial, you will create a minimal Vine application and run it in standalone mode. Standalone starts Hub, Portal, Link, and the business application in the same process, making it suitable for first-time evaluation, local development, and integration testing.
-
-When you finish, you will have a Vine application that starts, shuts down
-gracefully, and stores its embedded Hub runtime state in a local SQLite file.
+The quickest way to see Vine run is standalone mode: Hub, Portal, Link, and the
+business application start in one process. The small application below has no
+business endpoint yet. It is just enough to exercise application assembly,
+module lifecycle, persistent Hub state, and graceful shutdown.
 
 ## Prerequisites
 
 - Go 1.26.5 or later.
-- Vine is installed, or the project can access the `go.yorun.ai/vine` module.
+- Network access to download the `go.yorun.ai/vine` module, or an existing
+  module cache.
 
 Create an empty directory and initialize a Go module:
 
@@ -22,8 +23,12 @@ Create an empty directory and initialize a Go module:
 mkdir vine-hello
 cd vine-hello
 go mod init example.com/vine-hello
-go get go.yorun.ai/vine@v0.10.0
+go get go.yorun.ai/vine@main
 ```
+
+`@main` matches the `next` documentation you are reading. For a released
+application, replace it with a reviewed commit or tag and keep that revision in
+`go.mod`.
 
 ## Define the Application
 
@@ -65,14 +70,15 @@ func main() {
 }
 ```
 
-This code introduces three concepts you need to understand:
+Three pieces matter here:
 
 1. Embed `app.Application` to get the default implementation of the application specification.
 2. `Name()` returns the logical application name. It must contain one or more
    lowercase-letter segments separated by dots, such as `demo.hello`.
    Replicas of the same application share this name and have different instance
    IDs; two different applications in one process cannot use the same name.
-3. `HelloModule` starts with the application and writes a verifiable log message after startup completes.
+3. `HelloModule` follows the application lifecycle and logs from
+   `AfterAppStart()`.
 
 `StartAndWait()` starts the runtime and waits for `SIGINT` or `SIGTERM`. After you press `Ctrl+C`, the application shuts down gracefully in reverse startup order.
 
@@ -88,11 +94,13 @@ On the first run, Vine creates `vine.sqlite` in the current directory. The termi
 hello from Vine
 ```
 
-This message confirms that the application, dependency injection, and module lifecycle are all working. The application does not yet declare Rpc, Web, Event, or Task capabilities, but the complete runtime is assembled and running.
+That line proves the module reached `AfterAppStart()`. The application does not
+declare Rpc, Web, Event, or Task yet, so it does not advertise a business
+capability through Link.
 
 Press `Ctrl+C` to stop it. Running the same command again reuses the Hub data stored in `vine.sqlite`.
 
-## Understand the Standalone Runtime
+## What standalone started
 
 ```mermaid
 flowchart LR
@@ -107,7 +115,8 @@ flowchart LR
 - **Link** owns the connection to `HelloApp` and provides configuration,
   discovery, and forwarding. This minimal App declares no public capability, so
   it has nothing to advertise yet.
-- **HelloApp** is your business application. You can later add components, modules, and Rpc, Web, Event, or Task capabilities to it.
+- **HelloApp** is the business application. Components, modules, and Rpc, Web,
+  Event, or Task capabilities are added here as the application grows.
 
 In standalone, the management connections between Hub and Link use the inproc transport and do not open additional management ports. Portal can still listen on business HTTP/HTTPS ports according to its entry rules. This mode does not simulate heartbeat, TTL expiration, or network disconnection. Use linked mode when you need to validate these behaviors.
 
@@ -116,7 +125,7 @@ In standalone, the management connections between Hub and Link use the inproc tr
 Install the matching Vine CLI, then start Hub separately:
 
 ```bash
-go install go.yorun.ai/vine/cmd/vine@v0.10.0
+go install go.yorun.ai/vine/cmd/vine@main
 
 vine hub serve \
   --mq-embedded-nats \

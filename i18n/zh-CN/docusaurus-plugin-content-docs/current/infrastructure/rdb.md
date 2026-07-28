@@ -5,7 +5,8 @@ sidebar_label: 数据库 API
 
 # RDB API
 
-日常接入请先阅读 [使用关系型数据库](../framework/rdb-guide.md)。本页说明 `infra/rdb` 的完整连接、DAO、Query 和模型 API。
+把数据库接进应用时，先看[使用关系型数据库](../framework/rdb-guide.md)。需要确认连接
+共享、模型语义以及 `Dao`、`Query` 的精确行为时，再查这里的 `infra/rdb` API。
 
 顶层 `infra/rdb` 暴露 `Option`、`TypeAdder`、`DatabaseSpec`、`Database`、`Dao`、`Query`、`Model`、`DeletableModel`、`Patch` 等公共类型。
 
@@ -205,7 +206,7 @@ type ConfigDAO struct {
 
 复杂查询仍建议直接使用 `dao.GormDB()`。
 
-## 使用建议
+## 连接与查询规则
 
 - 每个数据库组件都嵌入 `Database`
 - DAO 类型统一嵌入 `rdb.Dao[...]`

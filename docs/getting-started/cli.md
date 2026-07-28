@@ -5,7 +5,8 @@ sidebar_label: Vine CLI
 
 # Vine CLI
 
-`vine` is the command-line entry point for Vine. It provides runtime services and version information.
+Use the `vine` command to start Hub, Link, or Portal and to inspect the build
+version.
 
 - `hub` / `link` / `portal`: Start Vine runtime infrastructure services.
 - `version`: Display the current CLI version.
@@ -23,12 +24,12 @@ vine --help
 vine hub serve --help
 ```
 
-## Installation and Version
+## Installation and version
 
-Install a published version:
+Install the source revision described by `next`:
 
 ```bash
-go install go.yorun.ai/vine/cmd/vine@v0.10.0
+go install go.yorun.ai/vine/cmd/vine@main
 ```
 
 Verify the installation:
@@ -38,8 +39,9 @@ which vine
 vine version
 ```
 
-Pin the CLI to the same reviewed release as the application module. See
-[Version Compatibility](./compatibility.md) before upgrading.
+For a released application, replace `main` with the same reviewed commit or tag
+used by the application module. See [Version Compatibility](./compatibility.md)
+before upgrading.
 
 ## hub
 
@@ -119,7 +121,8 @@ Notes:
 
 ## link
 
-`link` is the application-side sidecar mesh. It connects to Hub, provides ingress, and registers the capabilities of the current application.
+`link` is the application-side runtime. It connects to Hub, accepts ingress
+from Portal or other Links, and registers the capabilities of its applications.
 
 Start Link:
 
@@ -158,9 +161,9 @@ Environment variables:
 
 - `VINE_HUB_ENDPOINT`
 
-## Common Workflows
+## Common workflow
 
-### Start Runtime Infrastructure Services Separately
+### Start runtime services separately
 
 ```bash
 vine hub serve --mq-embedded-nats --db-sqlite-file ./hub.sqlite

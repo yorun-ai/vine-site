@@ -5,7 +5,8 @@ sidebar_label: App API
 
 # App API
 
-`app` 的职责是把一个进程组装成统一运行时：管理应用生命周期、创建组件和模块、挂载 HTTP/Rpc/Web 入口，并把运行时依赖通过 DI 暴露给应用内部对象。
+大多数应用代码只需要依赖 `go.yorun.ai/vine/app`。这个包负责进程生命周期、
+组件与模块的创建、HTTP/Rpc/Web 入口挂载，以及运行时依赖的注入。
 
 ## 对外入口
 
@@ -165,14 +166,18 @@ app.New[*DemoApp](
 ```go
 type RunFlag struct {
     FlagModel
-    ListenAddr string
-    Context    context.Context
+    ListenAddr   string
+    LinkEndpoint string
+    Context      context.Context
 }
 ```
 
 语义如下：
 
 - `ListenAddr == ""` 时监听随机端口
+- `LinkEndpoint` 指定通过 `app.New(...)` 或 `app.NewWithOption(...)` 直接创建的
+  应用所连接的 Link API；可以通过 `app.Option`、`--link-endpoint` 或
+  `VINE_LINK_ENDPOINT` 设置
 - `Context == nil` 时回退到 `context.Background()`
 - 即使没有显式传入 `RunFlag`，框架也会自动补一个默认实例
 
@@ -445,12 +450,12 @@ inproc 下会注册：
 - 组件/模块自己的 `Bind(...)` 适合放该对象专属依赖
 - Servicer / Webber / Eventer / Tasker 会把各自上下文再补到执行容器里
 
-## 建议
+## 使用时需要守住的边界
 
-- 业务 app 一定要覆写 `Name()`
+- 每个业务 app 都要覆写 `Name()`
 - 在构造时通过 `app.With(&app.RunFlag{ListenAddr: "..."})` 提供监听地址。
   如果 app 必须自行选择默认值，应在 specification 的 `DIInit()` 中修改注入的
   flag；到 `BindCommon(...)` 再修改已经太晚
 - 组件和模块都用指针类型声明
-- `BindCommon(...)` 只放公共依赖，不要把 route 逻辑塞进这里
+- `BindCommon(...)` 只放共享依赖，不要在这里做路由或启动工作
 - web 路由入口收敛到单个 `WebberSpec`，如果需要更多路由，放在同一个 weber 下追加多个 handler

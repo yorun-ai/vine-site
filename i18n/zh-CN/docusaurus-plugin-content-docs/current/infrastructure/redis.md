@@ -5,7 +5,8 @@ sidebar_label: Redis API
 
 # Redis API
 
-日常接入请先阅读 [使用 Redis](../framework/redis-guide.md)。本页说明 `infra/redis` 的完整配置、依赖注入、Cache 和 Locker API。
+把 Redis 接进应用时，先看[使用 Redis](../framework/redis-guide.md)。需要确认 component、
+Cache、Locker 或锁失效的精确行为时，再查这里的 `infra/redis` API。
 
 顶层 `infra/redis` 暴露 `Option`、`TypeAdder`、`RedisSpec`、`Redis`、`Locker`、`Lock`、`Cache[T]` 和 `NewCache[T](...)` 等公共类型。
 
@@ -490,7 +491,7 @@ vine:cache:user:1
 - 默认情况下，每个 cache 类型都会基于完整类型名拿到唯一前缀
 - 如果需要多个不同 cache 类型共享同一组 Redis key，必须显式覆写 `KeyPrefix()` 并返回相同值
 
-## 使用建议
+## Cache 与锁的使用规则
 
 - Redis 组件统一嵌入 `redis.Redis`
 - 优先把稳定前缀声明成注入式 locker

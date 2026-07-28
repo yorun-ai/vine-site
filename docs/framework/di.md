@@ -5,7 +5,9 @@ sidebar_label: Dependency Injection
 
 # Dependency Injection (DI)
 
-Vine uses dependency injection to create modules, handlers, listeners, and runners, and to manage the lifetimes of their dependencies. Everyday development starts with `inject:""` on fields; add explicit bindings only when you need to replace an interface implementation or control a scope.
+Vine creates modules, handlers, listeners, and runners through DI. Start with
+`inject:""` fields. Add a binding when an interface needs an implementation,
+construction needs a factory, or an object needs an explicit lifetime.
 
 ```go
 type UserService struct {
@@ -13,8 +15,7 @@ type UserService struct {
 }
 
 func (*DemoApp) BindCommon(b *di.Binder) {
-    b.Bind(di.T[*UserRepo]()).In(di.SingletonScope)
-    b.Bind(di.T[*UserService]()).In(di.SingletonScope)
+    b.Bind(di.T[UserRepo]()).ToImplementation(di.T[*PostgresUserRepo]())
 }
 ```
 
@@ -115,7 +116,15 @@ type TempValue struct {
 }
 ```
 
-If a constructible type has neither an explicit `In(...)` call nor a scope marker, it uses the fallback scope of the container it belongs to. The fallback for root and child containers is `TransientScope`.
+If a constructible type has neither an explicit `In(...)` call nor a scope
+marker, the injector resolving it supplies the fallback scope:
+
+- A root or child `PlainInjector` uses `TransientScope`.
+- An `ExecutionInjector` uses `ExecutionScope`.
+
+This is why an unscoped handler dependency is shared within one request but a
+direct resolution from the root injector creates a fresh value. An explicit
+scope or a marker on the type always wins over the fallback.
 
 A scope belongs to the requested target type, not to the concrete instance eventually created. For forwarding and factory bindings such as `ToImplementation(...)`, `ToFactory(...)`, and `ToInstance(...)`, the scope describes only the current binding.
 
@@ -291,6 +300,8 @@ Resolution follows these rules:
 - `SingletonScope`: reuse the root-container singleton.
 - `ExecutionScope`: cache the instance for the current execution.
 - `TransientScope`: create a new instance on every request.
+- No declared scope: use `ExecutionScope` while resolving through this
+  execution injector.
 
 A root `PlainInjector` cannot resolve an `ExecutionScope` type directly.
 
@@ -352,9 +363,21 @@ Objects can participate in disposal in two ways:
 
 Therefore, if business code binds databases, Redis or MQ clients, file handles, or other singleton resources through DI, it should release them explicitly in an application, component, or module shutdown hook rather than relying on `PlainInjector` to call `DIDispose()`.
 
-## Recommendations
+## Choosing a scope
 
-- Prefer `SingletonScope` for global configuration, clients, and caches.
-- Prefer `ExecutionScope` for request contexts, traces, and invocation metadata.
-- Use `TransientScope` for stateless temporary objects.
-- Prefer explicit bindings over excessive reliance on implicit completion.
+- Leave request-aware services, clients, configuration readers, DAOs, caches,
+  and lockers unscoped, and inject them only into execution-owned objects.
+  They are then reused inside one execution and stay fresh across executions.
+- Use `ExecutionScope` explicitly for values that are only valid during an
+  execution, especially seeded request context, trace, and protocol metadata.
+- Use `SingletonScope` only for context-free objects that are safe to share for
+  the entire application lifetime and have an explicit owner responsible for
+  shutdown.
+- Use `TransientScope` when every resolution must produce a fresh stateless
+  object.
+- Do not turn a request-aware client or dynamic configuration reader into a
+  singleton merely to avoid construction; doing so can pin the context or
+  configuration observed by the first resolution.
+
+See [Execution Model](../runtime/execution-model.md) for the containers Vine
+creates around Rpc, Web, Event, and Task handlers.

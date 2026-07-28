@@ -2,17 +2,17 @@
 slug: /core-packages
 title: 公共 Package 导航
 sidebar_label: 公共 Package
-description: 按应用任务找到受支持的 Vine package，并判断何时需要使用底层 API。
+description: 应用任务对应的 Vine package，以及底层 API 的使用边界。
 ---
 
 # 公共 Package 导航
 
-Vine 的公共 Go API 被有意组织为一组 facade。先从 `app` 与应用使用的生成 contract
-类型开始，再按需引入对应的 `core/*` 或 `infra/*` package。
+Vine 用 facade package 保持公共 Go API 的边界。应用代码通常从 `app` 和生成的
+contract 类型开始，只为实际使用的能力引入对应的 `core/*` 或 `infra/*` package。
 
 精确到 symbol 的权威参考是
-[`pkg.go.dev/go.yorun.ai/vine`](https://pkg.go.dev/go.yorun.ai/vine)。本页回答的是另一个
-问题：**应用代码应该选择哪个 package？**
+[`pkg.go.dev/go.yorun.ai/vine`](https://pkg.go.dev/go.yorun.ai/vine)。下面这份导航补充
+symbol 索引无法回答的问题：**应用代码应该选择哪个 package？**
 
 :::warning 公共边界
 
@@ -106,7 +106,7 @@ listener 或 runner，不要手工构造 `ServiceSpec`、`WebSpec`、`EventSpec`
 标准库函数同样清晰时，应优先使用标准库。这些 package 最适合已经处于 Vine 相关调用
 路径中的通用操作。
 
-## 推荐顺序
+## 实际查阅顺序
 
 1. 先学习 `app` 与一个运行模式 package。
 2. 按应用实际暴露的能力逐一阅读对应指南。

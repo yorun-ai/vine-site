@@ -5,7 +5,10 @@ sidebar_label: Rpc API
 
 # Rpc API
 
-For day-to-day use, start with [Using Rpc](../framework/rpc-guide.md). See [vRPC over HTTP](./vrpc-http.md) for the wire protocol. This page documents the client, server, executor, and service metadata APIs provided by `core/rpc`. Use it when you need to tune low-level invocation options or build a custom integration layer.
+Use the generated client and server flow in [Using Rpc](../framework/rpc-guide.md)
+for application code. The APIs below matter when tuning invocation options,
+writing an executor, or integrating a transport. The HTTP binding is documented
+separately in [vRPC over HTTP](./vrpc-http.md).
 
 `core/rpc` provides a unified Rpc abstraction. It is responsible for:
 
@@ -311,9 +314,11 @@ Rules:
 - The final return value of an ER server is always `ex.Error`.
 - A normal server can be wrapped as an ER server through `WrapperERServerCtor`.
 
-## Recommendations
+## When using the lower-level APIs
 
-- Prefer generated metadata to handwritten specs.
-- Always provide a `Logger` explicitly when creating a client.
-- On the server, prefer `NewContainerExecutor(...)` when you need context injection or filters.
-- Enable `ReturnIfSystemError` explicitly only when you want to catch and handle system errors yourself.
+- Keep generated metadata as the source of service and method definitions.
+- Pass a `Logger` when constructing a client.
+- Use `NewContainerExecutor(...)` on a server that needs context injection or
+  filters.
+- Set `ReturnIfSystemError` only at a boundary that deliberately catches and
+  handles system errors.

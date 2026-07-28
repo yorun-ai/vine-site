@@ -7,7 +7,7 @@ sidebar_label: Deployment
 
 Vine supports different runtime topologies for development and production. The business application code remains the same; the difference is whether Hub, Portal, Link, and the business application run in the same process, and whether components communicate through inproc or network connections.
 
-## Mode Comparison
+## Mode comparison
 
 | Mode | Hub / Portal / Link | Business application | Recommended for |
 | --- | --- | --- | --- |
@@ -37,7 +37,7 @@ standalone.NewWithOption[*HelloApp](standalone.Option{
 
 The startup order is Hub → Portal → Link → business application. Shutdown runs in the reverse order. Hub uses in-process Redis, while Link and Portal use inproc endpoints, so no runtime service needs to be started in advance.
 
-### Characteristics and Limitations
+### Characteristics and limitations
 
 - You only need to start one business binary, which makes this the best mode for the [first application tutorial](./tutorial-first-app.md).
 - Use `standalone.Option` to configure SQLite/PostgreSQL, a seed YAML file, and the Dashboard URL.
@@ -45,7 +45,7 @@ The startup order is Hub → Portal → Link → business application. Shutdown 
 - Hub and Link do not expose separate management ports. Portal can still listen on business HTTP/HTTPS ports according to its entry rules.
 - This mode does not cover cross-process networking or independent service restarts.
 
-## Linked: Separate Hub and Application
+## Linked: separate Hub and application
 
 Linked mode runs Hub and Portal as independent runtime services, while each business application carries an inproc Link in its own process:
 
@@ -82,7 +82,7 @@ linked.NewWithOption[*HelloApp](linked.Option{
 
 This mode preserves the configuration, registration, and lease semantics of an independent Hub, but Link and the business application are still released and stopped together. It is suitable for development and deployment environments where maintaining a separate Link sidecar is undesirable.
 
-## Separated Deployment: Independent Runtime and Application
+## Separated deployment: independent runtime and application
 
 In production, you can separate the control plane, external entry point, application-side connectivity layer, and business application into independent processes:
 
@@ -134,7 +134,7 @@ configuration. Review the
 [Production Readiness Checklist](../operations/production-readiness.md) before treating
 process separation as high availability.
 
-## How to Choose
+## Pick a topology
 
 Start with standalone. Move to linked when you need shared configuration, discovery between multiple applications, or an external entry point. Use fully separated deployment when you need independent scaling, failure isolation, or complete distributed-system semantics.
 
@@ -144,7 +144,7 @@ Start with standalone. Move to linked when you need shared configuration, discov
 | Debug multiple applications locally without maintaining a separate Link | linked |
 | Containerized deployment, multiple instances, independent releases, and realistic failure exercises | Separated deployment |
 
-## Related Documentation
+## Related documentation
 
 - [Hub](../runtime/hub.md): Configuration, registration, and lease management.
 - [Link](../runtime/link.md): Application registration, discovery, and request forwarding.

@@ -5,7 +5,9 @@ sidebar_label: 依赖注入
 
 # 依赖注入（DI）
 
-Vine 使用依赖注入创建模块、handler、listener 和 runner，并管理它们依赖对象的生命周期。日常开发从字段上的 `inject:""` 开始；需要替换接口实现或控制 scope 时，再添加显式绑定。
+Vine 通过 DI 创建模块、handler、listener 和 runner。日常代码先使用字段上的
+`inject:""`；接口需要指定实现、构造过程需要 factory，或对象确实需要明确生命周期时，
+再增加 binding。
 
 ```go
 type UserService struct {
@@ -13,8 +15,7 @@ type UserService struct {
 }
 
 func (*DemoApp) BindCommon(b *di.Binder) {
-    b.Bind(di.T[*UserRepo]()).In(di.SingletonScope)
-    b.Bind(di.T[*UserService]()).In(di.SingletonScope)
+    b.Bind(di.T[UserRepo]()).ToImplementation(di.T[*PostgresUserRepo]())
 }
 ```
 
@@ -115,7 +116,14 @@ type TempValue struct {
 }
 ```
 
-如果一个可构造类型既没有显式 `In(...)`，也没有 marker scope，会使用所在容器的 fallback scope；根容器和子容器的 fallback 都是 `TransientScope`。
+如果一个可构造类型既没有显式 `In(...)`，也没有 scope marker，最终使用的是当前
+injector 提供的 fallback scope：
+
+- 根或子 `PlainInjector` 使用 `TransientScope`
+- `ExecutionInjector` 使用 `ExecutionScope`
+
+因此，同一个未标注 scope 的 handler 依赖在一次请求内会复用；直接从根 injector
+解析时，则每次都会得到新实例。显式 scope 或类型上的 marker 始终优先于 fallback。
 
 Scope 绑定在“请求的 target type”上，而不是绑定在最终创建出的 concrete instance 上。也就是说，`ToImplementation(...)`、`ToFactory(...)`、`ToInstance(...)` 这类转发或工厂式绑定，其 scope 只描述当前这条 binding 的生命周期。
 
@@ -291,6 +299,7 @@ defer execution.CompleteExecution()
 - `SingletonScope`：复用根容器单例
 - `ExecutionScope`：在当前 execution 内缓存
 - `TransientScope`：每次都新建
+- 未声明 scope：通过 execution injector 解析时使用 `ExecutionScope`
 
 根 `PlainInjector` 不能直接解析 `ExecutionScope` 类型。
 
@@ -352,9 +361,18 @@ sub := injector.SubInjector(func(b *di.Binder) {
 
 因此，如果业务代码通过 DI 绑定了数据库、Redis、MQ client、文件句柄等单例资源，也应该在 app/component/module 的停止钩子中明确释放，而不是依赖 `PlainInjector` 自动调用 `DIDispose()`。
 
-## 使用建议
+## 怎么选择 scope
 
-- 全局配置、客户端、缓存优先用 `SingletonScope`
-- 请求上下文、trace、调用元数据优先用 `ExecutionScope`
-- 无状态临时对象才用 `TransientScope`
-- 能用显式绑定就用显式绑定，不要过度依赖隐式补全
+- 会读取请求上下文的 service、client、配置 reader、DAO、cache 和 locker，除非有更强的
+  生命周期要求，否则保持 unscoped，并且只注入 execution 持有的对象。这样它们会在
+  一次 execution 内复用，也不会把上一次请求的状态带到下一次
+- 只在 execution 内有效的值应显式使用 `ExecutionScope`，尤其是 seed 进来的请求
+  context、trace 和协议 metadata
+- 只有与请求上下文无关、能安全跨整个应用复用，并且有明确关闭责任人的对象，才使用
+  `SingletonScope`
+- 每次解析都必须产生新实例的无状态对象使用 `TransientScope`
+- 不要仅仅为了少一次构造，就把带请求上下文的 client 或动态配置 reader 改成 singleton；
+  这会固定第一次解析时看到的 context 或配置
+
+Rpc、Web、Event 和 Task handler 外层的 container 如何创建，见
+[执行模型](../runtime/execution-model.md)。

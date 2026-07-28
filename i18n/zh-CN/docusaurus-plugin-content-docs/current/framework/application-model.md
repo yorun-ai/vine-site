@@ -5,7 +5,8 @@ sidebar_label: 应用模型
 
 # 应用模型
 
-Vine App 是业务进程的入口。它给应用一个稳定名称，声明需要的组件和模块，并选择 standalone、linked 或分开部署模式。
+Vine App 是运行时负责启动、注册和停止的基本单元。它的 specification 提供稳定名称，
+并声明属于这个应用的组件、模块和能力。
 
 ## 最小应用
 

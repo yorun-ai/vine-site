@@ -1,33 +1,37 @@
 ---
 slug: /getting-started
 title: Getting Started
-sidebar_label: Learning Path
-description: Choose a Vine learning path and understand the runtime before building your first application.
+sidebar_label: Start with Vine
+description: A first Vine application, the main capability guides, and the runtime boundaries that matter later.
 ---
 
 # Getting Started
 
-Vine is a runtime framework for Go applications. It gives business code one
-application model for lifecycle, dependency injection, configuration, Rpc, Web,
-events, tasks, Redis, and relational databases. The same application can run
-with an embedded development runtime or connect to independently deployed
-runtime services.
+Vine brings lifecycle, dependency injection, configuration, Rpc, Web, Event,
+Task, Redis, and relational databases under one Go application model. Start
+with a standalone process; split Hub, Link, Portal, and the business
+application only when you need the network and operational boundaries.
 
-This section helps you choose the shortest useful path through the
-documentation. You do not need to learn Hub, Link, and Portal internals before
-writing your first handler.
+If you are trying Vine for the first time:
 
-:::info Version first
+1. Check the [supported Go, Vine, and skelc versions](./compatibility.md).
+2. Run the [first application](./tutorial-first-app.md).
+3. Generate a service from the [first Skel contract](./first-contract.md).
+4. Implement and call it with the [Rpc guide](../framework/rpc-guide.md).
 
-Check the version selector before copying an example. **Vine next** follows the
-current source, while release labels are immutable documentation snapshots.
-For production, select a release and pin compatible Vine and `skelc` versions
-instead of copying `@latest` into a reproducible build. See
-[Versions and compatibility](./compatibility.md).
+You can finish all four steps without starting a separate runtime service.
+
+:::info Before copying a command
+
+Before 1.0, this site maintains only **Vine next**. It follows current source
+and may be ahead of the latest release. Pin released application builds to
+exact Vine and skelc revisions, and check the
+[compatibility page](./compatibility.md) when an example differs from the
+revision you use.
 
 :::
 
-## The mental model
+## What runs where
 
 ```mermaid
 flowchart LR
@@ -51,11 +55,10 @@ flowchart LR
 - **Portal** is the optional external HTTP/HTTPS gateway. Internal application
   calls do not need to pass through Portal.
 
-In standalone mode, Vine starts Hub, Link, Portal, and your application in one
-process. The responsibility boundaries stay the same even though network hops
-become in-process calls.
+Standalone starts all four roles in one process. Their responsibilities do not
+change; only the transport becomes in-process.
 
-## Choose a capability
+## Pick the capability you need
 
 | You need to… | Start with | Key behavior |
 | --- | --- | --- |
@@ -70,19 +73,9 @@ become in-process calls.
 If two components are part of the same application and do not need a network
 contract, inject a Go dependency instead of creating an Rpc service.
 
-## Recommended learning paths
+## Read further when the problem appears
 
-### Evaluate Vine
-
-1. Check the [prerequisites and compatibility matrix](./compatibility.md).
-2. Run the [first Vine application](./tutorial-first-app.md).
-3. Define the [first Skel contract](./first-contract.md).
-4. Implement and call the generated service in the [Rpc guide](../framework/rpc-guide.md).
-
-This path starts in standalone mode, so no runtime process needs to be installed
-or started separately.
-
-### Build an application
+### As the application grows
 
 1. Learn the [application model](../framework/application-model.md) and how to compose
    [components and modules](../framework/components.md).
@@ -92,18 +85,21 @@ or started separately.
 4. Use [logging and testkit](../framework/logging-testing.md) to verify observable
    behavior.
 
-### Understand what happens at runtime
+### When lifecycle or concurrency matters
 
-Read these after the first working application, or earlier when you need to
-make a lifecycle or concurrency decision:
+Start with [runtime architecture](../runtime/mechanisms.md), then go to the
+specific boundary you are debugging:
 
-1. [Runtime architecture](../runtime/mechanisms.md)
-2. [Application lifecycle](../runtime/application-lifecycle.md)
-3. [Dependency and execution model](../runtime/execution-model.md)
-4. [Registration, discovery, and request routing](../runtime/request-routing.md)
-5. [Trace and timeout propagation](../framework/trace-timeout.md)
+- [Application lifecycle](../runtime/application-lifecycle.md) for hook order,
+  readiness, shutdown, and resource ownership.
+- [Dependency and execution model](../runtime/execution-model.md) for scopes,
+  request-local objects, filters, and disposal.
+- [Request routing](../runtime/request-routing.md) for registration,
+  discovery, instance selection, and drain.
+- [Trace and timeout](../framework/trace-timeout.md) for downstream deadlines
+  and call metadata.
 
-### Prepare for deployment
+### Before deployment
 
 1. Choose a [deployment topology](./deployment-modes.md).
 2. Work through the [production readiness checklist](../operations/production-readiness.md).
@@ -113,7 +109,7 @@ make a lifecycle or concurrency decision:
    the current [security boundary](../operations/production-readiness.md#secure-the-runtime-network)
    does not support exposing them to an untrusted network.
 
-## What to keep in application code
+## Boundaries worth keeping
 
 - Put business behavior in modules and capability handlers, not in `main`.
 - Treat generated code as build output; change the `.skel` source and regenerate.

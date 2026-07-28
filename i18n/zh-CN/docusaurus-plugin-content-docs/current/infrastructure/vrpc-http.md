@@ -7,7 +7,8 @@ sidebar_label: vRPC over HTTP
 
 vRPC 是 Vine 的 Rpc 线协议。它使用 HTTP 承载请求与响应，通过 URL 标识 Skel service 和 method，通过 `vrpc-*` Header 传递调用元数据，并使用 JSON 或 CBOR 编码参数、结果和错误。
 
-本文描述当前 vRPC 的 HTTP 承载格式，适合实现非 Go 客户端、调试 Portal Rpc 入口或排查跨进程调用。业务 Go 代码通常应使用 skelc 生成的 client，而不是手工拼装 HTTP 请求。
+实现非 Go 客户端、检查 Portal Rpc 入口或排查跨进程调用时，需要下面这套承载格式。
+业务 Go 代码应使用 skelc 生成的 client，不要手工拼装这些 HTTP 请求。
 
 ## 请求目标
 

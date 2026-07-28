@@ -5,7 +5,8 @@ sidebar_label: 生命周期
 
 # 应用生命周期
 
-Vine 应用有两个不同的准备时刻：通过 `New(...)` 构造，以及通过 `Start()` 激活。理解这个区别很重要，因为构造并非惰性的，而应用的大部分依赖图要到 `Start()` 时才会装配。
+Vine 应用分两步准备：通过 `New(...)` 构造，再通过 `Start()` 激活。构造并非惰性操作，
+但应用的大部分依赖图要到 `Start()` 时才会装配。
 
 实际生命周期如下：
 
@@ -167,9 +168,9 @@ sequenceDiagram
 
 先停止业务应用、后停止其进程内 Link 至关重要：在每个业务应用完成停止前，注销与排空路径必须保持可用。
 
-## 一个稳健的 module 模式
+## 由 module 管理后台 worker
 
-下面的结构明确表达了资源所有权：
+谁启动 worker，谁就保存它的 cancel function 和完成信号：
 
 ```go
 type WorkerModule struct {

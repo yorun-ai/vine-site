@@ -5,7 +5,9 @@ sidebar_label: Lifecycle
 
 # Application Lifecycle
 
-Vine applications have two distinct setup moments: construction with `New(...)`, and activation with `Start()`. This distinction matters because construction is not lazy, while most of the application dependency graph is assembled only during `Start()`.
+Vine applications have two setup moments: construction with `New(...)` and
+activation with `Start()`. Construction is not lazy, while most of the
+application dependency graph is assembled only during `Start()`.
 
 The practical lifecycle is:
 
@@ -167,9 +169,10 @@ The business application's internal lifecycle stays the same in every deployment
 
 Stopping business applications before their in-process Link is essential: the unregister and drain path must remain available until each business application has completed its shutdown.
 
-## A robust module pattern
+## A module that owns a worker
 
-The following shape makes ownership explicit:
+Keep the cancel function and completion signal on the module that starts the
+worker:
 
 ```go
 type WorkerModule struct {

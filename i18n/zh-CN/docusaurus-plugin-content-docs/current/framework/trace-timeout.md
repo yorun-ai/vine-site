@@ -124,14 +124,14 @@ rpcgw 入口
 
 业务 handler 里继续调用 Rpc 时，通常不用手工设置 timeout。只要使用 Vine 注入的当前上下文，Rpc client 会自动读取 context deadline，并把剩余时间写入 `vrpc-options`。
 
-推荐：
+保留注入的 context：
 
 ```go
 // 使用当前 handler 注入的 client/context，继续发起 Rpc 调用。
 result := h.SomeClient.DoSomething(...)
 ```
 
-避免：
+下面的写法会切断传播：
 
 ```go
 ctx := context.Background()
