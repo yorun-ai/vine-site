@@ -32,15 +32,29 @@ export default function NavbarLogo(): ReactNode {
         <span className="navbar__title">Vine Framework</span>
       </Link>
 
-      <a
-        aria-label="Switch to Skeleton DSL"
-        className={styles.productSwitch}
-        href="https://skel.yorun.ai">
-        <span aria-hidden="true" className={styles.productLogo}>
-          S
-        </span>
-        <span className={styles.productName}>Skeleton DSL</span>
-      </a>
+      <div className={styles.productLinks}>
+        <a
+          aria-label="Open Yorun Platform"
+          className={styles.productSwitch}
+          href="https://www.yorun.ai">
+          <img
+            alt=""
+            aria-hidden="true"
+            className={styles.yorunLogo}
+            src="/brand/logo-simple.png"
+          />
+          <span className={styles.productName}>Yorun Platform</span>
+        </a>
+        <a
+          aria-label="Switch to Skeleton DSL"
+          className={styles.productSwitch}
+          href="https://skel.yorun.ai">
+          <span aria-hidden="true" className={styles.productLogo}>
+            S
+          </span>
+          <span className={styles.productName}>Skeleton DSL</span>
+        </a>
+      </div>
     </div>
   )
 }

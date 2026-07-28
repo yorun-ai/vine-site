@@ -35,15 +35,29 @@ export default function NavbarMobileSidebarSecondaryMenu(): ReactNode {
         </div>
       </div>
       <div className={styles.navigation}>{secondaryMenu.content}</div>
-      <a
-        aria-label="Switch to Skeleton DSL"
-        className={styles.productSwitch}
-        href="https://skel.yorun.ai">
-        <span aria-hidden="true" className={styles.productLogo}>
-          S
-        </span>
-        <span>Skeleton DSL</span>
-      </a>
+      <div className={styles.productLinks}>
+        <a
+          aria-label="Open Yorun Platform"
+          className={styles.productSwitch}
+          href="https://www.yorun.ai">
+          <img
+            alt=""
+            aria-hidden="true"
+            className={styles.yorunLogo}
+            src="/brand/logo-simple.png"
+          />
+          <span>Yorun Platform</span>
+        </a>
+        <a
+          aria-label="Switch to Skeleton DSL"
+          className={styles.productSwitch}
+          href="https://skel.yorun.ai">
+          <span aria-hidden="true" className={styles.productLogo}>
+            S
+          </span>
+          <span>Skeleton DSL</span>
+        </a>
+      </div>
     </div>
   )
 }

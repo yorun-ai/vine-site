@@ -5,7 +5,16 @@ sidebar_label: Deployment
 
 # Deployment
 
-Vine supports different runtime topologies for development and production. The business application code remains the same; the difference is whether Hub, Portal, Link, and the business application run in the same process, and whether components communicate through inproc or network connections.
+Vine supports different runtime topologies without requiring a second
+application implementation for production. The same `ApplicationSpec`,
+components, modules, and Rpc/Web/Event/Task code can run in a local monolith or
+behind independently deployed runtime services in Kubernetes. What changes is
+the thin startup entry point, the process boundary, and endpoint configuration.
+
+This is possible because business code declares capabilities rather than
+service locations. Link owns registration, discovery, and forwarding, while
+Hub and Portal remain outside the application. Read
+[Architecture](../runtime/mechanisms.md) for the mechanism behind this boundary.
 
 ## Mode comparison
 
@@ -15,7 +24,9 @@ Vine supports different runtime topologies for development and production. The b
 | linked | Hub and Portal are separate; Link runs with the application | Same process as Link | Local development, a small number of services, and simpler application deployment |
 | Separated deployment | Hub, Portal, and Link all run separately | Independent process | Production, independent scaling, and failure testing |
 
-Regardless of the selected mode, the business application keeps the same `ApplicationSpec`, Rpc, Web, Event, and Task definitions. Only the startup entry point and endpoint configuration change.
+Regardless of the selected mode, the business application keeps the same
+`ApplicationSpec`, Rpc, Web, Event, and Task definitions. Only deployment
+assembly and endpoint configuration change.
 
 ## Standalone
 

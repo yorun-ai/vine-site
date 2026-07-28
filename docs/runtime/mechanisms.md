@@ -2,20 +2,116 @@
 slug: /runtime-mechanisms
 title: Architecture
 sidebar_label: Architecture
-description: How Vine turns application declarations into configuration, discovery, routing, and delivery behavior.
+description: How Vine keeps business capabilities stable across single-process and distributed deployments.
 ---
 
 # Architecture
 
-Vine keeps business code separate from the runtime that makes it reachable. An
-application declares typed capabilities; Link turns those declarations into
-routable and deliverable state; Hub distributes that state; Portal provides an
-optional external entry point.
+Vine draws a firm line between business capabilities and deployment topology.
+An application declares components, modules, Rpc services, Web handlers,
+Event listeners, and Task runners without owning service addresses, discovery,
+or gateway wiring. The runtime decides how those capabilities are reached.
+
+That separation lets the same application implementation run as a local
+single-process system or as part of a Kubernetes deployment. Business packages
+stay unchanged; only the thin process entry point and runtime configuration
+select how Hub, Link, Portal, and the application are assembled.
 
 The four roles can be reduced to one sentence:
 
 > **Hub knows what exists, Link connects applications to it, Portal admits
 > external traffic, and the application executes business code.**
+
+## One application model, different deployment shapes
+
+The quickest Vine setup is a complete runtime in one process. A production
+cluster can split the same roles across workloads. One practical Kubernetes
+layout places Link beside each application instance, while Hub and Portal run
+as independent workloads:
+
+```mermaid
+flowchart TB
+  subgraph Single["Standalone: one process"]
+    direction LR
+    SHub["Hub"] --> SPortal["Portal"]
+    SHub --> SLink["Link"] --> SApp["Business application"]
+  end
+
+  subgraph Cluster["Kubernetes: separated runtime"]
+    direction LR
+    KHub["Hub"]
+    KPortal["Portal"]
+    subgraph Pod["Application Pod × N"]
+      KLink["Link"] <--> KApp["Business application"]
+    end
+    KHub -. configuration and registry .-> KPortal
+    KHub -. configuration and registry .-> KLink
+    KPortal --> KLink
+  end
+```
+
+The Kubernetes diagram is one layout, not a required sidecar model. Link and
+the application may also be separate workloads as long as their API and
+application endpoints are mutually reachable.
+
+### What remains unchanged
+
+- The `ApplicationSpec` and the component/module graph.
+- Rpc, Web, Event, and Task implementations and generated contracts.
+- Dependency injection, execution context, filters, lifecycle hooks, and
+  application configuration reads.
+- Calls made through generated clients, emitters, and launchers.
+
+### What moves to the deployment edge
+
+| Concern | Standalone | Kubernetes / separated deployment |
+| --- | --- | --- |
+| Process assembly | `standalone.New` starts Hub, Portal, Link, and the app | The `vine` CLI and the app binary start separate roles |
+| App-to-Link transport | In-process endpoint | `VINE_LINK_ENDPOINT` points to a reachable Link API |
+| Registration and discovery | In-process endpoints and snapshots | Link registers with Hub and consumes distributed snapshots |
+| External traffic | Embedded Portal may open configured listeners | Independently deployed Portal forwards to registered Links |
+| Scaling and failure | One process boundary | Application, Link, Portal, and infrastructure can be operated independently |
+
+In practice, keep the entry point small and keep the application specification
+in a reusable package:
+
+```go title="cmd/checkout-standalone/main.go"
+func main() {
+	standalone.New[*checkout.App]().StartAndWait()
+}
+```
+
+```go title="cmd/checkout/main.go"
+func main() {
+	app.New[*checkout.App]().StartAndWait()
+}
+```
+
+The cluster entry point obtains its Link address from deployment
+configuration:
+
+```bash
+VINE_LINK_ENDPOINT=http://127.0.0.1:7079 ./checkout
+```
+
+Changing these few lines is deployment assembly, not a rewrite of business
+code. Vine does not generate Kubernetes resources; it keeps topology-specific
+concerns out of the application implementation so the same capability model
+survives the move.
+
+### Why the boundary holds
+
+Three mechanisms make the topology switch possible:
+
+1. **Capability registration is transport-neutral.** The application reports
+   the same identity, schemas, and Rpc/Web/Event/Task capabilities whether its
+   endpoint is in-process or networked.
+2. **Link owns location and delivery.** Business handlers do not resolve pod
+   addresses or select service instances. Link maintains local and distributed
+   views and performs the final forwarding or message delivery.
+3. **In-process transport uses the runtime contracts.** Standalone replaces
+   network hops with registered in-process endpoints; it does not introduce a
+   second business programming model.
 
 ## The four runtime roles
 
@@ -174,7 +270,7 @@ resolutions. An already injected pointer is not mutated.
 
 See [Configuration](../framework/configuration.md) for the consistency model.
 
-## Same responsibilities, different topology
+## Where the topology abstraction ends
 
 | Mode | Processes | Transport changes | What it is good for |
 | --- | --- | --- | --- |
@@ -182,9 +278,11 @@ See [Configuration](../framework/configuration.md) for the consistency model.
 | Linked | An external Hub; Link and one or more apps share a process | App-to-Link is in-process; Hub and Link ingress use the network | Shared development/runtime control plane |
 | Separated | Hub, Portal, Link, and apps can run independently | Runtime boundaries use network endpoints | Production topology and distributed-failure testing |
 
-Application capability code does not change between these modes. The important
-caveat is that in-process transport preserves routing and subscription
-semantics, not distributed failure semantics:
+Application capability code does not change between these modes. The
+abstraction deliberately covers application assembly, registration, routing,
+and delivery; it cannot erase operational differences between a process and a
+cluster. In-process transport preserves routing and subscription semantics, not
+distributed failure semantics:
 
 - Standalone registrations have no TTL and Link sends no heartbeat.
 - Standalone does not model an independently crashed process or network
