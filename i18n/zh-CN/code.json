@@ -358,7 +358,7 @@
     "description": "The title of the tag list page"
   },
   "homepage.title": {
-    "message": "让应用边界在运行时依然清晰。"
+    "message": "应用边界，在运行时依然清晰"
   },
   "homepage.kicker": {
     "message": "面向 Go 应用的 Vine"
