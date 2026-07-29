@@ -21,3 +21,6 @@ peerDependencyRules:
 
 patchedDependencies:
   serialize-javascript@6.0.2: patches/serialize-javascript@6.0.2.patch
+
+minimumReleaseAgeExclude:
+  - '@easyops-cn/docusaurus-search-local@0.55.3'

@@ -121,6 +121,11 @@
   text-wrap: balance;
 }
 
+.landing .heroCopy h1 span {
+  display: block;
+  white-space: nowrap;
+}
+
 .lede {
   max-width: 42rem;
   margin: 1.45rem 0 0;

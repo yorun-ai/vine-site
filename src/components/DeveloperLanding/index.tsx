@@ -189,6 +189,11 @@ export default function DeveloperLanding(): React.JSX.Element {
     id: 'homepage.a11y.topologies',
     message: 'Supported runtime topologies',
   })
+  const heroTitle = translate({
+    id: 'homepage.title',
+    message: 'Keep application boundaries intact at runtime.',
+  })
+  const heroTitleBreak = heroTitle.indexOf('，')
 
   return (
     <div className={`developer-landing ${styles.landing}`}>
@@ -206,9 +211,14 @@ export default function DeveloperLanding(): React.JSX.Element {
             </span>
           </div>
           <h1>
-            <Translate id="homepage.title">
-              Keep application boundaries intact at runtime.
-            </Translate>
+            {heroTitleBreak >= 0 ? (
+              <>
+                <span>{heroTitle.slice(0, heroTitleBreak + 1)}</span>
+                <span>{heroTitle.slice(heroTitleBreak + 1)}</span>
+              </>
+            ) : (
+              heroTitle
+            )}
           </h1>
           <p className={styles.lede}>
             <Translate id="homepage.description">

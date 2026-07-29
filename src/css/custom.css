@@ -620,8 +620,12 @@ button:not(:disabled),
 }
 
 .navbar__items--right > div > button.clean-btn {
+  display: flex;
   width: var(--navbar-control-size);
   height: var(--navbar-control-size);
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   border: 1px solid var(--border);
   border-radius: 50%;
   color: var(--muted-foreground);
@@ -649,7 +653,7 @@ button:not(:disabled),
 
 html[data-theme='light']
   .navbar__items--right
-  > div
+  > div:not(.navbar-search-control)
   > button.clean-btn
   > svg {
   display: none;
@@ -657,7 +661,7 @@ html[data-theme='light']
 
 html[data-theme='light']
   .navbar__items--right
-  > div
+  > div:not(.navbar-search-control)
   > button.clean-btn
   > svg:nth-child(2) {
   display: initial;
@@ -665,7 +669,7 @@ html[data-theme='light']
 
 html[data-theme='dark']
   .navbar__items--right
-  > div
+  > div:not(.navbar-search-control)
   > button.clean-btn
   > svg {
   display: none;
@@ -673,7 +677,7 @@ html[data-theme='dark']
 
 html[data-theme='dark']
   .navbar__items--right
-  > div
+  > div:not(.navbar-search-control)
   > button.clean-btn
   > svg:first-child {
   display: initial;
@@ -1924,7 +1928,7 @@ div[class*='codeBlockContainer'] code {
   .navbar__inner > .navbar__items--right > .navbar-github-link,
   .navbar__inner
     > .navbar__items--right
-    > div:has(> button.clean-btn) {
+    > div:not(.navbar-search-control):has(> button.clean-btn) {
     display: none;
   }
 
