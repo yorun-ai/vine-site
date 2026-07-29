@@ -48,9 +48,9 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 :::caution fail-fast 解锁
 
-下面的预检查只是 best effort，并不是原子的安全解锁操作。refresh 仍可能在
-`IsBroken()` 返回后把锁标记为 broken，导致 `Unlock()` panic。当前 API 没有
-`TryUnlock`。
+下面的预检查只是尽力而为，并不是原子的安全解锁操作。refresh 仍可能在
+`IsBroken()` 返回后把锁标记为 broken，导致 `Unlock()` panic。当前 API 未提供
+`TryUnlock` 方法。
 
 :::
 
@@ -77,7 +77,7 @@ func (s *UserService) Rebuild(userID string) {
     if lock.IsBroken() {
         return
     }
-    // 这里只是 best-effort 预检查，所有权仍可能在此刻变化。
+    // 这里只是尽力而为的预检查，所有权仍可能在此刻变化。
     lock.Unlock()
 }
 ```

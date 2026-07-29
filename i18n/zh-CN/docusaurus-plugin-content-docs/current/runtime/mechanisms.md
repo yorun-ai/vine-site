@@ -7,8 +7,8 @@ description: Vine 如何让同一套业务能力跨越单进程与分布式部�
 
 # 架构
 
-Vine 在业务能力和部署拓扑之间划出了一条明确边界。应用声明 component、module、
-Rpc service、Web handler、Event listener 和 Task runner，但不在业务代码里维护
+Vine 在业务能力和部署拓扑之间划出了一条明确边界。应用声明 Component、Module、
+RPC 服务、Web Handler、Event Listener 和 Task Runner，但不在业务代码里维护
 服务地址、服务发现或网关连接。怎样找到并调用这些能力，由运行时决定。
 
 因此，同一套应用实现既可以在本地作为单进程系统运行，也可以进入 Kubernetes 集群。
@@ -53,8 +53,8 @@ flowchart LR
 
 ### 保持不变的部分
 
-- `ApplicationSpec` 以及 component/module 关系。
-- Rpc、Web、Event、Task 实现与生成的契约代码。
+- `ApplicationSpec` 以及 Component/Module 关系。
+- RPC、Web、Event、Task 实现与生成的契约代码。
 - 依赖注入、执行上下文、filter、生命周期 hook 和应用配置读取方式。
 - 通过生成 client、emitter、launcher 发起的调用。
 
@@ -96,8 +96,8 @@ VINE_LINK_ENDPOINT=http://127.0.0.1:7079 ./checkout
 背后有三个机制：
 
 1. **能力注册与 transport 无关。** 无论 endpoint 在进程内还是网络上，应用上报的
-   身份、schema 和 Rpc/Web/Event/Task 能力都相同。
-2. **位置与交付由 Link 负责。** 业务 handler 不解析 Pod 地址，也不选择服务实例。
+   身份、schema 和 RPC/Web/Event/Task 能力都相同。
+2. **位置与交付由 Link 负责。** 业务 Handler 不解析 Pod 地址，也不选择服务实例。
    Link 维护本地和分布式视图，完成最终转发或消息交付。
 3. **进程内 transport 复用运行时契约。** Standalone 只是把网络跳转替换为注册过的
    进程内 endpoint，并没有另造一套业务编程模型。
@@ -115,7 +115,7 @@ flowchart LR
 
 | 参与者 | 拥有什么 | 是否处于同步业务请求路径 |
 | --- | --- | --- |
-| Application | Component、module、handler、listener、runner 与业务状态 | 是，作为调用方或目标 |
+| Application | Component、Module、Handler、Listener、Runner 与业务状态 | 是，作为调用方或目标 |
 | Link | 本地应用状态、配置读取、发现快照、转发、Event/Task consumer、健康与 drain | 是 |
 | Hub | 配置、注册状态、Portal 配置、schema 与运行时分发 | 否；Link 与 Portal 使用同步后的状态 |
 | Portal | 外部 listener、site、TLS、准入策略与 endpoint 选择 | 仅外部流量 |
@@ -131,8 +131,8 @@ flowchart LR
 Hub 以自己的数据库作为 application config、Portal site、rule、certificate 等托管
 配置的 source of truth，并通过 Redis 分发层公开运行时快照与变更通知。
 
-Link 将应用注册与 lease 状态发布到 Hub；Link 与 Portal 再读取或订阅各自需要的部分。
-因此 Hub 是控制面依赖，而不是普通 Rpc 或 Web 调用中的额外 proxy。
+Link 将应用注册与租约状态发布到 Hub；Link 与 Portal 再读取或订阅各自需要的部分。
+因此 Hub 是控制面依赖，而不是普通 RPC 或 Web 调用中的额外 proxy。
 
 ### 应用接入层：Link
 
@@ -141,21 +141,21 @@ Link 将应用注册与 lease 状态发布到 Hub；Link 与 Portal 再读取或
 - 应用直接上报给当前 Link 的**本地 source state**；
 - 从 Hub 加载的配置与远端发现**分布式快照**。
 
-Link 基于这些视图转发 Rpc/Web 请求、提供配置、创建 Event/Task consumer、维护注册
-lease，并在停止期间 drain 应用。
+Link 基于这些视图转发 RPC/Web 请求、提供配置、创建 Event/Task consumer、维护注册
+租约，并在停止期间排空应用。
 
 ### 外部入口：Portal
 
-Portal 是 northbound 基础设施。它从 Hub 监听 entry rule、site、certificate、schema
+Portal 是北向基础设施。它从 Hub 监听 entry rule、site、certificate、schema
 与可用 endpoint，随后接收外部 HTTP/HTTPS 流量。Portal 可以根据生成 schema 和 site
 策略完成认证、授权，再把请求转发给目标 Link。
 
 应用之间的调用不经过 Portal。Portal 也不能替代 Link：它选择的目标是 Link ingress
-endpoint，而不是脱离 Link 独立发现的应用 handler。
+endpoint，而不是脱离 Link 独立发现的应用 Handler。
 
 ### 执行：Application
 
-应用创建自己的 component、module 与能力 server。每次 Rpc、Web、Event 或 Task 交付
+应用创建自己的 Component、Module 与能力 server。每次 RPC、Web、Event 或 Task 交付
 都会进入 execution container；container 注入正确的 context 与依赖后再调用业务代码。
 
 scope 与 filter 规则见[依赖与执行模型](./execution-model.md)。
@@ -179,10 +179,10 @@ sequenceDiagram
   App->>App: 执行 AfterAppStart
 ```
 
-注册只描述已声明的运行时事实：应用身份和 endpoint，以及它的 Rpc service、Web handler、
-Event listener、Task runner 与 domain schema。业务数据不会进入 registry。
+注册只描述已声明的运行时事实：应用身份和 endpoint，以及它的 RPC service、Web Handler、
+Event Listener、Task Runner 与 domain schema。业务数据不会进入 registry。
 
-只拥有 module、未暴露这些能力的应用仍可正常运行，但它没有需要通过服务发现公开的内容。
+只拥有 Module、未暴露这些能力的应用仍可正常运行，但它没有需要通过服务发现公开的内容。
 
 ### Readiness 含义
 
@@ -197,26 +197,26 @@ endpoint 启动和注册完成都发生在 `AfterAppStart` hook **之前**。因
 | 流 | 来源 | 运行时路径 | 交付模型 |
 | --- | --- | --- | --- |
 | 配置 | Hub 数据库或 seed | Hub → Redis 快照/变更 → Link → 应用 DI | eternal 实例快照或受监听的 instant 快照 |
-| 内部 Rpc | 应用中的生成 client | 调用方 Link → 选中的本地应用或目标 Link → 目标应用 | 同步请求/响应 |
-| 外部 Rpc 或 Web | 外部客户端 | Portal → 选中的 Link → 目标应用 | 同步网关转发 |
+| 内部 RPC | 应用中的生成 client | 调用方 Link → 选中的本地应用或目标 Link → 目标应用 | 同步请求/响应 |
+| 外部 RPC 或 Web | 外部客户端 | Portal → 选中的 Link → 目标应用 | 同步网关转发 |
 | Event 或 Task | 生成的 emitter 或 launcher | 发送方 Link → NATS → consumer Link → 目标应用 | 异步、可重试交付 |
 
-### Rpc 选择与 Web 网关路由
+### RPC 选择与 Web 网关路由
 
-应用间 Rpc 由调用方 Link 根据注册状态构造当前 service 集合，并选择一个已注册
+应用间 RPC 由调用方 Link 根据注册状态构造当前 service 集合，并选择一个已注册
 实例。目标归当前 Link 所有时直接调用本地应用；否则请求先进入目标 Link，再到达
 应用。
 
 Web 的选择者不同。Portal 匹配外部 entry 和 site，从自己的分布式 Web endpoint
 快照中选择目标，再把请求发送给所选应用所属的 Link。目标 Link 的 `webproxy`
-只索引本地应用，负责最后的 handler 查找与投递。
+只索引本地应用，负责最后的 Handler 查找与投递。
 
 两条路径都不是持久化 workflow engine。目标失败并不表示同一个请求会透明迁移到
 另一个目标。设计重试前请先阅读[注册、发现与请求路由](./request-routing.md)。
 
 ### Event 与 Task
 
-Link 将生成的 Event/Task 消息发布到 NATS，并根据已注册的 listener/runner 创建
+Link 将生成的 Event/Task 消息发布到 NATS，并根据已注册的 Listener/Runner 创建
 consumer。应用代码不直接创建这些 consumer。
 
 Event 与 Task 的分组语义不同，失败后也可能重新交付。依赖广播、顺序、重试或身份传播
@@ -242,13 +242,13 @@ Link 提供应用侧配置读取边界。eternal 配置在当前应用第一次�
 抹平单个进程与真实集群之间的运维差异。进程内 transport 保留的是路由和订阅语义，
 不是分布式故障语义：
 
-- Standalone 注册没有 TTL，Link 也不会发送 heartbeat。
+- Standalone 注册没有 TTL，Link 也不会发送心跳。
 - Standalone 无法模拟独立进程崩溃或网络分区。
 - 进程内健康检查和 endpoint 可达性不能证明生产 listener、firewall、DNS 路径或 TLS
   配置正确。
 - Hub 配置定义了业务 HTTP/HTTPS listener 时，Portal 仍可能打开这些端口。
 
-验证 lease 过期、独立重启、真实网络可达性与 TLS 时，应使用 separated setup。
+验证租约过期、独立重启、真实网络可达性与 TLS 时，应使用 separated setup。
 
 ## 优雅移除
 
@@ -268,17 +268,17 @@ sequenceDiagram
 ```
 
 linked 与 standalone 组合会先停止业务应用，再停止共享 Link，确保注销与 drain 路径
-仍可使用。separated 部署也应保持同样的运维顺序：先停止或 drain 应用，再终止拥有它们
+仍可使用。separated 部署也应保持同样的运维顺序：先停止或排空应用，再终止拥有它们
 的 Link。
 
-`BeforeAppStop` 在注销前执行。可以用它停止应用自有 producer 并开始静默，但在 drain
-完成前，仍要保持在途 handler 所需依赖有效。最终资源应在 `AfterAppStop` 中释放。
+`BeforeAppStop` 在注销前执行。可以用它停止应用自有 producer 并开始静默，但在排空
+完成前，仍要保持在途 Handler 所需依赖有效。最终资源应在 `AfterAppStop` 中释放。
 
 ## 相关指南
 
-- [应用生命周期](./application-lifecycle.md)：构造、hook、readiness、drain 与 bundle 顺序。
-- [依赖与执行模型](./execution-model.md)：应用 singleton、execution scope、filter、context 与释放。
+- [应用生命周期](./application-lifecycle.md)：构造、hook、readiness、排空与 bundle 顺序。
+- [依赖与执行模型](./execution-model.md)：应用单例、execution scope、filter、context 与释放。
 - [请求路由](./request-routing.md)：注册监听、instance 选择、本地/远端转发与失败行为。
-- [Trace 与 timeout](../framework/trace-timeout.md)：元数据、deadline、取消与下游调用。
+- [Trace 与 timeout](../framework/trace-timeout.md)：元数据、截止时间、取消与下游调用。
 - [部署拓扑](../getting-started/deployment-modes.md)：选择 standalone、linked 或 separated 运行。
 - [生产就绪](../operations/production-readiness.md)：网络边界、持久化、生命周期与故障验证。

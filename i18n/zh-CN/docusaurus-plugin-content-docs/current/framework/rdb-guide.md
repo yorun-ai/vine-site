@@ -57,4 +57,4 @@ func (s *UserService) Create(name string) *User {
 }
 ```
 
-连接在组件启动时建立，在应用停止后释放。使用同一 `ConnURL` 的组件共享底层连接池。Model、Query、Patch 和删除语义见 [RDB 参考](../infrastructure/rdb.md)。
+连接在组件启动时建立，在应用停止后释放。使用同一 `ConnURL` 的组件共享底层连接池。Model、Query、Patch 与 Delete 语义见 [RDB 参考](../infrastructure/rdb.md)。

@@ -18,7 +18,7 @@ slug: /production-readiness
 | 拓扑 | 进程边界 | 生产含义 |
 | --- | --- | --- |
 | Standalone | Hub、Portal、Link 和应用共享一个进程 | 适合本地开发与集成测试；不会覆盖网络租约和独立故障 |
-| Linked | Hub 与 Portal 独立；Link 与应用同进程 | 保留网络注册和 heartbeat 行为，但每个应用与其 Link 共用生命周期 |
+| Linked | Hub 与 Portal 独立；Link 与应用同进程 | 保留网络注册和心跳行为，但每个应用与其 Link 共用生命周期 |
 | 分开部署 | Hub、Portal、Link 和应用都是独立进程 | 支持独立发布、重启和扩缩容，但必须显式配置每一条内部网络路径 |
 
 先阅读 [运行与部署](../getting-started/deployment-modes.md)，再通过
@@ -110,24 +110,24 @@ Vine 当前创建的 Event 和 Task JetStream stream 使用内存存储。外部
 - [ ] 按所选拓扑规划并监控 PostgreSQL 或 SQLite 的容量。
 - [ ] 启动 Link 前，确认外部 NATS account 已启用 JetStream。
 - [ ] 使用与生产一致的拓扑测试 NATS 断开和重连。
-- [ ] 按 retry 和重复投递设计 Event listener 与 Task runner；传输
+- [ ] 按 retry 和重复投递设计 Event Listener 与 Task Runner；传输
   存储不应作为唯一业务记录。
 
 ## 验证注册与故障语义
 
-| 模式 | TTL 与 registry sweeper | Link heartbeat | 本地应用健康检查 |
+| 模式 | TTL 与 registry sweeper | Link 心跳 | 本地应用健康检查 |
 | --- | --- | --- | --- |
 | 应用与 Link 分开运行 | 启用 | 启用 | 启用 |
 | 应用与 Link 同进程、Hub 走网络的 linked | 启用 | 启用 | 禁用；应用与 Link 共享一个进程 |
 | 使用 inproc Hub 的 standalone | 禁用 | 禁用 | 禁用 |
 
-使用普通网络 Hub 时，注册信息带有租约。Link 通过 heartbeat 续期，Hub 的
+使用普通网络 Hub 时，注册信息带有租约。Link 通过心跳续期，Hub 的
 registry sweeper 会注销过期的应用实例并发布删除事件。独立运行的 Link
-还会检查它管理的应用。Linked 模式保留网络租约和 heartbeat，但由于 Link
+还会检查它管理的应用。Linked 模式保留网络租约和心跳，但由于 Link
 和应用共享一个进程，不需要单独执行本地应用健康检查。
 
 standalone/inproc 模式下，注册信息会保留到显式 unregister。此时没有
-heartbeat、租约过期扫描或本地应用健康检查，因此 standalone 测试通过并
+心跳、租约过期扫描或本地应用健康检查，因此 standalone 测试通过并
 不能证明分布式存活机制正确。
 
 在当前源码中，独立运行的 Link 每 5 秒检查一次应用，console ping 的 timeout
@@ -154,8 +154,8 @@ heartbeat、租约过期扫描或本地应用健康检查，因此 standalone �
 
 1. 以逆序执行 Module 的 `BeforeAppStop()` hook。
 2. 以逆序执行 Component 的 `BeforeAppStop()` hook。
-3. 通过 Link 注销应用，包括 Link 侧的传播等待与 drain。
-4. 停止应用 server：HTTP shutdown 会等待在途 handler，inproc shutdown
+3. 通过 Link 注销应用，包括 Link 侧的传播等待与排空。
+4. 停止应用 server：HTTP shutdown 会等待在途 Handler，inproc shutdown
    则移除其 route registration。
 5. 取消 runtime context。
 6. 以逆序执行 Module 和 Component 的 `AfterAppStop()` hook。
@@ -210,7 +210,7 @@ heartbeat、租约过期扫描或本地应用健康检查，因此 standalone �
 协调或 failover 协议，因此在单独验证该架构之前，增加 Hub 进程数量
 不等于生产 HA。
 
-Portal 维护自己的 endpoint 订阅，并以 round-robin 方式选择 Rpc 和 Web
+Portal 维护自己的 endpoint 订阅，并以轮询方式选择 RPC 和 Web
 目标。Link 也会维护本地与远端调用所需的 discovery 状态。注册变更是异步
 的，因此应在 rollout 期间测试收敛，不要假设 endpoint 列表会原子更新。
 
@@ -220,7 +220,7 @@ Portal 维护自己的 endpoint 订阅，并以 round-robin 方式选择 Rpc 和
 
 - [ ] 先启动 Hub，再启动 Portal 和 Link，最后启动业务应用。
 - [ ] 通过每一个公开 Portal entry 发起请求。
-- [ ] 至少完成一次应用到应用的 Rpc 调用。
+- [ ] 至少完成一次应用到应用的 RPC 调用。
 - [ ] 验证请求路径上的 trace ID 和 timeout 符合预期。
 - [ ] 应用一次 `instant` 配置变更，并为 `eternal` 配置变更执行重启。
 - [ ] 使用幂等测试动作演练 Event 和 Task 的 retry 行为。

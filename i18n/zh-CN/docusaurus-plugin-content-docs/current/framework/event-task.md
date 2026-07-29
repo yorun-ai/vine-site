@@ -5,7 +5,7 @@ sidebar_label: 事件与任务
 
 # 事件与任务
 
-Event 用于发布已经发生的事实，Task 用于请求某个 runner 执行一项工作。两者都是
+Event 用于发布已经发生的事实，Task 用于请求某个 Runner 执行一项工作。两者都是
 类型安全的 `.skel` 契约，但接收方选择方式有意设计成不同语义。
 
 ## 选择 Event 还是 Task？
@@ -13,7 +13,7 @@ Event 用于发布已经发生的事实，Task 用于请求某个 runner 执行�
 | 问题 | Event | Task |
 | --- | --- | --- |
 | 表达什么？ | “用户 42 已创建。” | “重建索引 42。” |
-| 有多少逻辑接收方？ | 每个不同的监听 App 名各投递一份 | 全局只向一个 runner 投递一份 |
+| 有多少逻辑接收方？ | 每个不同的监听 App 名各投递一份 | 全局只向一个 Runner 投递一份 |
 | 多实例如何工作？ | 同名 App 的实例竞争该 App 的一份消息 | 所有已注册实例竞争同一个 Task |
 | 发送方是否等待业务处理？ | 否，只等待消息被接受 | 否，只等待消息被接受 |
 | 典型设计 | 通知、投影、集成事实 | 后台工作、定时维护、作业 |
@@ -69,14 +69,14 @@ skelc check --skel-in ./skel
 skelc gen go --skel-in ./skel --go-out ./skeled
 ```
 
-生成代码会为 Event 提供 emitter/listener，为 Task 提供 launcher/runner。请勿直接
+生成代码会为 Event 提供 emitter/Listener，为 Task 提供 launcher/Runner。请勿直接
 编辑生成文件。
 
 ## 发布 Event
 
 ### 注册 Listener
 
-嵌入生成的默认 listener，并实现对应方法：
+嵌入生成的默认 Listener，并实现对应方法：
 
 ```go title="event.go"
 type UserCreatedListener struct {
@@ -97,12 +97,12 @@ func (*DemoApp) EventerInitListeners(add app.ListenerTypeAdder) {
 }
 ```
 
-不传 option 时，一个已注册 listener 的单次尝试超时为 30 秒，允许 10 个并发
+不传 option 时，一个已注册 Listener 的单次尝试超时为 30 秒，允许 10 个并发
 执行，并在失败后重试。
 
 ### 从业务代码发送
 
-注入生成的 emitter。方法在 Link 接受并发布消息后返回，不会等待 listener 完成：
+注入生成的 emitter。方法在 Link 接受并发布消息后返回，不会等待 Listener 完成：
 
 ```go title="service.go"
 type UserService struct {
@@ -131,8 +131,8 @@ Vine 使用 Event 的 Skel 名和监听 App 名组成 Event consumer identity：
 - 两个不同 App 名各收到一份。
 - 同一个 App 名的两个实例竞争该 App 的一份。
 - 重试可能改由同名 App 的另一个实例执行。
-- 并发与重试意味着 handler 不能依赖全局顺序。
-- Event 不是可回放审计日志。不要假设稍后出现的 listener 会收到在匹配 consumer
+- 并发与重试意味着 Handler 不能依赖全局顺序。
+- Event 不是可回放审计日志。不要假设稍后出现的 Listener 会收到在匹配 consumer
   interest 建立之前发布的事实。
 
 两个逻辑消费者都必须观察 Event 时，应使用不同 App 名；同一个逻辑消费者需要
@@ -142,7 +142,7 @@ Vine 使用 Event 的 Skel 名和监听 App 名组成 Event consumer identity：
 
 ### 注册 Runner
 
-嵌入生成的默认 runner。Cron 只能调度无输入 trigger，因此 `nightly` 能调度，
+嵌入生成的默认 Runner。Cron 只能调度无输入 trigger，因此 `nightly` 能调度，
 而 `manually` 不能：
 
 ```go title="task.go"
@@ -168,7 +168,7 @@ func (*DemoApp) TaskerInitRunners(add app.RunnerTypeAdder) {
 }
 ```
 
-不传 option 时，一个已注册 runner 的单次尝试超时为 30 秒，允许 10 个并发执行，
+不传 option 时，一个已注册 Runner 的单次尝试超时为 30 秒，允许 10 个并发执行，
 并在失败后重试。
 
 ### 从业务代码启动
@@ -198,9 +198,9 @@ flowchart LR
 Vine 仅使用 Task 的 Skel 名组成 consumer identity。为该 Task 注册的所有 Link 和
 App 实例都在同一个逻辑 work queue 中竞争：
 
-- 一条消息只会分派给一个选中的 runner。
+- 一条消息只会分派给一个选中的 Runner。
 - 启动 Task 的 App 不选择目标 App 或实例。
-- 在同一个 Link 内，可用本地实例按 round-robin 使用。
+- 在同一个 Link 内，可用本地实例按轮询使用。
 - 重试可能改由另一个 App、Link 或实例执行。
 - Task 执行没有向 launcher 同步返回结果的通道。
 
@@ -209,11 +209,11 @@ App 实例都在同一个逻辑 work queue 中竞争：
 
 ## 投递默认值与边界
 
-| 行为 | Event listener | Task runner |
+| 行为 | Event Listener | Task Runner |
 | --- | --- | --- |
 | 单次尝试超时 | 30 秒 | 30 秒 |
 | 并发 | 每个已注册实例 10 | 每个已注册实例 10 |
-| 成功 | handler 成功返回后 Ack | runner 成功返回后 Ack |
+| 成功 | Handler 成功返回后 Ack | Runner 成功返回后 Ack |
 | 默认失败行为 | 负确认并重试 | 负确认并重试 |
 | 重试上限 | stream 存续期间 Vine 不限制投递次数 | stream 存续期间 Vine 不限制投递次数 |
 | `NoRetry` | 终结确认，不重试 | 终结确认，不重试 |
@@ -235,7 +235,7 @@ app.WithRunnerNoRetry()
 `NoRetry` 的含义是“第一次尝试失败后终结这条消息”。它不会把消息移动到死信队列，
 也不会产生发送方可查询的失败记录。
 
-当前 stream 使用内存存储。发布成功可以抵御单个 handler 失败，但并不保证消息
+当前 stream 使用内存存储。发布成功可以抵御单个 Handler 失败，但并不保证消息
 运行时重启后的磁盘持久性。如果无法接受运行时重启造成的丢失，建议使用数据库
 outbox、持久化外部工作流系统或其他持久记录。
 
@@ -243,7 +243,7 @@ outbox、持久化外部工作流系统或其他持久记录。
 
 Event 与 Task 的默认处理语义是至少一次。下列情况可能让同一业务消息执行多次：
 
-- listener 或 runner 报错；
+- Listener 或 Runner 报错；
 - 单次尝试超时；
 - Ack 丢失；
 - 重连或 consumer 重新分配。
@@ -261,11 +261,11 @@ Vine 不会向生成的 payload 添加公开 delivery ID。应在契约中放置
 
 ## 超时不等于执行已经停止
 
-注册 timeout 限制 Link 等待一次尝试的时间。listener 或 runner 会获得带该
-deadline 的 context，业务代码应在它被取消时停止工作。
+注册超时时间限制 Link 等待一次尝试的时间。Listener 或 Runner 会获得带该
+截止时间的上下文，业务代码应在它被取消时停止工作。
 
 如果业务代码忽略 cancellation，Link 可能先超时，把本次尝试标记为失败并重新
-投递，而原 handler 仍在运行。网络部署如此，standalone 的进程内 transport 也
+投递，而原 Handler 仍在运行。网络部署如此，standalone 的进程内 transport 也
 有意保留调用方可见的相同行为。所以两次尝试可能重叠。
 
 注意这意味着：
@@ -284,11 +284,11 @@ Event 与 Task 消息不会携带完整的同步请求 context：
 | Trace id/span | 传播 | 传播 |
 | 发送方 App 身份 | 通过 `Emitter()` 获取 | 通过 `Launcher()` 获取 |
 | 发布时间 | 通过 `EmittedAt()` 获取 | 通过 `LaunchedAt()` 获取 |
-| Actor | 不传播；listener/runner 看到 absent Actor | 不传播；listener/runner 看到 absent Actor |
+| Actor | 不传播；Listener/Runner 看到 absent Actor | 不传播；Listener/Runner 看到 absent Actor |
 | Initiator | 不传播 | 不传播 |
 | 发送方 deadline/cancellation | 不传播 | 不传播 |
 
-每次投递都从 listener 或 runner 注册配置获得新的 deadline。如果异步工作需要
+每次投递都从 Listener 或 Runner 注册配置获得新的 deadline。如果异步工作需要
 授权或租户身份，应在契约中放入消费者所需的最小、不可变身份数据，重新校验它，
 并避免把 credential 或 secret 复制进 payload。
 
@@ -308,7 +308,7 @@ Event 与 Task 消息不会携带完整的同步请求 context：
 - 同一个 App 名的多个 replica 所提交的等价声明会由 Hub 去重。不同 App 名会
   创建不同 schedule，即使 Cron 表达式相同；两次发布都会进入同一个全局 Task
   queue。
-- 只有匹配 runner 处于 active 状态时才会发布定时消息。
+- 只有匹配 Runner 处于 active 状态时才会发布定时消息。
 - scheduler 使用 Hub 进程的时钟和默认本地时区。
 - Vine 不承诺补发 Hub、scheduler 或消息运行时不可用期间错过的执行。
 - 定时消息会进入同一个全局 Task work queue，并与手动启动的 Task 具有相同的
@@ -322,11 +322,11 @@ Event 与 Task 消息不会携带完整的同步请求 context：
 - 契约中包含稳定业务标识。
 - 接收方应按 App 名各收一份，还是全局竞争。
 - timeout 与 concurrency 来自真实工作负载测量。
-- handler 会观察 context cancellation。
+- Handler 会观察 context cancellation。
 - 已决定如何对账重复执行和第一次尝试后的终结失败。
 - 不依赖不存在的 DLQ、结果查询、顺序、回放历史或磁盘持久性。
 - 已测试强制失败、超时、重复投递和优雅停止。
 
-注册与 drain 行为见[请求路由与就绪状态](../runtime/request-routing.md)，同步 context
+注册与排空行为见[请求路由与就绪状态](../runtime/request-routing.md)，同步 context
 规则见[Trace 与超时](./trace-timeout.md)，契约语言见
 [Skel 语法](https://skel.yorun.ai/docs/syntax)。

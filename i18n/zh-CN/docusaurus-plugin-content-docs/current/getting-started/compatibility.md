@@ -36,7 +36,7 @@ Vine 目前仍处于 1.0 之前。同一个 minor 版本线内的 patch 版本�
 | 当前源码 / `next` | `1.26.5` 或更高 | `v0.9.0` | 与应用一起审查过的精确 revision |
 
 当前 Vine 源码通过 `core/skel.MinSkelcVersion()` 报告最低版本 `v0.9.0`。
-这是兼容下限，不是版本选择策略。生成的 schema 会记录 compiler 版本；如果版本缺失
+这是兼容下限，不是版本选择策略。生成的 Schema 会记录 skelc 版本；如果版本缺失
 或低于 runtime 要求，Vine 会拒绝注册该 schema。
 
 runtime 检查没有为未来的 skelc 版本定义兼容上限。请固定已经在应用中完成

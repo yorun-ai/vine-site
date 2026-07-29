@@ -5,7 +5,7 @@ sidebar_label: 追踪与超时
 
 # 追踪与超时
 
-请求进入 Vine 后，trace 会贯穿 Portal、auth/check、Rpc/Web handler 和后续下游调用；timeout 会从入口开始计时，并在每次转发时换算成剩余时间继续传递。业务代码一般不需要手工解析这些 header，继续用注入的 context 发下游调用就行。
+请求进入 Vine 后，trace 会贯穿 Portal、auth/check、RPC/Web Handler 和后续下游调用；timeout 会从入口开始计时，并在每次转发时换算成剩余时间继续传递。业务代码一般不需要手工解析这些 header，继续用注入的 context 发下游调用就行。
 
 ## 你会看到哪些 Header
 
@@ -13,9 +13,9 @@ sidebar_label: 追踪与超时
 
 | Header | 谁传 | 用途 |
 | --- | --- | --- |
-| `vrpc-trace` | Rpc 客户端 | 传递 Rpc 调用链 |
+| `vrpc-trace` | RPC 客户端 | 传递 RPC 调用链 |
 | `vweb-trace` | Web 客户端 | 传递 Web 调用链 |
-| `vrpc-options` | Rpc 客户端 | 传递 Rpc 调用选项，目前只有 `timeout` |
+| `vrpc-options` | RPC 客户端 | 传递 RPC 调用选项，目前只有 `timeout` |
 | `vweb-options` | Web 客户端 | 传递 Web 调用选项，目前只有 `timeout` |
 | `portal-trace-id` | Portal 响应 | 返回本次请求的 trace id，方便排查 |
 
@@ -35,7 +35,7 @@ vweb-options: timeout=30s
 
 timeout 使用 Go duration 格式，例如 `1000ms`、`1s`、`30s`。
 
-## 外部 Rpc 客户端应该怎么传
+## 外部 RPC 客户端应该怎么传
 
 调用 rpcgw 时必须传 `vrpc-trace`。如果客户端有自己的 span，传完整格式：
 
@@ -103,7 +103,7 @@ timeout 从进入 gateway 开始计时，而不是只限制最后一次转发。
 vrpc-options: timeout=30s
 ```
 
-rpcgw 会在入口创建一个 30 秒 deadline。之后：
+rpcgw 会在入口创建一个 30 秒截止时间。之后：
 
 ```text
 rpcgw 入口
@@ -114,20 +114,20 @@ rpcgw 入口
 
 如果 auth/check 花掉了 2 秒，转发给目标服务时就不会再传 `timeout=30s`，而是传接近 `timeout=28s` 的剩余时间。
 
-普通 Web 请求的 `vweb-options` 也是同样机制。web auth 会计入总耗时，最终 forward 到后端 Web 应用前也会刷新剩余 timeout。未显式指定 timeout 的 SSE 和 WebSocket 不创建总时长 deadline，而由双向流量的 idle timeout 控制生命周期。
+普通 Web 请求的 `vweb-options` 也是同样机制。Web 认证会计入总耗时，最终转发到后端 Web 应用前也会刷新剩余超时时间。未显式指定 timeout 的 SSE 和 WebSocket 不创建总时长 deadline，而由双向流量的 idle timeout 控制生命周期。
 
-对于普通 Rpc/Web 请求，Portal 会把外部客户端连接断开和内部执行 timeout 分开处理。请求进入 gateway 并创建执行上下文后，移动端断线、浏览器关闭页面这类 client cancel 不会默认取消 auth/check、handler 或下游调用；执行仍由 timeout、Portal 停止等服务端侧信号控制。SSE 和 WebSocket 长连接会响应客户端断开、上游断开、idle timeout 和 Portal 停止。
+对于普通 RPC/Web 请求，Portal 会把外部客户端连接断开和内部执行 timeout 分开处理。请求进入 gateway 并创建执行上下文后，移动端断线、浏览器关闭页面这类客户端取消不会默认取消 auth/check、Handler 或下游调用；执行仍由 timeout、Portal 停止等服务端侧信号控制。SSE 和 WebSocket 长连接会响应客户端断开、上游断开、idle timeout 和 Portal 停止。
 
 如果请求体还没有传完整，Portal 或下游读取 body 时仍会失败。这类情况不会被当作已经开始的完整业务执行。
 
 ## Handler 里调用下游要注意什么
 
-业务 handler 里继续调用 Rpc 时，不用手工设置 timeout。使用 Vine 注入的当前上下文就行，Rpc client 会自动读取 context deadline，并把剩余时间写入 `vrpc-options`。
+业务 Handler 里继续调用 RPC 时，不用手工设置超时时间。使用 Vine 注入的当前上下文就行，RPC client 会自动读取上下文的截止时间，并把剩余时间写入 `vrpc-options`。
 
 保留注入的 context：
 
 ```go
-// 使用当前 handler 注入的 client/context，继续发起 Rpc 调用。
+// 使用当前 handler 注入的 client/context，继续发起 RPC 调用。
 result := h.SomeClient.DoSomething(...)
 ```
 
@@ -137,13 +137,13 @@ result := h.SomeClient.DoSomething(...)
 ctx := context.Background()
 ```
 
-如果你用没有 deadline 的新 context 覆盖当前上下文，下游调用就拿不到 gateway 传下来的剩余 timeout。
+如果你用没有截止时间的新上下文覆盖当前上下文，下游调用就拿不到网关传下来的剩余超时时间。
 
-普通 Web handler 也是一样。webgw 会把 `vweb-options` 应用到后端 Web handler 的 request context；handler 内再调用 Rpc 时，会继续递减并传播为 `vrpc-options`。未显式指定 timeout 的 SSE/WebSocket handler context 没有总时长 deadline；其中发起的 Rpc 调用仍使用 Rpc 自身的默认 timeout，除非业务代码显式传入 context 或 timeout。
+普通 Web Handler 也是一样。webgw 会把 `vweb-options` 应用到后端 Web Handler 的 request context；Handler 内再调用 RPC 时，会继续递减并传播为 `vrpc-options`。未显式指定超时时间的 SSE/WebSocket Handler 上下文没有总时长截止时间；其中发起的 RPC 调用仍使用 RPC 自身的默认超时时间，除非业务代码显式传入上下文或超时时间。
 
 ## 在 OTel 后台会看到什么
 
-带 auth/check 的 Rpc 请求大致会形成这样的调用树：
+带 auth/check 的 RPC 请求大致会形成这样的调用树：
 
 ```text
 incoming trace
@@ -184,7 +184,7 @@ type Trace interface {
 
 跨进程 header 只传 `id` 和 `span`。接收方把 header 里的 `span` 当作 remote parent，然后在本地创建新的 child trace。
 
-普通 Rpc 调用：
+普通 RPC 调用：
 
 ```text
 当前 handler trace

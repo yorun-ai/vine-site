@@ -68,13 +68,13 @@ application := app.New[*DemoApp](
 Vine 首先连接 Link，取得应用所需的运行信息，然后创建：
 
 - 应用依赖图。
-- 已声明的 components。
-- 已声明的 modules。
-- Rpc、Web、Event、Task 服务及其 execution containers。
+- 已声明的 Component。
+- 已声明的 Module。
+- RPC、Web、Event、Task 服务及其 execution containers。
 
-已声明的 component 和 module 实例都是应用生命周期 singleton。依赖图构造时，会完成它们的字段注入并调用 `DIInit()`。框架 component minder 也会在这里初始化其 component。例如，RDB component 可以在生命周期 hooks 开始之前打开数据库。
+已声明的 Component 和 Module 实例都是应用生命周期单例。依赖图构造时，会完成它们的字段注入并调用 `DIInit()`。框架组件 minder 也会在这里初始化其 Component。例如，RDB Component 可以在生命周期 hooks 开始之前打开数据库。
 
-`BindCommon(...)`、component `Bind(...)` 和 module `Bind(...)` 是依赖声明，不是生命周期回调。Vine 可能把它们应用到多个容器，因此它们应当是确定性的，且不包含运行时副作用。
+`BindCommon(...)`、Component `Bind(...)` 和 Module `Bind(...)` 是依赖声明，不是生命周期回调。Vine 可能把它们应用到多个容器，因此它们应当是确定性的，且不包含运行时副作用。
 
 ### 2. 执行启动前 hooks
 
@@ -92,8 +92,8 @@ Vine 按以下顺序调用 `BeforeAppStart()`：
 所有启动前 hooks 成功后，Vine 会：
 
 1. 启动 HTTP 或进程内 endpoint。
-2. 启动已启用的 Rpc、Event、Task 能力机制。
-3. 向 Link 注册应用的 Rpc、Web、Event、Task 与 schema 元数据。
+2. 启动已启用的 RPC、Event、Task 能力机制。
+3. 向 Link 注册应用的 RPC、Web、Event、Task 与 schema 元数据。
 
 因此，listener 会先于注册存在。注册使应用可通过 Link 被发现；远端 Link 和 Portal 的视图仍可能需要一小段传播时间。
 
@@ -112,12 +112,12 @@ Vine 按以下顺序调用 `BeforeAppStart()`：
 
 | Hook | 顺序 | 运行状态 | 适合的职责 | 避免 |
 | --- | --- | --- | --- | --- |
-| `BeforeAppStart()` | Components 后 modules；按声明顺序 | 依赖图已装配，endpoint 尚未发布 | 校验依赖、有界预热、就绪检查 | 假定会自动回滚的不可逆工作 |
-| `AfterAppStart()` | Components 后 modules；按声明顺序 | Endpoint 已启动，本地注册已完成 | 启动后台循环、声明本地就绪 | 在 hook 中永久阻塞 |
-| `BeforeAppStop()` | Modules 后 components；按声明逆序 | 仍处于注册状态，server 与根 context 仍可用 | 停止生产者、取消并等待 worker、执行有界 flush | 无 deadline 地等待 |
-| `AfterAppStop()` | Modules 后 components；按声明逆序 | 已注销，server 已停止，根 context 已取消 | 释放应用拥有的资源、完成本地收尾 | 发起新的 Rpc、Event、Task 或依赖 context 的工作 |
+| `BeforeAppStart()` | Component 后 Module；按声明顺序 | 依赖图已装配，endpoint 尚未发布 | 校验依赖、有界预热、就绪检查 | 假定会自动回滚的不可逆工作 |
+| `AfterAppStart()` | Component 后 Module；按声明顺序 | Endpoint 已启动，本地注册已完成 | 启动后台循环、声明本地就绪 | 在 hook 中永久阻塞 |
+| `BeforeAppStop()` | Module 后 Component；按声明逆序 | 仍处于注册状态，server 与根 context 仍可用 | 停止生产者、取消并等待 worker、执行有界 flush | 无截止时间地等待 |
+| `AfterAppStop()` | Module 后 Component；按声明逆序 | 已注销，server 已停止，根 context 已取消 | 释放应用拥有的资源、完成本地收尾 | 发起新的 RPC、Event、Task 或依赖上下文的工作 |
 
-Components 先于 modules 启动，因此业务 modules 能依赖已经初始化的基础设施。停止时反转这个关系，使 modules 能在 component 资源仍存在时完成收尾。
+Component 先于 Module 启动，因此业务模块能依赖已经初始化的基础设施。停止时反转这个关系，使 Module 能在 Component 资源仍存在时完成收尾。
 
 Hook 顺序取决于声明顺序，但对象的构造顺序不一定如此。依赖解析可能提前构造被注入对象。不要用声明顺序代替真正的依赖声明。
 
@@ -168,7 +168,7 @@ sequenceDiagram
 
 先停止业务应用、后停止其进程内 Link 至关重要：在每个业务应用完成停止前，注销与排空路径必须保持可用。
 
-## 由 module 管理后台 worker
+## 由 Module 管理后台 worker
 
 谁启动 worker，谁就保存它的 cancel function 和完成信号：
 
@@ -207,7 +207,7 @@ func (m *WorkerModule) BeforeAppStop() {
 }
 ```
 
-该 module 只在发布后启动工作，在依赖仍可用时停止工作，也不会依赖 `AfterAppStop()` 才来得及观察 context 取消。
+该 Module 只在发布后启动工作，在依赖仍可用时停止工作，也不会依赖 `AfterAppStop()` 才来得及观察 context 取消。
 
 ## 相关文档
 

@@ -6,7 +6,7 @@ sidebar_label: App API
 # App API
 
 大多数应用代码只需要依赖 `go.yorun.ai/vine/app` 这一个包就够了。它负责进程生命周期、
-组件与模块的创建、HTTP/Rpc/Web 入口挂载，以及运行时依赖的注入。
+Component 与 Module 的创建、HTTP/RPC/Web 入口挂载，以及运行时依赖的注入。
 
 ## 对外入口
 
@@ -80,8 +80,8 @@ type ApplicationSpec interface {
 
 - `Name()`：应用名，必须匹配 `^[a-z]+(?:\.[a-z]+)*$`，即由点号分隔的一个或
   多个纯小写字母段，例如 `demo.checkout`
-- `InitComponents(...)`：声明组件类型
-- `InitModules(...)`：声明模块类型
+- `InitComponents(...)`：声明 Component 类型
+- `InitModules(...)`：声明 Module 类型
 - `BindCommon(...)`：注册应用级公共依赖
 
 业务应用嵌入 `app.Application` 即可获得默认实现，再覆盖需要的方法。
@@ -99,8 +99,8 @@ type Application struct {
 默认实现如下：
 
 - `Name()` 返回空字符串，业务 app 必须覆写
-- `InitComponents(...)` 默认不追加组件
-- `InitModules(...)` 默认不追加模块
+- `InitComponents(...)` 默认不追加 Component
+- `InitModules(...)` 默认不追加 Module
 - `BindCommon(...)` 默认不绑定额外依赖
 
 最小 app 一般这样写：
@@ -236,7 +236,7 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 }
 ```
 
-组件会把连接、DAO、Cache 或 Locker 等对象提供给依赖注入容器。注意，组件类型不能重复声明。
+Component 会把连接、DAO、Cache 或 Locker 等对象提供给依赖注入容器。注意，Component 类型不能重复声明。
 
 ### Module
 
@@ -252,7 +252,7 @@ func (*DemoApp) InitModules(add app.TypeAdder) {
 }
 ```
 
-模块同样会参与：
+Module 同样会参与：
 
 - `BeforeAppStart`
 - `AfterAppStart`
@@ -265,7 +265,7 @@ func (*DemoApp) InitModules(add app.TypeAdder) {
 
 应用 spec 按需实现以下能力接口即可。
 
-### Rpc：`ServicerSpec`
+### RPC：`ServicerSpec`
 
 ```go
 type ServicerSpec interface {
@@ -321,7 +321,7 @@ type EventerEnabled struct{}
 
 实现后，框架会创建 event server，并挂到 `/event`。
 
-声明 listener 时可以附加选项：
+声明 Listener 时可以附加选项：
 
 - `app.WithListenerTimeout(timeout)`
 - `app.WithListenerConcurrency(concurrency)`
@@ -345,7 +345,7 @@ type TaskerEnabled struct{}
 
 实现后，框架会创建 task server，并挂到 `/task`。
 
-声明 runner 时可以附加选项：
+声明 Runner 时可以附加选项：
 
 - `app.WithRunnerTimeout(timeout)`
 - `app.WithRunnerConcurrency(concurrency)`
@@ -366,7 +366,7 @@ app 进程会按需挂载这些内建前缀：
 
 行为说明：
 
-- 命中某个前缀后，框架会去掉该前缀，再把剩余路径转给对应 handler
+- 命中某个前缀后，框架会去掉该前缀，再把剩余路径转给对应 Handler
 - 没有命中任何已注册 route 时，返回 `404`
 
 例如访问：
@@ -375,13 +375,13 @@ app 进程会按需挂载这些内建前缀：
 /rpc/invoke/demo.user.UserService/getUser
 ```
 
-传给 Rpc handler 的内部路径会变成：
+传给 RPC Handler 的内部路径会变成：
 
 ```text
 /demo.user.UserService/getUser
 ```
 
-模块如果实现 `PathPrefixRouteModule`，还能主动追加自定义前缀 route。
+Module 如果实现 `PathPrefixRouteModule`，还能主动追加自定义前缀 route。
 
 ## HTTP 与 inproc
 
@@ -395,7 +395,7 @@ app 进程会按需挂载这些内建前缀：
 
 inproc 下会注册：
 
-- 所有 Rpc route
+- 所有 RPC route
 - 所有 `/web/access/...` route
 
 ## 启动与停止流程
@@ -404,28 +404,28 @@ inproc 下会注册：
 
 1. 初始化 Linker 和配置 reader
 2. 初始化 injector
-3. 初始化组件
-4. 初始化模块
+3. 初始化 Component
+4. 初始化 Module
 5. 初始化 console / servicer / webber / eventer / tasker
-6. 执行组件 `BeforeAppStart()`
-7. 执行模块 `BeforeAppStart()`
+6. 执行 Component `BeforeAppStart()`
+7. 执行 Module `BeforeAppStart()`
 8. 启动 HTTP 或 inproc server
 9. 启动 servicer / eventer / tasker
 10. 向 Link 注册 app 能力
-11. 执行组件 `AfterAppStart()`
-12. 执行模块 `AfterAppStart()`
+11. 执行 Component `AfterAppStart()`
+12. 执行 Module `AfterAppStart()`
 
 `StopGracefully()` 大致顺序：
 
-1. 逆序执行模块 `BeforeAppStop()`
-2. 逆序执行组件 `BeforeAppStop()`
+1. 逆序执行 Module `BeforeAppStop()`
+2. 逆序执行 Component `BeforeAppStop()`
 3. 注销 app
 4. 停止 HTTP 或 inproc server
 5. 取消运行时 context
-6. 逆序执行模块 `AfterAppStop()`
-7. 逆序执行组件 `AfterAppStop()`
+6. 逆序执行 Module `AfterAppStop()`
+7. 逆序执行 Component `AfterAppStop()`
 
-在 `linked` 模式下，外层 app 会先等待业务 app 完成 `StopGracefully()`，再停止同进程内的 Link。这样可以避免业务 app 注销时 Link 的 inproc handler 已经卸载的问题。
+在 `linked` 模式下，外层 app 会先等待业务 app 完成 `StopGracefully()`，再停止同进程内的 Link。这样可以避免业务 app 注销时 Link 的 inproc Handler 已经卸载的问题。
 
 在 `standalone` / bundled standalone 模式下，会先按逆序优雅停止业务 apps，再停止 Link、Portal、Hub 等内置运行时组件。
 
@@ -439,15 +439,15 @@ inproc 下会注册：
 
 - 各类 flag
 - app 自己的 spec 实例
-- 用户组件实例
-- 模块实例
+- 用户 Component 实例
+- Module 实例
 - `BindCommon(...)` 绑定的公共依赖
 - 各能力子系统额外绑定的上下文和 logger
 
 具体来说：
 
 - `BindCommon(...)` 放应用级公共依赖
-- 组件/模块自己的 `Bind(...)` 放该对象专属依赖
+- Component/Module 自己的 `Bind(...)` 放该对象专属依赖
 - Servicer / Webber / Eventer / Tasker 会把各自上下文再补到执行容器里
 
 ## 使用时需要守住的边界
@@ -456,6 +456,6 @@ inproc 下会注册：
 - 推荐在构造时通过 `app.With(&app.RunFlag{ListenAddr: "..."})` 提供监听地址。
   如果 app 必须自行选择默认值，请在 specification 的 `DIInit()` 中修改注入的
   flag。到 `BindCommon(...)` 再修改已经太晚了
-- 组件和模块都用指针类型声明
+- Component 和 Module 都用指针类型声明
 - `BindCommon(...)` 只放共享依赖，不要在这里做路由或启动工作
-- web 路由入口收敛到单个 `WebberSpec`。如果需要更多路由，放在同一个 weber 下追加多个 handler
+- web 路由入口收敛到单个 `WebberSpec`。如果需要更多路由，放在同一个 weber 下追加多个 Handler

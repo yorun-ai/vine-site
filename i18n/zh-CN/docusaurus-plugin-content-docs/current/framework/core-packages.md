@@ -25,7 +25,7 @@ symbol 索引无法回答的问题：**应用代码应该选择哪个 package？
 
 | 任务 | Package | 从这里开始 |
 | --- | --- | --- |
-| 声明应用、component、module、能力与生命周期 hook | [`app`](https://pkg.go.dev/go.yorun.ai/vine/app) | [应用模型](./application-model.md) |
+| 声明应用、Component、Module、能力与生命周期 hook | [`app`](https://pkg.go.dev/go.yorun.ai/vine/app) | [应用模型](./application-model.md) |
 | 用内嵌 Hub、Link、Portal 运行一个或多个应用 | [`app/standalone`](https://pkg.go.dev/go.yorun.ai/vine/app/standalone) | [第一个应用](../getting-started/tutorial-first-app.md) |
 | 用进程内 Link 连接外部 Hub 并运行一个或多个应用 | [`app/linked`](https://pkg.go.dev/go.yorun.ai/vine/app/linked) | [部署拓扑](../getting-started/deployment-modes.md) |
 | 在可控的 standalone 运行时中测试应用行为 | [`app/testkit`](https://pkg.go.dev/go.yorun.ai/vine/app/testkit) | [日志与测试](./logging-testing.md) |
@@ -44,20 +44,20 @@ standalone.NewWithOption[*CheckoutApp](standalone.Option{
 
 | 能力 | Package | 应用代码使用的对象 |
 | --- | --- | --- |
-| 配置 | [`core/conf`](https://pkg.go.dev/go.yorun.ai/vine/core/conf) | 注入 module 或 execution 的生成配置类型 |
-| Rpc | [`core/rpc`](https://pkg.go.dev/go.yorun.ai/vine/core/rpc) | 生成的服务 client 与 server 实现 |
-| Web | [`core/web`](https://pkg.go.dev/go.yorun.ai/vine/core/web) | 生成的 Web handler、router、assets server 或 reverse proxy |
-| Event | [`core/event`](https://pkg.go.dev/go.yorun.ai/vine/core/event) | 生成的 emitter 与 listener |
-| Task | [`core/task`](https://pkg.go.dev/go.yorun.ai/vine/core/task) | 生成的 launcher 与 runner |
+| 配置 | [`core/conf`](https://pkg.go.dev/go.yorun.ai/vine/core/conf) | 注入 Module 或 execution 的生成配置类型 |
+| RPC | [`core/rpc`](https://pkg.go.dev/go.yorun.ai/vine/core/rpc) | 生成的服务 client 与 server 实现 |
+| Web | [`core/web`](https://pkg.go.dev/go.yorun.ai/vine/core/web) | 生成的 Web Handler、router、assets server 或 reverse proxy |
+| Event | [`core/event`](https://pkg.go.dev/go.yorun.ai/vine/core/event) | 生成的 emitter 与 Listener |
+| Task | [`core/task`](https://pkg.go.dev/go.yorun.ai/vine/core/task) | 生成的 launcher 与 Runner |
 | Skel 运行时类型 | [`core/skel`](https://pkg.go.dev/go.yorun.ai/vine/core/skel) | 生成的 scalar/schema 辅助类型与 `MinSkelcVersion()` |
 
-生成代码已经把这些 package 接入类型安全 facade。推荐优先使用生成的 client、handler、
-listener 或 runner，而不是手工构造 `ServiceSpec`、`WebSpec`、`EventSpec` 或 `TaskSpec`。
+生成代码已经把这些 package 接入类型安全 facade。推荐优先使用生成的 client、Handler、
+Listener 或 Runner，而不是手工构造 `ServiceSpec`、`WebSpec`、`EventSpec` 或 `TaskSpec`。
 
 只有在构建框架集成、自定义 executor 或 transport adapter 时，才需要这些 package
 中的底层 constructor。对应参考页记录了这些高级 API：
 
-- [Rpc API](../infrastructure/rpc.md)
+- [RPC API](../infrastructure/rpc.md)
 - [基于 HTTP 的 vRPC](../infrastructure/vrpc-http.md)
 - [App API](./app.md)
 
@@ -74,19 +74,19 @@ listener 或 runner，而不是手工构造 `ServiceSpec`、`WebSpec`、`EventSp
 | 进程 runtime 与 executable 身份 | [`core/runtime`](https://pkg.go.dev/go.yorun.ai/vine/core/runtime) | 读取进程级 runtime 名称、版本、instance ID 或构建信息；它不标识 bundle 中的某一个 App |
 | 构建元数据 | [`buildinfo`](https://pkg.go.dev/go.yorun.ai/vine/buildinfo) | 写入或读取发布时的 linker 元数据 |
 
-对于普通 Rpc、Web、Event 与 Task handler，Vine 会自动创建 execution container 并注入
-正确 context。把依赖保留到接收它的 handler 之外前，请先阅读
+对于普通 RPC、Web、Event 与 Task Handler，Vine 会自动创建 execution container 并注入
+正确 context。把依赖保留到接收它的 Handler 之外前，请先阅读
 [依赖与执行模型](../runtime/execution-model.md)。
 
-## 基础设施 Component
+## 基础设施组件
 
 | 需求 | Package | 指南 | 参考 |
 | --- | --- | --- | --- |
 | 关系型数据库、GORM 连接、类型化 DAO/query | [`infra/rdb`](https://pkg.go.dev/go.yorun.ai/vine/infra/rdb) | [RDB 指南](./rdb-guide.md) | [RDB API](../infrastructure/rdb.md) |
 | Redis client、类型化 cache、分布式 locker | [`infra/redis`](https://pkg.go.dev/go.yorun.ai/vine/infra/redis) | [Redis 指南](./redis-guide.md) | [Redis API](../infrastructure/redis.md) |
 
-建议将它们声明为应用 component。这样 Vine 会在业务 module 之前创建依赖，通过 DI
-公开它们，并在业务 module 结束后再停止它们。
+建议将它们声明为应用 Component。这样 Vine 会在业务模块之前创建依赖，通过 DI
+公开它们，并在业务模块结束后再停止它们。
 
 ## 可复用工具
 
