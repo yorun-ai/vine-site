@@ -29,25 +29,27 @@ cluster can split the same roles across workloads. One practical Kubernetes
 layout places Link beside each application instance, while Hub and Portal run as
 independent workloads:
 
-```mermaid
-flowchart TB
-  subgraph Single["Standalone: one process"]
-    direction LR
-    SHub["Hub"] --> SPortal["Portal"]
-    SHub --> SLink["Link"] --> SApp["Business application"]
-  end
+**Standalone: one process**
 
-  subgraph Cluster["Kubernetes: separated runtime"]
+```mermaid
+flowchart LR
+  SHub["Hub"] --> SPortal["Portal"]
+  SHub --> SLink["Link"] --> SApp["Business application"]
+```
+
+**Kubernetes: separated runtime**
+
+```mermaid
+flowchart LR
+  KHub["Hub"]
+  KPortal["Portal"]
+  subgraph Pod["Application Pod × N"]
     direction LR
-    KHub["Hub"]
-    KPortal["Portal"]
-    subgraph Pod["Application Pod × N"]
-      KLink["Link"] <--> KApp["Business application"]
-    end
-    KHub -. configuration and registry .-> KPortal
-    KHub -. configuration and registry .-> KLink
-    KPortal --> KLink
+    KLink["Link"] <--> KApp["Business application"]
   end
+  KHub -. configuration and registry .-> KPortal
+  KHub -. configuration and registry .-> KLink
+  KPortal --> KLink
 ```
 
 The Kubernetes diagram shows one layout, not a required sidecar model. Link and

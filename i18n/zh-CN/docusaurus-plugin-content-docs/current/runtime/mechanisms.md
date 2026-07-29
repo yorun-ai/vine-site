@@ -25,25 +25,27 @@ Rpc service、Web handler、Event listener 和 Task runner，但不在业务代�
 独立 workload。下面是一种实用的 Kubernetes 布局：每个应用实例旁运行一个 Link，
 Hub 与 Portal 独立部署。
 
-```mermaid
-flowchart TB
-  subgraph Single["Standalone：单进程"]
-    direction LR
-    SHub["Hub"] --> SPortal["Portal"]
-    SHub --> SLink["Link"] --> SApp["业务应用"]
-  end
+**Standalone：单进程**
 
-  subgraph Cluster["Kubernetes：分离运行时"]
+```mermaid
+flowchart LR
+  SHub["Hub"] --> SPortal["Portal"]
+  SHub --> SLink["Link"] --> SApp["业务应用"]
+```
+
+**Kubernetes：分离运行时**
+
+```mermaid
+flowchart LR
+  KHub["Hub"]
+  KPortal["Portal"]
+  subgraph Pod["应用 Pod × N"]
     direction LR
-    KHub["Hub"]
-    KPortal["Portal"]
-    subgraph Pod["应用 Pod × N"]
-      KLink["Link"] <--> KApp["业务应用"]
-    end
-    KHub -. 配置与注册 .-> KPortal
-    KHub -. 配置与注册 .-> KLink
-    KPortal --> KLink
+    KLink["Link"] <--> KApp["业务应用"]
   end
+  KHub -. 配置与注册 .-> KPortal
+  KHub -. 配置与注册 .-> KLink
+  KPortal --> KLink
 ```
 
 这只是其中一种布局，并不要求 Link 必须作为 sidecar。只要 Link API 与应用 endpoint
