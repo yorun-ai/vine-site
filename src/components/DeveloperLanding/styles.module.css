@@ -1,400 +1,1023 @@
 .landing {
   width: 100%;
-  padding: 0.4rem 0 4.5rem;
+  padding: 0.4rem 0 4.75rem;
   font-family: var(--ifm-font-family-base);
-  --landing-rule: color-mix(
+  --landing-border: color-mix(
     in srgb,
-    var(--ifm-color-emphasis-300) 72%,
+    var(--border) 82%,
+    var(--primary) 18%
+  );
+  --landing-soft: color-mix(in srgb, var(--accent) 62%, var(--card));
+  --landing-muted: color-mix(in srgb, var(--muted) 78%, var(--card));
+  --landing-shadow:
+    0 1px 2px rgb(var(--ink-rgb) / 4%),
+    0 24px 64px -48px rgb(var(--ink-rgb) / 46%);
+  --visual-surface: color-mix(in srgb, var(--card) 96%, var(--primary));
+  --visual-raised: color-mix(in srgb, var(--card) 88%, var(--primary));
+  --visual-canvas: color-mix(in srgb, var(--muted) 82%, var(--card));
+  --visual-border: color-mix(in srgb, var(--primary) 16%, var(--border));
+  --visual-border-strong: color-mix(
+    in srgb,
+    var(--primary) 28%,
+    var(--border)
+  );
+  --visual-text: var(--foreground);
+  --visual-muted: var(--muted-foreground);
+  --visual-faint: color-mix(
+    in srgb,
+    var(--muted-foreground) 68%,
     transparent
+  );
+  --visual-accent: color-mix(in srgb, var(--primary) 86%, var(--foreground));
+  --visual-accent-soft: color-mix(
+    in srgb,
+    var(--primary) 9%,
+    var(--card)
   );
 }
 
-.intro {
-  padding: 0.45rem 0 3.5rem;
-  border-bottom: 1px solid var(--landing-rule);
+:global(html[data-theme='dark']) .landing {
+  --visual-surface: #17141e;
+  --visual-raised: #211b2e;
+  --visual-canvas: #1b1724;
+  --visual-border: rgb(255 255 255 / 10%);
+  --visual-border-strong: rgb(169 150 255 / 25%);
+  --visual-text: #eeeaf6;
+  --visual-muted: #b8b0c4;
+  --visual-faint: #7f778c;
+  --visual-accent: #b69cff;
+  --visual-accent-soft: rgb(169 150 255 / 10%);
+}
+
+.hero {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  grid-template-columns: minmax(0, 1.08fr) minmax(22rem, 0.92fr);
+  gap: clamp(2.25rem, 5vw, 4.5rem);
+  align-items: center;
+  padding: clamp(2.25rem, 5vw, 4rem);
+  border: 1px solid var(--landing-border);
+  border-radius: 1.15rem;
+  background:
+    radial-gradient(
+      circle at 8% 8%,
+      rgb(var(--brand-rgb) / 12%),
+      transparent 33%
+    ),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--accent) 55%, var(--card)),
+      var(--card) 58%
+    );
+  box-shadow: var(--landing-shadow);
+  isolation: isolate;
+}
+
+.hero::before {
+  position: absolute;
+  z-index: -1;
+  top: -7rem;
+  right: -5rem;
+  width: 22rem;
+  height: 22rem;
+  border-radius: 999px;
+  background: rgb(var(--brand-rgb) / 7%);
+  content: '';
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+.heroCopy {
+  min-width: 0;
 }
 
 .kicker {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  color: var(--ifm-color-primary);
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+  gap: 0.45rem;
+  margin-bottom: 1.15rem;
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
 }
 
-.intro h1 {
+.kicker span:last-child {
+  color: var(--muted-foreground);
+}
+
+.landing .heroCopy h1 {
+  max-width: 39rem;
   margin: 0;
+  color: var(--foreground);
   font-family: var(--ifm-heading-font-family);
-  font-size: clamp(2.8rem, 6vw, 4.8rem);
-  font-weight: 600;
-  letter-spacing: -0.055em;
+  font-size: clamp(2.65rem, 5.8vw, 4.55rem);
+  font-weight: 650;
+  letter-spacing: -0.06em;
   line-height: 0.98;
+  text-wrap: balance;
 }
 
 .lede {
-  max-width: 55rem;
+  max-width: 42rem;
   margin: 1.45rem 0 0;
-  color: var(--ifm-color-emphasis-800);
-  font-size: clamp(1.04rem, 1.8vw, 1.2rem);
-  line-height: 1.75;
+  color: var(--muted-foreground);
+  font-size: clamp(1rem, 1.55vw, 1.12rem);
+  line-height: 1.72;
 }
 
-.introLinks {
+.lede strong {
+  color: var(--foreground);
+  font-weight: 550;
+}
+
+.actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.8rem 1.8rem;
-  margin-top: 1.75rem;
+  gap: 0.7rem;
+  margin-top: 1.8rem;
 }
 
-.introLinks a {
+.landing .actions a {
+  display: inline-flex;
+  min-height: 2.7rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.55rem;
+  padding: 0.7rem 1rem;
+  font-size: 0.86rem;
+  font-weight: 620;
+  line-height: 1;
+  text-decoration: none;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
+}
+
+.landing .primaryAction {
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: var(--primary-foreground) !important;
+  box-shadow: 0 8px 20px -12px rgb(var(--brand-rgb) / 80%);
+}
+
+.landing .primaryAction:hover {
+  border-color: var(--ifm-color-primary-dark);
+  background: var(--ifm-color-primary-dark);
+  color: var(--primary-foreground) !important;
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.landing .secondaryAction {
+  border: 1px solid var(--landing-border);
+  background: color-mix(in srgb, var(--card) 82%, transparent);
+  color: var(--foreground);
+}
+
+.landing .secondaryAction:hover {
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+  background: var(--card);
+  color: var(--primary);
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.actions a:focus-visible,
+.skelPrompt a:focus-visible,
+.mechanismLinks a:focus-visible,
+.guideLink:focus-visible,
+.statusLinks a:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.skelPrompt {
+  margin: 1rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.79rem;
+}
+
+.landing .skelPrompt a {
   display: inline-flex;
   align-items: center;
-  gap: 0.42rem;
-  color: var(--ifm-font-color-base);
-  font-size: 0.84rem;
+  gap: 0.22rem;
+  color: var(--foreground);
   font-weight: 600;
-  text-decoration-color: var(--ifm-color-emphasis-400);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.3rem;
+  text-decoration-color: color-mix(
+    in srgb,
+    var(--muted-foreground) 48%,
+    transparent
+  );
+  text-underline-offset: 0.22rem;
 }
 
-.introLinks a:hover {
-  color: var(--ifm-color-primary);
+.landing .skelPrompt a:hover {
+  color: var(--primary);
   text-decoration-color: currentColor;
 }
 
-.section {
-  padding: 3.75rem 0;
-  border-bottom: 1px solid var(--landing-rule);
-}
-
-.sectionLead {
-  display: grid;
-  grid-template-columns: 3.5rem minmax(0, 1fr);
-  gap: 1.5rem;
-  max-width: 52rem;
-  margin-bottom: 2.4rem;
-}
-
-.sectionIndex {
-  margin: 0.35rem 0 0;
-  color: var(--ifm-color-primary);
-  font-size: 0.72rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.sectionLead h2 {
+.runtimeMap {
+  min-width: 0;
   margin: 0;
-  font-family: var(--ifm-heading-font-family);
-  font-size: clamp(1.55rem, 3vw, 2rem);
-  font-weight: 600;
-  letter-spacing: -0.025em;
+  border: 1px solid var(--visual-border-strong);
+  border-radius: 0.9rem;
+  padding: 1rem;
+  background:
+    radial-gradient(
+      circle at 90% 0%,
+      rgb(var(--brand-rgb) / 10%),
+      transparent 34%
+    ),
+    var(--visual-surface);
+  box-shadow:
+    0 1px 2px rgb(var(--ink-rgb) / 7%),
+    0 22px 48px -32px rgb(var(--ink-rgb) / 34%);
+  color: var(--visual-text);
 }
 
-.sectionLead div > p {
-  max-width: 46rem;
-  margin: 0.75rem 0 0;
-  color: var(--ifm-color-emphasis-700);
-  font-size: 0.94rem;
-  line-height: 1.7;
-}
-
-.loopStages {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  column-gap: 1.75rem;
-  margin: 0;
-  padding: 0;
-  border-top: 1px solid var(--ifm-color-emphasis-500);
-  list-style: none;
-}
-
-.loopStages li {
-  display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr);
-  gap: 0.9rem;
-  padding: 1rem 0;
-  border-bottom: 1px solid var(--landing-rule);
-}
-
-.loopStages li > span {
-  color: var(--ifm-color-emphasis-500);
-  font-size: 0.65rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.stageHeading {
+.runtimeMap figcaption {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 0.8rem;
+  gap: 1rem;
+  padding: 0.1rem 0.15rem 0.85rem;
 }
 
-.stageHeading strong {
-  font-size: 0.88rem;
-  font-weight: 600;
+.runtimeMap figcaption span {
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
 }
 
-.stageHeading code {
-  flex: 0 0 auto;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--ifm-color-primary);
-  font-size: 0.67rem;
+.runtimeMap figcaption small {
+  color: var(--visual-muted);
+  font-size: 0.66rem;
 }
 
-.mechanisms {
-  margin-left: 5rem;
-  border-top: 1px solid var(--ifm-color-emphasis-500);
-}
-
-.mechanisms article {
-  display: grid;
-  grid-template-columns: 5.5rem minmax(0, 1fr);
-  gap: 1.5rem;
-  padding: 1.55rem 0;
-  border-bottom: 1px solid var(--landing-rule);
-}
-
-.mechanismNumber {
+.topologies {
   display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
-
-.mechanismNumber > span {
-  color: var(--ifm-color-primary);
-  font-size: 0.68rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.mechanismNumber small {
-  color: var(--ifm-color-emphasis-500);
-  font-size: 0.64rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.mechanismBody h3 {
-  margin: 0;
-  font-family: var(--ifm-heading-font-family);
-  font-size: 1.02rem;
-  font-weight: 600;
-  letter-spacing: -0.012em;
-}
-
-.mechanismBody > p {
-  max-width: 51rem;
-  margin: 0.55rem 0 0;
-  color: var(--ifm-color-emphasis-700);
-  font-size: 0.83rem;
-  line-height: 1.65;
-}
-
-.markers {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: 0.8rem;
-}
-
-.markers code {
-  padding: 0.18rem 0.38rem;
-  border-color: var(--landing-rule);
-  background: transparent;
-  color: var(--ifm-color-emphasis-600);
-  font-size: 0.64rem;
-}
-
-.mechanismLinks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.15rem;
-  margin-top: 0.85rem;
-}
-
-.mechanismLinks a {
-  display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  color: var(--ifm-font-color-base);
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-decoration: none;
+  gap: 0.45rem;
+  margin-bottom: 0.7rem;
+  border: 1px solid var(--visual-border);
+  border-radius: 0.48rem;
+  padding: 0.5rem 0.6rem;
+  background: var(--visual-raised);
+  color: var(--visual-faint);
 }
 
-.mechanismLinks a:hover {
-  color: var(--ifm-color-primary);
-  text-decoration: none;
+.landing .runtimeMap .topologies code {
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  color: var(--visual-muted) !important;
+  font-size: 0.63rem;
 }
 
-.guideGroups {
+.topologies code:first-child {
+  color: var(--visual-accent);
+}
+
+.runtimeRoles {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
 }
 
-.guideGroups > section {
+.runtimeRole {
+  display: flex;
+  min-width: 0;
+  min-height: 4rem;
+  align-items: flex-start;
+  gap: 0.65rem;
+  border: 1px solid var(--visual-border);
+  border-radius: 0.55rem;
+  padding: 0.7rem;
+  background: color-mix(
+    in srgb,
+    var(--visual-raised) 54%,
+    var(--visual-surface)
+  );
+}
+
+.runtimeRole[data-role='link'],
+.runtimeRole[data-role='application'] {
+  border-color: var(--visual-border-strong);
+  background: var(--visual-accent-soft);
+}
+
+.runtimeRoleIcon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 0.42rem;
+  background: var(--visual-accent-soft);
+  color: var(--visual-accent);
+}
+
+.runtimeRoleIcon svg {
+  margin-top: 0;
+}
+
+.runtimeRole > span:last-child {
   min-width: 0;
 }
 
-.guideGroups h3 {
-  margin: 0 0 0.65rem;
-  color: var(--ifm-color-emphasis-500);
-  font-size: 0.69rem;
+.runtimeRole strong,
+.runtimeRole small {
+  display: block;
+}
+
+.runtimeRole strong {
+  color: var(--visual-text);
+  font-size: 0.73rem;
+  font-weight: 620;
+}
+
+.runtimeRole small {
+  margin-top: 0.08rem;
+  color: var(--visual-muted);
+  font-size: 0.6rem;
+  line-height: 1.35;
+  text-wrap: balance;
+}
+
+.requestRoute {
+  margin-top: 0.7rem;
+  border-radius: 0.52rem;
+  padding: 0.65rem 0.7rem;
+  background: var(--visual-canvas);
+}
+
+.requestRoute > span {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--visual-muted);
+  font-size: 0.6rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.guideLink {
+.requestRoute > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.38rem;
+  color: var(--visual-faint);
+}
+
+.requestRoute small,
+.requestRoute strong {
+  white-space: nowrap;
+}
+
+.requestRoute small {
+  color: var(--visual-muted);
+  font-size: 0.63rem;
+}
+
+.requestRoute strong {
+  border: 1px solid var(--visual-border-strong);
+  border-radius: 0.3rem;
+  padding: 0.16rem 0.3rem;
+  background: var(--visual-accent-soft);
+  color: var(--visual-text);
+  font-size: 0.62rem;
+  font-weight: 570;
+}
+
+.runtimeNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0.7rem 0 0;
+  color: var(--visual-muted);
+  font-size: 0.62rem;
+  line-height: 1.45;
+}
+
+.runtimeNote svg {
+  flex: 0 0 auto;
+  margin-top: 0.05rem;
+  color: var(--visual-accent);
+}
+
+.section {
+  padding-top: clamp(4.5rem, 8vw, 6.5rem);
+}
+
+.sectionLead {
+  display: grid;
+  grid-template-columns: 9.5rem minmax(0, 1fr);
+  gap: 1.75rem;
+  max-width: 55rem;
+  margin-bottom: 2rem;
+}
+
+.eyebrow {
+  margin: 0.33rem 0 0;
+  color: var(--primary);
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.085em;
+  text-transform: uppercase;
+}
+
+.landing .sectionLead h2 {
+  margin: 0;
+  color: var(--foreground);
+  font-family: var(--ifm-heading-font-family);
+  font-size: clamp(1.75rem, 3.5vw, 2.45rem);
+  font-weight: 630;
+  letter-spacing: -0.04em;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+.sectionLead div > p {
+  max-width: 45rem;
+  margin: 0.75rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.93rem;
+  line-height: 1.68;
+}
+
+.mechanismGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.mechanismCard {
+  display: flex;
+  min-width: 0;
+  min-height: 18.5rem;
+  flex-direction: column;
+  border: 1px solid var(--landing-border);
+  border-radius: 0.82rem;
+  padding: 1.4rem;
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--card) 94%, var(--accent)),
+      var(--card)
+    );
+  box-shadow: 0 14px 36px -34px rgb(var(--ink-rgb) / 44%);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.mechanismCard:hover {
+  border-color: color-mix(in srgb, var(--primary) 32%, var(--border));
+  box-shadow: 0 22px 46px -38px rgb(var(--brand-rgb) / 48%);
+  transform: translateY(-2px);
+}
+
+.mechanismMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--muted-foreground);
+  font-size: 0.66rem;
+  font-weight: 650;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.mechanismIcon {
+  display: grid;
+  place-items: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 0.52rem;
+  background: var(--accent);
+  color: var(--primary);
+}
+
+.landing .mechanismCard h3 {
+  margin: 1rem 0 0;
+  color: var(--foreground);
+  font-family: var(--ifm-heading-font-family);
+  font-size: 1.08rem;
+  font-weight: 620;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+}
+
+.mechanismCard > p {
+  margin: 0.55rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+  line-height: 1.62;
+}
+
+.markers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 1rem;
+}
+
+.landing .markers code {
+  border: 0;
+  border-radius: 0.3rem;
+  padding: 0.2rem 0.42rem;
+  background: var(--landing-muted);
+  color: color-mix(in srgb, var(--foreground) 72%, var(--muted-foreground));
+  font-size: 0.62rem;
+}
+
+.mechanismLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-top: auto;
+  padding-top: 1.15rem;
+}
+
+.landing .mechanismLinks a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  color: var(--foreground);
+  font-size: 0.72rem;
+  font-weight: 620;
+  text-decoration: none;
+}
+
+.landing .mechanismLinks a svg {
+  color: var(--muted-foreground);
+  transition: transform 140ms ease;
+}
+
+.landing .mechanismLinks a:hover {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.landing .mechanismLinks a:hover svg {
+  color: currentColor;
+  transform: translateX(2px);
+}
+
+.workflowPanel {
+  overflow: hidden;
+  border: 1px solid var(--landing-border);
+  border-radius: 0.9rem;
+  padding: 0.8rem;
+  background:
+    radial-gradient(
+      circle at 100% 0,
+      rgb(var(--brand-rgb) / 9%),
+      transparent 30%
+    ),
+    var(--landing-soft);
+}
+
+.workflowStages {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workflowStages li {
+  position: relative;
+  min-width: 0;
+  min-height: 9.2rem;
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  border-radius: 0.62rem;
+  padding: 0.95rem;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+}
+
+.workflowStages li:not(:nth-child(3n))::after {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  right: -0.82rem;
+  display: grid;
+  width: 0.95rem;
+  height: 0.95rem;
+  place-items: center;
+  border: 1px solid var(--landing-border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--primary);
+  content: '›';
+  font-size: 0.85rem;
+  line-height: 1;
+  transform: translateY(-50%);
+}
+
+.stageMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+}
+
+.stageMeta > span {
+  color: var(--primary);
+  font-size: 0.62rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.landing .stageMeta code {
+  overflow: hidden;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 0.61rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.landing .workflowStages h3 {
+  margin: 1.05rem 0 0;
+  color: var(--foreground);
+  font-size: 0.9rem;
+  font-weight: 620;
+  letter-spacing: -0.015em;
+}
+
+.workflowStages p {
+  margin: 0.35rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  line-height: 1.48;
+}
+
+.workflowReturn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+  border-radius: 0.55rem;
+  padding: 0.72rem;
+  background: color-mix(in srgb, var(--primary) 8%, var(--card));
+  color: color-mix(in srgb, var(--foreground) 82%, var(--primary));
+  font-size: 0.72rem;
+  font-weight: 550;
+}
+
+.workflowReturn svg {
+  flex: 0 0 auto;
+  color: var(--primary);
+}
+
+.guideGroups {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.guideGroup {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  border: 1px solid var(--landing-border);
+  border-radius: 0.82rem;
+  padding: 1.25rem;
+  background: var(--card);
+  box-shadow: 0 12px 32px -32px rgb(var(--ink-rgb) / 40%);
+}
+
+.guideGroupIcon {
+  display: grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 0.58rem;
+  background: var(--accent);
+  color: var(--primary);
+}
+
+.landing .guideGroup h3 {
+  margin: 1rem 0 0;
+  color: var(--foreground);
+  font-size: 1rem;
+  font-weight: 630;
+  letter-spacing: -0.02em;
+}
+
+.guideGroup > p {
+  min-height: 3.6rem;
+  margin: 0.4rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.guideLinks {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.landing .guideLink {
   display: flex;
   min-width: 0;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 0.8rem;
-  padding: 0.9rem 0;
-  border-top: 1px solid var(--landing-rule);
+  gap: 0.7rem;
+  border-radius: 0.55rem;
+  padding: 0.78rem;
+  background: var(--landing-muted);
   color: inherit;
   text-decoration: none;
+  transition:
+    background-color 150ms ease,
+    transform 150ms ease;
 }
 
-.guideLink:hover {
+.landing .guideLink:hover {
+  background: var(--accent);
   color: inherit;
   text-decoration: none;
+  transform: translateY(-1px);
 }
 
-.guideLink > span {
+.guideLink > span:first-child {
   min-width: 0;
 }
 
-.guideLink strong {
+.guideLink strong,
+.guideLink small {
   display: block;
-  font-size: 0.84rem;
-  font-weight: 600;
+}
+
+.guideLink strong {
+  color: var(--foreground);
+  font-size: 0.78rem;
+  font-weight: 620;
   transition: color 140ms ease;
 }
 
 .guideLink small {
-  display: block;
-  margin-top: 0.28rem;
-  color: var(--ifm-color-emphasis-600);
-  font-size: 0.72rem;
-  line-height: 1.45;
+  margin-top: 0.22rem;
+  color: var(--muted-foreground);
+  font-size: 0.66rem;
+  line-height: 1.4;
 }
 
-.guideLink svg {
+.guideArrow {
+  display: grid;
   flex: 0 0 auto;
-  margin-top: 0.08rem;
-  color: var(--ifm-color-emphasis-400);
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted-foreground);
   transition:
     color 140ms ease,
     transform 140ms ease;
 }
 
 .guideLink:hover strong,
-.guideLink:hover svg {
-  color: var(--ifm-color-primary);
+.guideLink:hover .guideArrow {
+  color: var(--primary);
 }
 
-.guideLink:hover svg {
-  transform: translate(1px, -1px);
+.guideLink:hover .guideArrow {
+  transform: translateX(2px);
 }
 
 .statusNote {
   display: grid;
-  grid-template-columns: 7rem minmax(0, 1fr);
-  gap: 1.5rem;
-  margin-top: 3rem;
-  padding: 1.15rem 0;
-  border-top: 1px solid var(--ifm-color-primary);
-  border-bottom: 1px solid var(--landing-rule);
+  grid-template-columns: 7.5rem minmax(0, 1fr) auto;
+  gap: 1.35rem;
+  align-items: center;
+  margin-top: clamp(4.5rem, 8vw, 6.5rem);
+  border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--border));
+  border-radius: 0.82rem;
+  padding: 1.2rem 1.3rem;
+  background: color-mix(in srgb, var(--accent) 62%, var(--card));
 }
 
-.statusNote > span {
-  color: var(--ifm-color-primary);
-  font-size: 0.7rem;
-  font-weight: 600;
+.statusLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--primary);
+  font-size: 0.67rem;
+  font-weight: 680;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-.statusNote p {
-  margin: 0;
-  color: var(--ifm-color-emphasis-700);
-  font-size: 0.8rem;
-  line-height: 1.55;
+.statusNote > div:nth-child(2) strong {
+  display: block;
+  color: var(--foreground);
+  font-size: 0.84rem;
+  font-weight: 630;
 }
 
-.statusNote a {
-  color: var(--ifm-font-color-base);
-  font-weight: 600;
-  text-decoration-color: var(--ifm-color-emphasis-400);
-  text-underline-offset: 0.2rem;
+.statusNote > div:nth-child(2) p {
+  margin: 0.25rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  line-height: 1.5;
 }
 
-.statusNote a:hover {
-  color: var(--ifm-color-primary);
+.statusLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem 0.9rem;
 }
 
-@media (max-width: 900px) {
-  .mechanisms {
-    margin-left: 2rem;
+.landing .statusLinks a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  color: var(--foreground);
+  font-size: 0.7rem;
+  font-weight: 620;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.landing .statusLinks a:hover {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+@media (max-width: 1000px) {
+  .hero {
+    grid-template-columns: 1fr;
   }
 
-  .loopStages {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .runtimeMap {
+    width: 100%;
+    max-width: 42rem;
   }
 
   .guideGroups {
-    grid-template-columns: 1fr;
-    gap: 2rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .guideGroup:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .guideGroup > p {
+    min-height: 0;
+  }
+
+  .statusNote {
+    grid-template-columns: 7.5rem minmax(0, 1fr);
+  }
+
+  .statusLinks {
+    grid-column: 2;
+    justify-content: flex-start;
   }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 780px) {
+  .sectionLead {
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+  }
+
+  .eyebrow {
+    margin-top: 0;
+  }
+
+  .mechanismGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .mechanismCard {
+    min-height: 0;
+  }
+
+  .mechanismLinks {
+    margin-top: 0;
+  }
+
+  .workflowStages {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workflowStages li::after {
+    display: none !important;
+  }
+}
+
+@media (max-width: 620px) {
   .landing {
     padding-top: 0;
   }
 
-  .intro {
-    padding-top: 0;
+  .hero {
+    gap: 2rem;
+    margin-inline: -0.35rem;
+    padding: 1.45rem;
+    border-radius: 0.9rem;
   }
 
-  .intro h1 {
-    font-size: clamp(2.55rem, 15vw, 3.5rem);
+  .landing .heroCopy h1 {
+    font-size: clamp(2.45rem, 13vw, 3.25rem);
   }
 
-  .sectionLead {
-    grid-template-columns: 2rem minmax(0, 1fr);
-    gap: 0.8rem;
+  .actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
-  .mechanisms article {
+  .landing .actions a {
+    width: 100%;
+  }
+
+  .runtimeMap {
+    padding: 0.78rem;
+  }
+
+  .runtimeRoles {
     grid-template-columns: 1fr;
-    gap: 0.8rem;
   }
 
-  .mechanisms {
-    margin-left: 0;
+  .topologies {
+    gap: 0.3rem;
+    justify-content: space-between;
   }
 
-  .mechanismNumber {
-    flex-direction: row;
-    align-items: center;
+  .requestRoute > div {
+    gap: 0.28rem;
   }
 
-  .loopStages {
+  .requestRoute strong {
+    padding-inline: 0.22rem;
+  }
+
+  .section {
+    padding-top: 4.25rem;
+  }
+
+  .workflowStages {
     grid-template-columns: 1fr;
+  }
+
+  .workflowStages li {
+    min-height: 0;
+  }
+
+  .guideGroups {
+    grid-template-columns: 1fr;
+  }
+
+  .guideGroup:last-child {
+    grid-column: auto;
   }
 
   .statusNote {
     grid-template-columns: 1fr;
-    gap: 0.6rem;
+    gap: 0.7rem;
+    margin-top: 4.25rem;
+  }
+
+  .statusLinks {
+    grid-column: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing .primaryAction,
+  .landing .secondaryAction,
+  .mechanismCard,
+  .landing .guideLink,
+  .mechanismLinks a svg,
+  .guideArrow {
+    transition: none;
+  }
+
+  .landing .primaryAction:hover,
+  .landing .secondaryAction:hover,
+  .mechanismCard:hover,
+  .landing .guideLink:hover,
+  .landing .mechanismLinks a:hover svg,
+  .guideLink:hover .guideArrow {
+    transform: none;
   }
 }

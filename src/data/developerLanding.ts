@@ -10,10 +10,20 @@ export type DocLink = {
 
 export type GovernanceStage = {
   title: LocalizedCopy
+  description: LocalizedCopy
   artifact: string
 }
 
+export type MechanismIcon =
+  | 'composition'
+  | 'lifecycle'
+  | 'execution'
+  | 'exposure'
+  | 'feedback'
+  | 'topology'
+
 export type VineMechanism = {
+  icon: MechanismIcon
   label: LocalizedCopy
   title: LocalizedCopy
   description: LocalizedCopy
@@ -26,39 +36,110 @@ export type GuideLink = DocLink & {
 }
 
 export type GuideGroup = {
+  icon: 'contract' | 'application' | 'runtime'
   title: LocalizedCopy
+  description: LocalizedCopy
   links: GuideLink[]
 }
+
+export type RuntimeRole = {
+  icon: 'hub' | 'portal' | 'link' | 'application'
+  title: LocalizedCopy
+  description: LocalizedCopy
+}
+
+export const runtimeRoles: RuntimeRole[] = [
+  {
+    icon: 'hub',
+    title: {id: 'homepage.runtime.hub.title', text: 'Hub'},
+    description: {
+      id: 'homepage.runtime.hub.description',
+      text: 'Config & registry',
+    },
+  },
+  {
+    icon: 'portal',
+    title: {id: 'homepage.runtime.portal.title', text: 'Portal'},
+    description: {
+      id: 'homepage.runtime.portal.description',
+      text: 'External entry & policy',
+    },
+  },
+  {
+    icon: 'link',
+    title: {id: 'homepage.runtime.link.title', text: 'Link'},
+    description: {
+      id: 'homepage.runtime.link.description',
+      text: 'Discovery & delivery',
+    },
+  },
+  {
+    icon: 'application',
+    title: {
+      id: 'homepage.runtime.application.title',
+      text: 'Application',
+    },
+    description: {
+      id: 'homepage.runtime.application.description',
+      text: 'Business execution',
+    },
+  },
+]
 
 export const governanceStages: GovernanceStage[] = [
   {
     title: {id: 'homepage.loop.declare.title', text: 'Declare'},
+    description: {
+      id: 'homepage.loop.declare.description',
+      text: 'Capture the domain boundary.',
+    },
     artifact: '.skel',
   },
   {
     title: {id: 'homepage.loop.validate.title', text: 'Validate'},
+    description: {
+      id: 'homepage.loop.validate.description',
+      text: 'Reject invalid contracts early.',
+    },
     artifact: 'skelc check',
   },
   {
     title: {id: 'homepage.loop.generate.title', text: 'Generate'},
+    description: {
+      id: 'homepage.loop.generate.description',
+      text: 'Produce typed Go boundaries.',
+    },
     artifact: 'skelc gen',
   },
   {
     title: {id: 'homepage.loop.assemble.title', text: 'Assemble'},
+    description: {
+      id: 'homepage.loop.assemble.description',
+      text: 'Declare application capabilities.',
+    },
     artifact: 'ApplicationSpec',
   },
   {
     title: {id: 'homepage.loop.execute.title', text: 'Execute'},
+    description: {
+      id: 'homepage.loop.execute.description',
+      text: 'Apply scopes, filters, and routing.',
+    },
     artifact: 'Vine runtime',
   },
   {
     title: {id: 'homepage.loop.verify.title', text: 'Verify'},
+    description: {
+      id: 'homepage.loop.verify.description',
+      text: 'Feed tests and signals back.',
+    },
     artifact: 'tests + ops',
   },
 ]
 
 export const vineMechanisms: VineMechanism[] = [
   {
+    icon: 'composition',
     label: {id: 'homepage.mechanisms.composition.label', text: 'Composition'},
     title: {
       id: 'homepage.mechanisms.composition.title',
@@ -87,6 +168,7 @@ export const vineMechanisms: VineMechanism[] = [
     ],
   },
   {
+    icon: 'lifecycle',
     label: {id: 'homepage.mechanisms.lifecycle.label', text: 'Lifecycle'},
     title: {
       id: 'homepage.mechanisms.lifecycle.title',
@@ -112,6 +194,7 @@ export const vineMechanisms: VineMechanism[] = [
     ],
   },
   {
+    icon: 'execution',
     label: {id: 'homepage.mechanisms.execution.label', text: 'Execution'},
     title: {
       id: 'homepage.mechanisms.execution.title',
@@ -140,6 +223,7 @@ export const vineMechanisms: VineMechanism[] = [
     ],
   },
   {
+    icon: 'exposure',
     label: {id: 'homepage.mechanisms.exposure.label', text: 'Exposure'},
     title: {
       id: 'homepage.mechanisms.exposure.title',
@@ -162,6 +246,7 @@ export const vineMechanisms: VineMechanism[] = [
     ],
   },
   {
+    icon: 'feedback',
     label: {id: 'homepage.mechanisms.feedback.label', text: 'Feedback'},
     title: {
       id: 'homepage.mechanisms.feedback.title',
@@ -190,6 +275,7 @@ export const vineMechanisms: VineMechanism[] = [
     ],
   },
   {
+    icon: 'topology',
     label: {id: 'homepage.mechanisms.topology.label', text: 'Topology'},
     title: {
       id: 'homepage.mechanisms.topology.title',
@@ -218,7 +304,12 @@ export const vineMechanisms: VineMechanism[] = [
 
 export const guideGroups: GuideGroup[] = [
   {
+    icon: 'contract',
     title: {id: 'homepage.guides.contract', text: 'Contract'},
+    description: {
+      id: 'homepage.guides.contract.description',
+      text: 'Define a typed boundary, then pin the toolchain that generates it.',
+    },
     links: [
       {
         title: {
@@ -245,7 +336,12 @@ export const guideGroups: GuideGroup[] = [
     ],
   },
   {
+    icon: 'application',
     title: {id: 'homepage.guides.application', text: 'Application'},
+    description: {
+      id: 'homepage.guides.application.description',
+      text: 'Build one complete app, then understand how its pieces compose.',
+    },
     links: [
       {
         title: {
@@ -272,7 +368,12 @@ export const guideGroups: GuideGroup[] = [
     ],
   },
   {
+    icon: 'runtime',
     title: {id: 'homepage.guides.runtime', text: 'Runtime'},
+    description: {
+      id: 'homepage.guides.runtime.description',
+      text: 'Trace requests through the runtime before operating it.',
+    },
     links: [
       {
         title: {

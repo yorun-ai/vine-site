@@ -354,64 +354,151 @@
     "description": "The title of the tag list page"
   },
   "homepage.title": {
-    "message": "概览"
+    "message": "让应用边界在运行时依然清晰。"
   },
   "homepage.kicker": {
-    "message": "AI 编程治理"
+    "message": "面向 Go 应用的 Vine"
+  },
+  "homepage.kicker.detail": {
+    "message": "契约感知运行时"
   },
   "homepage.description": {
-    "message": "Skel 把领域约束写进契约，Vine 让这些约束进入应用装配、调用过程和运行行为。"
+    "message": "Skel 用类型化契约定义能力，Vine 让它们贯穿应用装配、生命周期、路由与投递。"
+  },
+  "homepage.description.emphasis": {
+    "message": "从单进程起步，之后可拆分运行时角色，无需重写业务模块。"
   },
   "homepage.description.ai": {
     "message": "两者配合，让 AI 生成的代码不再只靠 review 兜底。"
   },
-  "homepage.a11y.shortcuts": {
-    "message": "概览快捷入口"
+  "homepage.a11y.actions": {
+    "message": "概览操作"
   },
-  "homepage.actions.firstContract": {
-    "message": "创建第一个契约"
+  "homepage.a11y.topologies": {
+    "message": "支持的运行拓扑"
   },
   "homepage.actions.firstApplication": {
     "message": "构建第一个应用"
   },
+  "homepage.actions.firstContract": {
+    "message": "创建第一个契约"
+  },
+  "homepage.actions.architecture": {
+    "message": "查看运行时架构"
+  },
+  "homepage.actions.skelPrompt": {
+    "message": "正在先定义契约？"
+  },
   "homepage.actions.skel": {
     "message": "阅读 Skel 概览"
   },
-  "homepage.sections.loop.title": {
-    "message": "契约到运行时的闭环"
+  "homepage.runtime.caption": {
+    "message": "运行时架构"
   },
-  "homepage.sections.loop.description": {
-    "message": "边界先写进 .skel，再进入生成代码和 ApplicationSpec，最后由 Vine 运行。测试与运行信号把发现的问题带回下一次修改。"
+  "homepage.runtime.caption.detail": {
+    "message": "同一套应用模型"
+  },
+  "homepage.runtime.hub.title": {
+    "message": "Hub"
+  },
+  "homepage.runtime.hub.description": {
+    "message": "配置与注册表"
+  },
+  "homepage.runtime.portal.title": {
+    "message": "Portal"
+  },
+  "homepage.runtime.portal.description": {
+    "message": "外部入口与策略"
+  },
+  "homepage.runtime.link.title": {
+    "message": "Link"
+  },
+  "homepage.runtime.link.description": {
+    "message": "发现与投递"
+  },
+  "homepage.runtime.application.title": {
+    "message": "应用"
+  },
+  "homepage.runtime.application.description": {
+    "message": "业务执行"
+  },
+  "homepage.runtime.route.label": {
+    "message": "外部请求"
+  },
+  "homepage.runtime.route.client": {
+    "message": "客户端"
+  },
+  "homepage.runtime.route.application": {
+    "message": "应用"
+  },
+  "homepage.runtime.note": {
+    "message": "内部调用直接进入 Link；Hub 分发状态，不处在同步请求路径上。"
+  },
+  "homepage.sections.mechanisms.eyebrow": {
+    "message": "运行时保证"
   },
   "homepage.sections.mechanisms.title": {
-    "message": "Vine 如何把约束落实到运行时"
+    "message": "Vine 明确守住的边界"
   },
   "homepage.sections.mechanisms.description": {
-    "message": "Vine 不只是多一层 Rpc 封装。应用装配、生命周期、执行、路由和运行反馈，都由同一套模型接管。"
+    "message": "装配、执行与拓扑共享同一套模型，让生成的能力进入运行时后依然可追溯、可审查。"
+  },
+  "homepage.sections.loop.eyebrow": {
+    "message": "工作流"
+  },
+  "homepage.sections.loop.title": {
+    "message": "从声明到反馈的一条短路径"
+  },
+  "homepage.sections.loop.description": {
+    "message": "每一步都会产出下一步可检查的边界，使生成代码与运行行为始终连接到原始意图。"
+  },
+  "homepage.sections.guides.eyebrow": {
+    "message": "文档路径"
   },
   "homepage.sections.guides.title": {
-    "message": "继续阅读"
+    "message": "从手头的工作继续"
   },
   "homepage.sections.guides.description": {
-    "message": "从正在修改的部分开始。"
+    "message": "根据你正在定义、构建或运维的边界选择阅读路径。"
   },
   "homepage.loop.declare.title": {
     "message": "声明"
   },
+  "homepage.loop.declare.description": {
+    "message": "记录领域边界。"
+  },
   "homepage.loop.validate.title": {
     "message": "校验"
+  },
+  "homepage.loop.validate.description": {
+    "message": "尽早拒绝无效契约。"
   },
   "homepage.loop.generate.title": {
     "message": "生成"
   },
+  "homepage.loop.generate.description": {
+    "message": "产出类型化 Go 边界。"
+  },
   "homepage.loop.assemble.title": {
     "message": "装配"
+  },
+  "homepage.loop.assemble.description": {
+    "message": "声明应用能力。"
   },
   "homepage.loop.execute.title": {
     "message": "执行"
   },
+  "homepage.loop.execute.description": {
+    "message": "应用作用域、Filter 与路由。"
+  },
   "homepage.loop.verify.title": {
     "message": "验证"
+  },
+  "homepage.loop.verify.description": {
+    "message": "让测试与运行信号回流。"
+  },
+  "homepage.loop.feedback": {
+    "message": "测试与运行信号会成为下一次契约修改的输入。"
   },
   "homepage.mechanisms.composition.label": {
     "message": "组成"
@@ -503,11 +590,20 @@
   "homepage.guides.contract": {
     "message": "契约"
   },
+  "homepage.guides.contract.description": {
+    "message": "先定义类型化边界，再固定生成它的工具链。"
+  },
   "homepage.guides.application": {
     "message": "应用"
   },
+  "homepage.guides.application.description": {
+    "message": "先构建一个完整应用，再理解其中各部分如何装配。"
+  },
   "homepage.guides.runtime": {
     "message": "运行时"
+  },
+  "homepage.guides.runtime.description": {
+    "message": "在开始运维之前，先追踪请求如何穿过运行时。"
   },
   "homepage.guides.firstApplication.title": {
     "message": "第一个应用"
@@ -547,6 +643,9 @@
   },
   "homepage.status.label": {
     "message": "1.0 之前"
+  },
+  "homepage.status.title": {
+    "message": "固定你实际审查过的运行时版本。"
   },
   "homepage.status.description": {
     "message": "Vine 的公共 API 仍在稳定阶段。请固定经过验证的 Vine 与 skelc revision，并仅在可信网络中部署运行时内部端点。"
