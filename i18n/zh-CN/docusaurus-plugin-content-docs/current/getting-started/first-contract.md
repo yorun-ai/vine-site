@@ -16,7 +16,7 @@ go install go.yorun.ai/skelc/cmd/skelc@main
 skelc version
 ```
 
-这里使用 `@main`，是为了与当前 `next` 文档保持一致。正式发布应用时，应安装经过
+这里使用 `@main`，是为了与当前 `next` 文档保持一致。正式发布应用时，请安装经过
 审查的 commit 或 tag，记录所用的 `skelc version`，并把重新生成契约作为一次明确的
 变更提交。具体做法见[版本兼容性](./compatibility.md)。
 

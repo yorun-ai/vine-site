@@ -47,11 +47,11 @@ skelc version
 :::danger 当前安全边界
 
 Vine 组件之间的身份认证和加密传输仍是 TODO。Hub 内嵌 Redis 当前允许
-客户端免密码只读连接，并会分发 runtime 配置，其中包括 Portal TLS 私钥。
+客户端免密码只读连接，并会分发 runtime 配置，里面就包括 Portal TLS 私钥。
 
-不要把 Hub API、Hub Redis、Link API、Link ingress、应用 listener 或内嵌
-NATS listener 暴露到不可信网络。将它们放在 loopback 或可信私有网络中，
-并通过防火墙或网络策略强制执行这条边界。
+请将 Hub API、Hub Redis、Link API、Link ingress、应用 listener 和内嵌
+NATS listener 全部放在 loopback 或可信私有网络中，并通过防火墙或网络策略强制执行这条边界。
+绝对不要将这些内部端口暴露到不可信网络。
 
 :::
 
@@ -110,8 +110,8 @@ Vine 当前创建的 Event 和 Task JetStream stream 使用内存存储。外部
 - [ ] 按所选拓扑规划并监控 PostgreSQL 或 SQLite 的容量。
 - [ ] 启动 Link 前，确认外部 NATS account 已启用 JetStream。
 - [ ] 使用与生产一致的拓扑测试 NATS 断开和重连。
-- [ ] 按 retry 和重复投递设计 Event listener 与 Task runner；不要把传输
-  存储作为唯一业务记录。
+- [ ] 按 retry 和重复投递设计 Event listener 与 Task runner；传输
+  存储不应作为唯一业务记录。
 
 ## 验证注册与故障语义
 
@@ -133,7 +133,7 @@ heartbeat、租约过期扫描或本地应用健康检查，因此 standalone �
 在当前源码中，独立运行的 Link 每 5 秒检查一次应用，console ping 的 timeout
 是 2 秒；连续三次发生非 timeout 失败后，Link 会注销应用。
 调用 timeout 只会写入日志，不会增加该失败计数。Hub 租约为 30 秒，sweeper
-每 5 秒运行一次。这些时间是当前实现常量，不是 CLI 调优参数。应分别测试
+每 5 秒运行一次。这些时间是当前实现常量，不是 CLI 调优参数。请分别测试
 无响应应用和已停止进程：应用卡住时，Link 仍可能继续续订它在 Hub 中的
 租约。
 
@@ -187,7 +187,7 @@ heartbeat、租约过期扫描或本地应用健康检查，因此 standalone �
 - [ ] 将 Hub 数据库、seed 文件、Hub Redis 和备份限制在同一个可信运维
   边界内。
 - [ ] 备份 Hub 数据库，并在隔离环境中测试恢复。
-- [ ] 不要把 seed YAML 当作持续备份。它用于导入初始状态；此后数据库仍是
+- [ ] seed YAML 只用于导入初始状态，不应充当持续备份；此后数据库仍是
   事实来源。
 - [ ] 恢复后，检查应用配置、Portal rule、site、证书和 endpoint 订阅。
 - [ ] 依赖 HTTPS entry 前，演练证书替换和 SNI 匹配。
@@ -207,8 +207,8 @@ heartbeat、租约过期扫描或本地应用健康检查，因此 standalone �
 - [ ] 缩容时先优雅停止应用，再终止 Link。
 
 已记录的控制面拓扑只有一个 Hub。当前文档没有定义 active-active Hub
-协调或 failover 协议，因此在单独验证该架构之前，不要把增加 Hub 进程数量
-视为生产 HA。
+协调或 failover 协议，因此在单独验证该架构之前，增加 Hub 进程数量
+不等于生产 HA。
 
 Portal 维护自己的 endpoint 订阅，并以 round-robin 方式选择 Rpc 和 Web
 目标。Link 也会维护本地与远端调用所需的 discovery 状态。注册变更是异步

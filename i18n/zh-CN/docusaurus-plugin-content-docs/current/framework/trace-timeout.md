@@ -5,7 +5,7 @@ sidebar_label: 追踪与超时
 
 # 追踪与超时
 
-请求进入 Vine 后，trace 会贯穿 Portal、auth/check、Rpc/Web handler 和后续下游调用；timeout 会从入口开始计时，并在每次转发时换算成剩余时间继续传递。业务代码通常不需要手工解析这些 header，只要继续使用当前注入的上下文发起下游调用即可。
+请求进入 Vine 后，trace 会贯穿 Portal、auth/check、Rpc/Web handler 和后续下游调用；timeout 会从入口开始计时，并在每次转发时换算成剩余时间继续传递。业务代码一般不需要手工解析这些 header，继续用注入的 context 发下游调用就行。
 
 ## 你会看到哪些 Header
 
@@ -43,7 +43,7 @@ timeout 使用 Go duration 格式，例如 `1000ms`、`1s`、`30s`。
 vrpc-trace: id=<trace_id>,span=<span_id>
 ```
 
-如果客户端只有 request id 或 trace id，也可以只传 `id`：
+如果客户端只有 request id 或 trace id，也能只传 `id`：
 
 ```text
 vrpc-trace: id=<trace_id>
@@ -61,13 +61,13 @@ vrpc-options: timeout=10s
 
 ## 外部 Web 客户端应该怎么传
 
-调用 webgw 时可以传 `vweb-trace`：
+调用 webgw 时能传 `vweb-trace`：
 
 ```text
 vweb-trace: id=<trace_id>,span=<span_id>
 ```
 
-也可以只传 `id`，或者完全不传。不传时 webgw 会创建新的 trace。
+也能只传 `id`，或者完全不传。不传时 webgw 会创建新的 trace。
 
 可选传入 timeout：
 
@@ -122,7 +122,7 @@ rpcgw 入口
 
 ## Handler 里调用下游要注意什么
 
-业务 handler 里继续调用 Rpc 时，通常不用手工设置 timeout。只要使用 Vine 注入的当前上下文，Rpc client 会自动读取 context deadline，并把剩余时间写入 `vrpc-options`。
+业务 handler 里继续调用 Rpc 时，不用手工设置 timeout。使用 Vine 注入的当前上下文就行，Rpc client 会自动读取 context deadline，并把剩余时间写入 `vrpc-options`。
 
 保留注入的 context：
 
@@ -131,7 +131,7 @@ rpcgw 入口
 result := h.SomeClient.DoSomething(...)
 ```
 
-下面的写法会切断传播：
+注意，下面的写法会切断传播：
 
 ```go
 ctx := context.Background()
@@ -210,4 +210,4 @@ incoming trace
 - 当前 span id
 - 本地 parent span id
 
-真正的 span name、attributes、status、events、finish/export 应由日志或 OTel 层负责。这样业务传播模型和具体观测后端可以解耦。
+真正的 span name、attributes、status、events、finish/export 应由日志或 OTel 层负责。这样业务传播模型和具体观测后端能解耦。

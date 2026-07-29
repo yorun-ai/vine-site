@@ -6,8 +6,8 @@ sidebar_label: 部署
 # 部署
 
 Vine 为开发和生产提供不同的运行拓扑，而且不需要为生产环境另写一套应用实现。
-同一个 `ApplicationSpec`、component、module 和 Rpc/Web/Event/Task 代码，既可以
-组成单机单进程应用，也可以接入 Kubernetes 中独立部署的运行时服务。变化只发生在
+同一个 `ApplicationSpec`、component、module 和 Rpc/Web/Event/Task 代码，既能
+组成单机单进程应用，也能接入 Kubernetes 中独立部署的运行时服务。变化只发生在
 很薄的启动入口、进程边界与 endpoint 配置。
 
 这得益于业务代码声明的是“具备什么能力”，而不是“服务位于哪个地址”。注册、发现和
@@ -51,7 +51,7 @@ standalone.NewWithOption[*HelloApp](standalone.Option{
 - 使用 `standalone.Option` 配置 SQLite / PostgreSQL、seed YAML 和 Dashboard URL。
 - Hub 与 Link 不启动 heartbeat、TTL 续租和 registry sweeper；应用停止时靠显式注销清理注册。
 - Hub 和 Link 不开放独立管理端口；Portal 仍可按入口规则监听业务 HTTP/HTTPS 端口。
-- 不覆盖跨进程网络、服务单独重启等场景。
+- 跨进程网络、服务单独重启等场景不在覆盖范围内。
 
 ## Linked：Hub 与应用分开
 
@@ -136,12 +136,12 @@ VINE_LINK_ENDPOINT=http://127.0.0.1:7079 ./hello-app
 
 此模式下，Link 负责向 Hub 注册应用并维持 heartbeat。应用、Link、Portal
 和 Hub 具有独立的进程生命周期，但各角色的扩缩容与可用性边界并不相同。
-Portal 的外部监听、站点规则和 TLS 证书通过 Hub 配置管理。不要把进程分离
-直接等同于高可用；上线前请检查[生产就绪清单](../operations/production-readiness.md)。
+Portal 的外部监听、站点规则和 TLS 证书通过 Hub 配置管理。注意：进程分离
+并不直接等同于高可用；上线前请检查[生产就绪清单](../operations/production-readiness.md)。
 
 ## 选择拓扑
 
-从 standalone 开始；当需要共享配置、多个应用相互发现或对外暴露入口时，迁移到 linked；当需要独立伸缩、故障隔离或验证完整分布式语义时，使用完全分开部署。
+从 standalone 开始。需要共享配置、应用间互相发现或对外暴露入口时，迁移到 linked。需要独立伸缩、故障隔离或验证完整分布式语义时，再拆为完全分开部署。
 
 | 需求 | 推荐模式 |
 | --- | --- |

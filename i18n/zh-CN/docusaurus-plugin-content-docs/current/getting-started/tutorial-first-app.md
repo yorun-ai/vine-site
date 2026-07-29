@@ -24,7 +24,7 @@ go mod init example.com/vine-hello
 go get go.yorun.ai/vine@main
 ```
 
-这里使用 `@main`，是为了与当前 `next` 文档保持一致。正式发布应用时，应换成经过审查的
+这里使用 `@main`，是为了与当前 `next` 文档保持一致。正式发布应用时，请换成经过审查的
 commit 或 tag，并把解析出的 revision 保留在 `go.mod` 中。
 
 ## 定义应用
@@ -72,7 +72,7 @@ func main() {
 1. 嵌入 `app.Application` 获得应用规格的默认实现。
 2. `Name()` 返回逻辑应用名。它必须由一个或多个以点号分隔的小写字母段组成，例如
    `demo.hello`。同一应用的多个 replica 共用该名称，并通过不同 instance ID 区分；
-   同一进程中的两个不同应用不能使用相同名称。
+   同一进程中的两个不同应用不可使用相同名称。
 3. `HelloModule` 跟随应用生命周期，在 `AfterAppStart()` 中输出日志。
 
 `StartAndWait()` 启动运行时并等待 `SIGINT` 或 `SIGTERM`。按 `Ctrl+C` 后，应用会按反向顺序优雅停止。
@@ -137,7 +137,7 @@ func main() {
 ```
 
 此时业务应用与一个 Link 在同一进程。Link 会连接独立 Hub，并注册你之后声明
-的应用能力。`HubEndpoint` 与 `IngressListen` 也可以分别由
+的应用能力。`HubEndpoint` 与 `IngressListen` 也能分别由
 `VINE_HUB_ENDPOINT` 和 `VINE_INGRESS_LISTEN` 提供。
 
 如需把 Link 与业务应用拆为独立进程，则使用 `app.New` 启动业务应用，并通过 `--link-endpoint` 或 `VINE_LINK_ENDPOINT` 指定已有 Link 的 API endpoint。

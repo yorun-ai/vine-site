@@ -52,7 +52,7 @@ type Filter interface {
 type FilterNext func()
 ```
 
-filter 可以：
+filter 能：
 
 - 在 `next()` 前做前置逻辑
 - 在 `next()` 后做后置逻辑
@@ -151,7 +151,7 @@ FilterA(after)
 
 ### 调用前改写目标与参数
 
-在执行结束前，可以修改：
+在执行结束前，能修改：
 
 - 目标类型
 - 目标方法名
@@ -169,13 +169,13 @@ func (f *RouteFilter) Filter(next ctr.FilterNext) {
 
 ### 调用后改写返回值
 
-一旦目标方法执行完成，就不能再改：
+目标方法执行完成后，就不能再改：
 
 - `TargetType`
 - `TargetMethodName`
 - `Arguments`
 
-但 `SetResults(...)` 仍然可用，所以可以统一包装返回值：
+但 `SetResults(...)` 仍然可用，所以能统一包装返回值：
 
 ```go
 func (f *EnvelopeFilter) Filter(next ctr.FilterNext) {
@@ -188,7 +188,7 @@ func (f *EnvelopeFilter) Filter(next ctr.FilterNext) {
 
 ## Execute 时的 seeding
 
-`Execution.Execute(...)` 可以额外传 `di.SeedApplier`，把运行时对象塞进本次 execution 的 DI 容器：
+`Execution.Execute(...)` 能额外接收 `di.SeedApplier`，把运行时对象塞进本次 execution 的 DI 容器：
 
 ```go
 execution.Execute([]any{"alice"}, func(s *di.Seeder) {

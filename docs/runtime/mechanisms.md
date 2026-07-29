@@ -7,15 +7,15 @@ description: How Vine keeps business capabilities stable across single-process a
 
 # Architecture
 
-Vine draws a firm line between business capabilities and deployment topology.
-An application declares components, modules, Rpc services, Web handlers,
-Event listeners, and Task runners without owning service addresses, discovery,
-or gateway wiring. The runtime decides how those capabilities are reached.
+Vine draws a firm line between business capabilities and deployment topology. An
+application declares components, modules, Rpc services, Web handlers, Event
+listeners, and Task runners without owning service addresses, discovery, or
+gateway wiring. The runtime decides how those capabilities are reached.
 
 That separation lets the same application implementation run as a local
 single-process system or as part of a Kubernetes deployment. Business packages
 stay unchanged; only the thin process entry point and runtime configuration
-select how Hub, Link, Portal, and the application are assembled.
+choose how Hub, Link, Portal, and the application are assembled.
 
 The four roles can be reduced to one sentence:
 
@@ -26,8 +26,8 @@ The four roles can be reduced to one sentence:
 
 The quickest Vine setup is a complete runtime in one process. A production
 cluster can split the same roles across workloads. One practical Kubernetes
-layout places Link beside each application instance, while Hub and Portal run
-as independent workloads:
+layout places Link beside each application instance, while Hub and Portal run as
+independent workloads:
 
 ```mermaid
 flowchart TB
@@ -50,7 +50,7 @@ flowchart TB
   end
 ```
 
-The Kubernetes diagram is one layout, not a required sidecar model. Link and
+The Kubernetes diagram shows one layout, not a required sidecar model. Link and
 the application may also be separate workloads as long as their API and
 application endpoints are mutually reachable.
 
@@ -72,8 +72,8 @@ application endpoints are mutually reachable.
 | External traffic | Embedded Portal may open configured listeners | Independently deployed Portal forwards to registered Links |
 | Scaling and failure | One process boundary | Application, Link, Portal, and infrastructure can be operated independently |
 
-In practice, keep the entry point small and keep the application specification
-in a reusable package:
+In practice, keep the entry point small. Keep the application specification in a
+reusable package:
 
 ```go title="cmd/checkout-standalone/main.go"
 func main() {
@@ -87,30 +87,29 @@ func main() {
 }
 ```
 
-The cluster entry point obtains its Link address from deployment
-configuration:
+The cluster entry point gets its Link address from deployment configuration:
 
 ```bash
 VINE_LINK_ENDPOINT=http://127.0.0.1:7079 ./checkout
 ```
 
-Changing these few lines is deployment assembly, not a rewrite of business
-code. Vine does not generate Kubernetes resources; it keeps topology-specific
-concerns out of the application implementation so the same capability model
-survives the move.
+Changing these few lines is deployment assembly, not a rewrite of business code.
+Vine does not generate Kubernetes resources; it keeps topology-specific concerns
+out of the application implementation so the same capability model survives the
+move.
 
 ### Why the boundary holds
 
 Three mechanisms make the topology switch possible:
 
-1. **Capability registration is transport-neutral.** The application reports
-   the same identity, schemas, and Rpc/Web/Event/Task capabilities whether its
+1. **Capability registration is transport-neutral.** The application reports the
+   same identity, schemas, and Rpc/Web/Event/Task capabilities whether its
    endpoint is in-process or networked.
-2. **Link owns location and delivery.** Business handlers do not resolve pod
+2. **Link owns location and delivery.** Business handlers don't resolve pod
    addresses or select service instances. Link maintains local and distributed
    views and performs the final forwarding or message delivery.
 3. **In-process transport uses the runtime contracts.** Standalone replaces
-   network hops with registered in-process endpoints; it does not introduce a
+   network hops with registered in-process endpoints; it doesn't introduce a
    second business programming model.
 
 ## The four runtime roles
@@ -151,8 +150,8 @@ application config, Portal sites, rules, and certificates. It exposes runtime
 snapshots and change notifications through its Redis distribution layer.
 
 Link publishes application registration and lease state to Hub. Link and Portal
-then read or subscribe to the parts they need. Hub is therefore a control-plane
-dependency, not an extra proxy hop in an ordinary Rpc or Web invocation.
+then read or subscribe to the parts they need. Hub is a control-plane dependency,
+not an extra proxy hop in an ordinary Rpc or Web invocation.
 
 ### Application access layer: Link
 
@@ -175,14 +174,14 @@ HTTPS traffic. Portal can authenticate and authorize a request according to the
 generated schemas and site policy before forwarding it to a target Link.
 
 Application-to-application calls do not go through Portal. Portal is also not a
-replacement for Link: its selected destination is a Link ingress endpoint, not
-an application handler discovered independently of Link.
+replacement for Link: its selected destination is a Link ingress endpoint, not an
+application handler discovered independently of Link.
 
 ### Execution: the application
 
 The application creates its components, modules, and capability servers. Each
-Rpc, Web, Event, or Task delivery enters an execution container that supplies
-the correct context and dependencies before calling business code.
+Rpc, Web, Event, or Task delivery enters an execution container that supplies the
+correct context and dependencies before calling business code.
 
 Read [Dependency and execution model](./execution-model.md) for the scope and
 filter rules inside that boundary.
@@ -207,54 +206,52 @@ sequenceDiagram
 ```
 
 A registration describes only declared runtime facts: the application identity
-and endpoint plus its Rpc services, Web handlers, Event listeners, Task
-runners, and domain schemas. Business data does not enter the registry.
+and endpoint plus its Rpc services, Web handlers, Event listeners, Task runners,
+and domain schemas. Business data does not enter the registry.
 
-An application that only owns modules and exposes none of these capabilities
-can run normally, but it has nothing to advertise through service discovery.
+An application that only owns modules and exposes none of these capabilities can
+run normally, but it has nothing to advertise through service discovery.
 
 ### Readiness implication
 
-The endpoint starts and registration completes **before** `AfterAppStart`
-hooks run. Requests can therefore arrive while an `AfterAppStart` hook is
-running. Put every readiness-critical check or resource initialization in
-`BeforeAppStart`; reserve `AfterAppStart` for work that is safe after the
-application is visible.
+The endpoint starts and registration completes **before** `AfterAppStart` hooks
+run. Requests can therefore arrive while an `AfterAppStart` hook is running. Put
+every readiness-critical check or resource initialization in `BeforeAppStart`;
+reserve `AfterAppStart` for work that is safe after the application is visible.
 
-The complete order and hook guidance are in
-[Application lifecycle](./application-lifecycle.md).
+The complete order and hook guidance are in [Application
+lifecycle](./application-lifecycle.md).
 
 ## Four runtime flows
 
 | Flow | Source | Runtime path | Delivery model |
 | --- | --- | --- | --- |
-| Configuration | Hub database or seed | Hub → Redis snapshot/change → Link → application DI | Eternal per-instance snapshot or watched instant snapshot |
-| Internal Rpc | Generated client in an application | Caller Link → selected local app or target Link → target app | Synchronous request/response |
-| External Rpc or Web | External client | Portal → selected Link → target app | Synchronous gateway forwarding |
-| Event or Task | Generated emitter or launcher | Sender Link → NATS → consumer Link → target app | Asynchronous, retryable delivery |
+| Configuration | Hub database or seed | Hub, Redis snapshot/change, Link, application DI | Eternal per-instance snapshot or watched instant snapshot |
+| Internal Rpc | Generated client in an application | Caller Link, selected local app or target Link, target app | Synchronous request/response |
+| External Rpc or Web | External client | Portal, selected Link, target app | Synchronous gateway forwarding |
+| Event or Task | Generated emitter or launcher | Sender Link, NATS, consumer Link, target app | Asynchronous, retryable delivery |
 
 ### Rpc selection and Web gateway routing
 
 For application-to-application Rpc, the caller's Link builds a current service
-set from registration data and selects a registered instance. A target owned
-by that Link is invoked locally; otherwise the call enters the target Link
-before reaching the application.
+set from registration data and selects a registered instance. A target owned by
+that Link is invoked locally; otherwise the call enters the target Link before
+reaching the application.
 
-Web selection has a different owner. Portal matches the external entry and
-site, selects from its distributed Web endpoint snapshot, and sends the request
-to the Link that owns the chosen application. The target Link's `webproxy`
-indexes only its local applications and performs the final handler lookup and
-delivery.
+Web selection has a different owner. Portal matches the external entry and site,
+selects from its distributed Web endpoint snapshot, and sends the request to the
+Link that owns the chosen application. The target Link's `webproxy` indexes only
+its local applications and performs the final handler lookup and delivery.
 
 Neither path is a durable workflow engine. A selected target failing does not
-imply that the same request is transparently moved to another target. See
+mean the same request is transparently moved to another target. See
 [Registration, discovery, and request routing](./request-routing.md) before
 designing retries.
 
 ### Event and Task
 
 Link publishes generated Event and Task messages to NATS and creates consumers
-from registered listeners and runners. Application code does not create those
+from registered listeners and runners. Application code doesn't create those
 consumers.
 
 Event and Task have different grouping semantics and can redeliver work after a
@@ -278,19 +275,19 @@ See [Configuration](../framework/configuration.md) for the consistency model.
 | Linked | An external Hub; Link and one or more apps share a process | App-to-Link is in-process; Hub and Link ingress use the network | Shared development/runtime control plane |
 | Separated | Hub, Portal, Link, and apps can run independently | Runtime boundaries use network endpoints | Production topology and distributed-failure testing |
 
-Application capability code does not change between these modes. The
-abstraction deliberately covers application assembly, registration, routing,
-and delivery; it cannot erase operational differences between a process and a
-cluster. In-process transport preserves routing and subscription semantics, not
-distributed failure semantics:
+Application capability code doesn't change between these modes. The abstraction
+deliberately covers application assembly, registration, routing, and delivery; it
+cannot erase operational differences between a process and a cluster. In-process
+transport preserves routing and subscription semantics, not distributed failure
+semantics:
 
 - Standalone registrations have no TTL and Link sends no heartbeat.
 - Standalone does not model an independently crashed process or network
   partition.
 - In-process health checks and endpoint reachability cannot prove that a
   production listener, firewall, DNS path, or TLS configuration works.
-- Portal may still open business HTTP/HTTPS listeners when its Hub
-  configuration defines them.
+- Portal may still open business HTTP/HTTPS listeners when its Hub configuration
+  defines them.
 
 Use a separated setup to validate lease expiry, independent restarts, real
 network reachability, and TLS.
@@ -326,13 +323,13 @@ handlers valid until the drain completes. Release final resources in
 
 - [Application lifecycle](./application-lifecycle.md): construction, hooks,
   readiness, drain, and bundle ordering.
-- [Dependency and execution model](./execution-model.md): application
-  singletons, execution scope, filters, context, and disposal.
+- [Dependency and execution model](./execution-model.md): application singletons,
+  execution scope, filters, context, and disposal.
 - [Request routing](./request-routing.md): registration watches, instance
   selection, local/remote forwarding, and failure behavior.
-- [Trace and timeout](../framework/trace-timeout.md): metadata, deadlines, cancellation,
-  and downstream calls.
-- [Deployment topologies](../getting-started/deployment-modes.md): choose standalone, linked,
-  or separated operation.
-- [Production readiness](../operations/production-readiness.md): network boundary,
-  persistence, lifecycle, and failure testing.
+- [Trace and timeout](../framework/trace-timeout.md): metadata, deadlines,
+  cancellation, and downstream calls.
+- [Deployment topologies](../getting-started/deployment-modes.md): choose
+  standalone, linked, or separated operation.
+- [Production readiness](../operations/production-readiness.md): network
+  boundary, persistence, lifecycle, and failure testing.

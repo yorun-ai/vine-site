@@ -6,7 +6,7 @@ sidebar_label: 应用模型
 # 应用模型
 
 Vine App 是运行时负责启动、注册和停止的基本单元。它的 specification 提供稳定名称，
-并声明属于这个应用的组件、模块和能力。
+声明属于这个应用的组件、模块和能力。
 
 ## 最小应用
 
@@ -22,9 +22,9 @@ func (*CheckoutApp) Name() string {
 
 应用名必须匹配 `^[a-z]+(?:\.[a-z]+)*$`，例如 `demo.checkout`。同一个
 进程中的不同 App 规格必须使用不同名称；同一个逻辑应用的多个副本应使用相同
-名称，这也会让它们作为同一个 Event consumer group 竞争消息。
+名称，这样它们也会作为同一个 Event consumer group 竞争消息。
 
-## 应用可以声明什么
+## 应用能声明什么
 
 | 入口 | 用途 |
 | --- | --- |
@@ -36,7 +36,7 @@ func (*CheckoutApp) Name() string {
 | `EventerInitListeners` | Event 监听器 |
 | `TaskerInitRunners` | Task 执行器 |
 
-只声明应用真正需要的能力。Vine 会根据这些声明创建 endpoint，并通过 Link 注册到运行时。
+建议只声明应用真正需要的能力。Vine 会根据这些声明创建 endpoint，并通过 Link 注册到运行时。
 
 ## 选择启动方式
 

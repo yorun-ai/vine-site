@@ -5,7 +5,7 @@ sidebar_label: Rpc 服务
 
 # Rpc 服务
 
-Vine Rpc 的常规工作流是：在 Skel 中声明服务，由 skelc 生成接口，实现服务端，然后在 App 中注册 handler。业务代码通常不需要手工构造底层 `ServiceSpec`。
+Vine Rpc 的常规工作流是：在 Skel 中声明服务，由 skelc 生成接口，实现服务端，然后在 App 中注册 handler。业务代码一般不需要手工构造底层 `ServiceSpec`。
 
 ## 定义和生成
 
@@ -57,7 +57,7 @@ func (*GreetingApp) ServicerInitHandlers(add app.TypeAdder) {
 
 ## 发起第一次调用
 
-生成的 client 可以直接注入 handler 或 module。下面的模块会在应用启动完成后调用刚注册的服务：
+生成的 client 能直接注入 handler 或 module。下面的模块在应用启动完成后调用刚注册的服务：
 
 ```go title="main.go"
 type GreetingProbe struct {

@@ -5,19 +5,18 @@ sidebar_label: Vine CLI
 
 # Vine CLI
 
-Use the `vine` command to start Hub, Link, or Portal and to inspect the build
-version.
+The `vine` command starts Hub, Link, or Portal and shows the build version.
 
-- `hub` / `link` / `portal`: Start Vine runtime infrastructure services.
-- `version`: Display the current CLI version.
+- `hub` / `link` / `portal`: Start the Vine runtime infrastructure services.
+- `version`: Print the CLI version.
 
-Display the version:
+Show the version:
 
 ```bash
 vine version
 ```
 
-Display help:
+Show help:
 
 ```bash
 vine --help
@@ -26,7 +25,7 @@ vine hub serve --help
 
 ## Installation and version
 
-Install the source revision described by `next`:
+Install the source revision corresponding to `next`:
 
 ```bash
 go install go.yorun.ai/vine/cmd/vine@main
@@ -81,7 +80,10 @@ vine hub serve \
   --db-sqlite-file ./hub.sqlite
 ```
 
-By default, the Hub API and embedded Redis listen on `127.0.0.1:7071` and `127.0.0.1:7073`, respectively. For access from another host, explicitly configure a reachable listen address and restrict it with a firewall; do not expose the embedded Redis server directly to an untrusted network.
+The Hub API defaults to `127.0.0.1:7071` and embedded Redis to `127.0.0.1:7073`.
+To allow access from another host, explicitly set a reachable listen address and
+restrict it with a firewall; never expose the embedded Redis server directly to
+an untrusted network.
 
 Initialize data from a seed YAML file:
 
@@ -101,9 +103,11 @@ vine hub serve \
   --db-sqlite-file ./hub.sqlite
 ```
 
-The default value of `--dashboard-url` is `http://:7099/`. It configures the Portal entry rule for Hub Dashboard. You can specify a host, port, and path, such as `https://hub.example.com:8443/admin`.
+`--dashboard-url` defaults to `http://:7099/`. It configures the Portal entry
+rule for the Hub Dashboard. You can supply a host, port, and path, such as
+`https://hub.example.com:8443/admin`.
 
-The same settings can also be supplied through environment variables:
+You can also pass these settings through environment variables:
 
 - `VINE_API_LISTEN`
 - `VINE_REDIS_LISTEN`
@@ -116,13 +120,13 @@ The same settings can also be supplied through environment variables:
 
 Notes:
 
-- Choose exactly one of `--db-sqlite-file` and `--db-postgres-url`.
-- Choose exactly one of `--mq-external-nats-url` and `--mq-embedded-nats`.
+- Pick exactly one of `--db-sqlite-file` and `--db-postgres-url`.
+- Pick exactly one of `--mq-external-nats-url` and `--mq-embedded-nats`.
 
 ## link
 
-`link` is the application-side runtime. It connects to Hub, accepts ingress
-from Portal or other Links, and registers the capabilities of its applications.
+`link` is the application-side runtime. It connects to Hub, accepts ingress from
+Portal or other Links, and registers its applications' capabilities.
 
 Start Link:
 
@@ -148,7 +152,9 @@ Environment variables:
 
 ## portal
 
-`portal` is the application gateway. It reads portal entry, rule, and site configuration from Hub, then forwards external requests to the target application.
+`portal` is the application gateway. It reads portal entry, rule, and site
+configuration from Hub, then forwards external requests to the target
+application.
 
 Start Portal:
 

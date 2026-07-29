@@ -45,7 +45,7 @@ flowchart TB
 
 它们拿到的是应用根 `context.Context` 和根 `meta.Context`，而不是未来某个请求的 context。因此，注入 module 的生成 Rpc client 表示由应用发起的后台工作；之后它不会自动变成请求感知的 client。
 
-长生命周期对象不能保留从 handler、filter 或其他请求路径取得的 execution-scoped 对象。这样做不仅会持有已取消的 context，还会在表面上延长 Vine 已经释放的资源生命周期。
+长生命周期对象不应保留从 handler、filter 或其他请求路径取得的 execution-scoped 对象。这样做不仅会持有已取消的 context，还会在表面上延长 Vine 已经释放的资源生命周期。
 
 ## 每次 execution 一个 injector
 
@@ -60,7 +60,7 @@ flowchart TB
 
 Handler、listener、runner 与 filter 实例都在该 execution 中创建。不同 executions 永远不会共享 execution-scoped 实例。
 
-应把 execution 视为一次性的。Filter chain 返回后，Vine 会完成该 execution，并拒绝继续从已完成的 injector 解析依赖。
+请把 execution 视为一次性的。Filter chain 返回后，Vine 会完成该 execution，并拒绝继续从已完成的 injector 解析依赖。
 
 ## 关键的 unscoped 规则
 
@@ -90,7 +90,7 @@ b.BindFactory(func(ctx context.Context) *Repository {
 
 Scope 属于被请求的 binding target。把某个 interface 绑定为 singleton，并不会自动让另一个单独绑定的 concrete type 成为同一个 singleton。
 
-子 containers 会继承父级 bindings，也可以增加新的 target types，但不能覆盖父级已经绑定的类型。
+子 containers 会继承父级 bindings，也能增加新的 target types，但不允许覆盖父级已经绑定的类型。
 
 ## Execution pipeline
 
@@ -149,12 +149,12 @@ Plain injectors **不会**自动释放其中的 singleton 实例。拥有数据�
 Vine 会在开始服务前校验依赖图：
 
 - 拒绝依赖环。
-- 已声明的 singleton 不能依赖已声明的 execution-scoped 类型。
-- Execution-scoped 类型不能从 plain injector 解析。
+- 已声明的 singleton 不允许依赖已声明的 execution-scoped 类型。
+- Execution-scoped 类型不允许从 plain injector 解析。
 - 隐式构造只支持 struct pointers。
 - 注入字段必须 exported。
 
-这些检查能防止请求对象被悄悄捕获进长生命周期 singleton，但不能替代生命周期设计：一个 unscoped、context-aware factory 仍可能使用应用根 context，为长生命周期 component 创建值。应有意识地决定消费者属于应用还是某次 execution。
+这些检查能防止请求对象被悄悄捕获进长生命周期 singleton，但替代不了生命周期设计：一个 unscoped、context-aware factory 仍可能使用应用根 context，为长生命周期 component 创建值。应有意识地决定消费者属于应用还是某次 execution。
 
 ## 常见生成依赖如何取得 context
 
@@ -188,7 +188,7 @@ func (h *OrderHandler) Handle() {
 
 请求结束后，`cachedDAO` 中的 DAO 携带的 context 已经结束。同样的规则也适用于生成 clients、请求 loggers、需要保持新鲜度的配置 pointers、caches、lockers、handlers 和 filters。
 
-应改用以下设计之一：
+推荐改用以下设计之一：
 
 - 把依赖保留在 handler 中，并且只在这次调用期间使用。
 - 向后台队列传递普通数据，而不是传递依赖。

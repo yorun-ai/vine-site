@@ -138,7 +138,7 @@ kind := code.Type() // ApplicationError
 category := ex.InvocationTimeout.Category() // InvocationCategory
 ```
 
-Codes are grouped as follows:
+The grouping:
 
 - `OK` belongs to `SuccessCategory`.
 - `ServiceUnavailable`, `GatewayTimeout`, `ClientForbidden`, and `InvalidRequest` belong to `FrameworkCategory`.
@@ -179,7 +179,7 @@ ex.NotFound.CanRaiseDirectly() // true
 ex.Internal.CanRaiseDirectly() // false
 ```
 
-Most public error codes can be raised directly. `Internal` and `Unknown` are fallback errors and should not normally be used as explicit final business semantics.
+Most public error codes can be raised directly. `Internal` and `Unknown` are fallback errors and shouldn't be used as explicit final business semantics.
 
 ### `DefaultMessage()`
 
@@ -216,7 +216,7 @@ err := ex.New(
 )
 ```
 
-Use `reason` for a distinguishable subcase in any format agreed upon by producer and consumer. Typically, `Code` identifies the broad failure and `Reason` identifies a specific case that a frontend may present or handle differently.
+Use `reason` for a distinguishable subcase in any format agreed upon by producer and consumer. `Code` identifies the broad failure and `Reason` identifies a specific case that a frontend may present or handle differently.
 
 ### Detail
 
@@ -264,7 +264,7 @@ err := ex.New(ex.NotFound, "missing user")
 err.Type() // ApplicationError
 ```
 
-You normally do not need to inspect the concrete error implementation; use `Code` and `Type` instead.
+You don't need to inspect the concrete error implementation; use `Code` and `Type` instead.
 
 ### `Error()` string format
 
@@ -341,7 +341,7 @@ defer func() {
 }()
 ```
 
-It behaves as follows:
+Here's what it does:
 
 - A `nil` recovered value returns `nil`.
 - An `ex.Error` is returned directly, whether it is an `ApplicationError` or `SystemError`.

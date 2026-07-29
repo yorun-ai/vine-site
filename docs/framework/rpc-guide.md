@@ -5,7 +5,7 @@ sidebar_label: Rpc Services
 
 # Rpc Services
 
-The usual Vine Rpc workflow is to declare a service in Skel, generate its interfaces with skelc, implement the server, and register the handler in an App. Business code normally does not need to construct a low-level `ServiceSpec` manually.
+The usual Vine Rpc workflow is to declare a service in Skel, generate its interfaces with skelc, implement the server, and register the handler in an App. Business code normally doesn't need to construct a low-level `ServiceSpec` manually.
 
 ## Define and generate
 

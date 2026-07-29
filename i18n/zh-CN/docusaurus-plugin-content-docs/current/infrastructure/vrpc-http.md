@@ -8,7 +8,7 @@ sidebar_label: vRPC over HTTP
 vRPC 是 Vine 的 Rpc 线协议。它使用 HTTP 承载请求与响应，通过 URL 标识 Skel service 和 method，通过 `vrpc-*` Header 传递调用元数据，并使用 JSON 或 CBOR 编码参数、结果和错误。
 
 实现非 Go 客户端、检查 Portal Rpc 入口或排查跨进程调用时，需要下面这套承载格式。
-业务 Go 代码应使用 skelc 生成的 client，不要手工拼装这些 HTTP 请求。
+业务 Go 代码应使用 skelc 生成的 client，不宜手工拼装这些 HTTP 请求。
 
 ## 请求目标
 
@@ -30,7 +30,7 @@ POST /rpc/invoke/demo.greeting.GreetingService/hello HTTP/1.1
 - Portal Rpc 站点在站点基路径下提供 `/invoke`，完整外部路径由 Portal entry 和 site 配置决定。
 - vRPC transport 自身只解析最后的 `/<service>/<method>`，不解释宿主前缀。
 
-除 `POST` 外的请求方法不是有效的 vRPC invoke 请求。
+`POST` 之外的其他请求方法不是有效的 vRPC invoke 请求。
 
 ## 请求 Header
 
@@ -65,7 +65,7 @@ vrpc-options: timeout=10s
 
 应用间直连要求 `vrpc-trace` 同时包含 `id` 和 `span`。Portal rpcgw 也要求该 Header，但允许外部客户端只传 `id`，并在入口补充 span。
 
-同一个 Header 不应使用多个独立字段行重复发送。需要声明多个响应媒体类型时，把它们放在同一个 `accept` 值中并用逗号分隔。
+同一个 Header 请勿使用多个独立字段行重复发送。需要声明多个响应媒体类型时，把它们放在同一个 `accept` 值中并用逗号分隔。
 
 ## 请求体
 
@@ -152,7 +152,7 @@ vrpc-server: name=demo.greeting,version=1.2.3,instanceId=123e4567-e89b-12d3-a456
 accept: application/vrpc+cbor, application/vrpc+json
 ```
 
-媒体类型参数可以存在，例如 `application/vrpc+json; charset=utf-8`。普通 `application/json` 和 `application/cbor` 不是有效的 vRPC content type。
+媒体类型参数允许存在，例如 `application/vrpc+json; charset=utf-8`。普通 `application/json` 和 `application/cbor` 不是有效的 vRPC content type。
 
 ## HTTP 状态码
 

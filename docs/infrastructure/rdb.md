@@ -9,9 +9,12 @@ Start with [Using Relational Databases](../framework/rdb-guide.md) to add a
 database to an application. Use this reference for connection sharing, model
 semantics, and the exact `Dao` and `Query` behavior exposed by `infra/rdb`.
 
-The top-level `infra/rdb` package exposes public types including `Option`, `TypeAdder`, `DatabaseSpec`, `Database`, `Dao`, `Query`, `Model`, `DeletableModel`, and `Patch`.
+The top-level `infra/rdb` package exposes public types including `Option`,
+`TypeAdder`, `DatabaseSpec`, `Database`, `Dao`, `Query`, `Model`,
+`DeletableModel`, and `Patch`.
 
-`rdb` does not replace GORM. It provides a consistent integration layer that:
+`rdb` doesn't replace GORM. Instead, it provides a consistent integration layer
+that:
 
 - Opens PostgreSQL and SQLite connections.
 - Applies consistent connection-pool settings.
@@ -30,8 +33,6 @@ type Option struct {
 }
 ```
 
-Rules:
-
 - `ConnURL` is the database connection string.
 - When `MaxOpenConn <= 0`, it falls back to the default value of `10`.
 
@@ -46,11 +47,14 @@ type DatabaseSpec interface {
 }
 ```
 
-A business component receives the default implementation of this contract by embedding `rdb.Database`.
+A business component receives the default implementation of this contract by
+embedding `rdb.Database`.
 
 ### `Database`
 
-The `rdb.Database` component already includes the lifecycle support required by an application. A business component only needs to embed it and supply configuration:
+The `rdb.Database` component already includes the lifecycle support an
+application needs. A business component only has to embed it and supply
+configuration:
 
 ```go
 type ConfigDatabase struct {
@@ -79,18 +83,18 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 ## Initialization Flow
 
-The application integrates the database in this order during startup:
+During startup, the application integrates the database in this order:
 
-1. The application creates the user component `*ConfigDatabase`.
-2. It calls `InitOption(...)` and `InitDao(...)`.
-3. It opens or reuses a database connection.
-4. It registers dependency-injection factories for the declared DAOs.
+1. Creates the user component `*ConfigDatabase`.
+2. Calls `InitOption(...)` and `InitDao(...)`.
+3. Opens or reuses a database connection.
+4. Registers dependency-injection factories for the declared DAOs.
 
 ## Connection Behavior
 
 ### Connection String Parsing
 
-The underlying rules are:
+The underlying rules:
 
 - An empty `ConnURL` produces an error.
 - A URL beginning with `sqlite://` uses SQLite.
@@ -113,7 +117,7 @@ Connection-pool settings include:
 - `SetConnMaxIdleTime(...)`
 - `SetConnMaxLifetime(...)`
 
-The default policy is:
+The default policy:
 
 - `MaxOpenConn` defaults to `10`.
 - `MaxIdleConns` is approximately `30%` of the maximum.
@@ -122,16 +126,20 @@ The default policy is:
 
 ## DI Semantics
 
-Vine provides the user-declared database component to the application as a singleton and creates each DAO through a factory. The DAO factory receives:
+Vine provides the user-declared database component to the application as a
+singleton and creates each DAO through a factory. The DAO factory receives:
 
 - `context.Context`
 - `*logger.Logger`
 
-It then injects `gorm.DB.WithContext(...)` into the DAO, so request context and the structured logger follow database operations.
+It then injects `gorm.DB.WithContext(...)` into the DAO, so request context and
+the structured logger follow database operations.
 
 ## Lifecycle
 
-The database connection is opened or reused when the component starts, and its shared reference for the `ConnURL` is released after the application stops. Vine closes the underlying connection pool only after its last user has stopped.
+The database connection is opened or reused when the component starts. Its shared
+reference for the `ConnURL` is released after the application stops. Vine closes
+the underlying connection pool only after its last user has stopped.
 
 ## Model Base Types
 
@@ -146,7 +154,7 @@ type Model struct {
 }
 ```
 
-Use it for tables that require soft deletion.
+Use it for tables that need soft deletion.
 
 ### `DeletableModel`
 
@@ -158,7 +166,7 @@ type DeletableModel struct {
 }
 ```
 
-Use it for tables that do not require soft deletion.
+Use it for tables that do not need soft deletion.
 
 ## `Dao[M]`
 
@@ -203,7 +211,8 @@ Constraints:
 
 - `Limit(...)` must be greater than zero.
 - `Offset(...)` cannot be negative.
-- `Count()` reuses the current query conditions and applies any configured limit, offset, and order.
+- `Count()` reuses the current query conditions and applies any configured limit,
+  offset, and order.
 
 For complex queries, use `dao.GormDB()` directly.
 
@@ -211,5 +220,6 @@ For complex queries, use `dao.GormDB()` directly.
 
 - Embed `Database` in every database component.
 - Embed `rdb.Dao[...]` consistently in DAO types.
-- When sharing a URL, let the first initialization determine connection-pool settings.
+- When sharing a URL, let the first initialization determine connection-pool
+  settings.
 - Use GORM directly for custom transactions and complex queries.

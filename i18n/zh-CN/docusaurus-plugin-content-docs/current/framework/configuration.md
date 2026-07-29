@@ -7,10 +7,10 @@ description: 类型化 Vine 配置、实例级快照与运行时更新。
 
 # 配置
 
-Vine 配置由 Skel 声明、Hub 存储、Link 分发，并最终作为类型化 Go 依赖解析。应用代码
-不需要自行轮询 Hub 或解码配置 JSON。
+Vine 配置由 Skel 声明、Hub 存储、Link 分发，最终作为类型化 Go 依赖解析。应用代码
+不需要自己轮询 Hub 或解码配置 JSON。
 
-配置设计的关键不只是字段本身，还包括：**一个应用实例何时可以看到新值**。
+配置设计的关键不只是字段本身，还有一个很重要的问题：**一个应用实例什么时候可以看到新值**。
 
 ## 声明类型化配置
 
@@ -39,7 +39,7 @@ skelc check --skel-in ./skel
 skelc gen go --skel-in ./skel --go-out ./skeled
 ```
 
-生成类型会向 Vine 注册自己的 Skel 名、Go 类型和生命周期。像普通依赖一样注入即可：
+生成类型会自动向 Vine 注册自己的 Skel 名、Go 类型和生命周期，像普通依赖一样注入即可：
 
 ```go title="checkout_service.go"
 type CheckoutService struct {
@@ -47,7 +47,7 @@ type CheckoutService struct {
 }
 ```
 
-不要手工注册生成的配置类型。
+生成的配置类型无需手工注册。
 
 ## 选择生命周期
 
@@ -57,12 +57,12 @@ type CheckoutService struct {
 | `instant` | Hub 发布更新时随之变化的受监听快照 | 后续 DI resolution 解码得到的新值 | Feature flag、限额、可动态调整的行为 |
 
 两种生命周期都是懒读取：只有 DI 第一次需要生成类型时才会读取。注入该配置的 module
-或 component 通常会在应用启动时构造；仅由请求 handler 使用的配置，可能直到第一次
+或 component 在应用启动时构造；仅由请求 handler 使用的配置，可能直到第一次
 对应 execution 才会读取。
 
 ### Instant 不会修改已有对象
 
-instant 更新会改变 Link 中的快照，但不会修改已经注入的 Go 指针：
+instant 更新会改变 Link 中的快照，但已经注入的 Go 指针不会变化：
 
 ```mermaid
 sequenceDiagram
@@ -76,16 +76,16 @@ sequenceDiagram
   RuntimeLink-->>Next: 从最新快照解码新指针
 ```
 
-这会直接影响 DI 行为：
+这会影响 DI 的行为：
 
-- 普通 Rpc、Web、Event 或 Task handler 会为一次 execution 创建；它注入的配置也在
-  该 execution 中解析，因此可以看到最新 instant 快照。
+- 普通 Rpc、Web、Event 或 Task handler 为一次 execution 创建。它注入的配置也在
+  该 execution 中解析，所以能看到最新 instant 快照。
 - module 与应用 component 是 application lifetime singleton。如果它把 instant 配置
   保存在字段中，该指针就会一直保持构造时的值。
 - 任何显式 singleton 依赖只要捕获了 instant 配置，也具有同样行为。
 
-长生命周期对象如果必须响应更新，应把依赖更新的逻辑放到新建的 execution 依赖中，
-或设计显式刷新边界。不要把字段注入理解为实时引用。
+长生命周期对象如果必须响应更新，建议把依赖更新的逻辑放到新建的 execution 依赖中，
+或设计显式刷新边界。不要误以为字段注入等于实时引用。
 
 ## 提供配置值
 
@@ -108,8 +108,8 @@ standalone.NewWithOption[*CheckoutApp](standalone.Option{
 }).StartAndWait()
 ```
 
-这里的 `SQLiteFile` 是 **Hub 自己的数据库**，不会配置业务 `infra/rdb` component。
-应用如果还拥有关系型数据库，应另外声明。
+注意，这里的 `SQLiteFile` 是 **Hub 自己的数据库**，不会配置业务 `infra/rdb` component。
+如果应用本身还有关系型数据库，需要另外声明。
 
 独立运行 Hub 时：
 
@@ -148,25 +148,25 @@ standalone 通过进程内连接执行同样步骤。
 - Hub 与 Link 中必须存在与完整 Skel 名对应的非空值。
 - JSON 必须能解码为生成的 Go 类型。
 
-任何条件不满足时，resolution 都会失败，而不是静默返回零值配置。失败出现在哪里取决
-于第一个 consumer：module 可能让应用启动失败；仅由 handler 使用的配置则可能在请求
+任何条件不满足，resolution 都会失败，而不是静默返回零值配置。失败出现的位置取决于
+第一个 consumer：module 可能让应用启动失败；仅由 handler 使用的配置则可能在请求
 到达时才首次失败。
 
 排查配置缺失时：
 
 1. 确认应用确实导入了生成 package。
 2. 确认 Hub 中的完整名称与 JSON 字段名。
-3. 确认应用所连接的 Link 可以访问 Hub API 与 Redis 分发 endpoint。
+3. 确认应用所连接的 Link 能访问 Hub API 与 Redis 分发 endpoint。
 4. 确认部署的生成 schema 与配置值是一起发布的。
 5. 对 instant 配置，先创建新的 execution，再判断已经注入的 singleton 是否理应变化。
 
 ## 设计建议
 
-- 如果不重建应用就更改配置会让资源或不变量不一致，应使用 `eternal`。
+- 如果改配置而不重建应用会导致资源或不变量不一致，请用 `eternal`。
 - 只有每个新 execution 都能安全地从新快照选择行为时，才使用 `instant`。
-- 配置值应保持声明式。不要把配置更新当成命令式 job trigger；这类工作应使用 Task。
+- 配置值应保持声明式。不要拿配置更新当命令式 job trigger，这类工作请用 Task。
 - 滚动发布期间，不同应用版本可能暂时读取同一个 Hub 值，因此相关字段应保持向后兼容。
-- credential 与私钥必须留在当前可信运行时网络边界内；分发敏感配置前先检查
+- credential 与私钥必须留在当前可信运行时网络边界内。分发敏感配置前先检查
   [生产就绪清单](../operations/production-readiness.md)。
 
 语言规则见 [Skel 配置语法](https://skel.yorun.ai/docs/syntax)，binding 与 scope

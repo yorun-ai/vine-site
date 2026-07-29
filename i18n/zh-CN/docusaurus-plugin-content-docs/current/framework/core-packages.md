@@ -7,7 +7,7 @@ description: 应用任务对应的 Vine package，以及底层 API 的使用边�
 
 # 公共 Package
 
-Vine 用 facade package 保持公共 Go API 的边界。应用代码通常从 `app` 和生成的
+Vine 用 facade package 保持公共 Go API 的边界清晰。应用代码从 `app` 和生成的
 contract 类型开始，只为实际使用的能力引入对应的 `core/*` 或 `infra/*` package。
 
 精确到 symbol 的权威参考是
@@ -17,7 +17,7 @@ symbol 索引无法回答的问题：**应用代码应该选择哪个 package？
 :::warning 公共边界
 
 `internal/` 下的 package 属于实现细节。它们或许能帮助理解 stack trace，但应用代码
-不得导入或复制这些实现。公共行为由下列 package 和本站记录的运行时 contract 定义。
+请勿导入或复制这些实现。公共行为由下列 package 和本站记录的运行时 contract 定义。
 
 :::
 
@@ -42,7 +42,7 @@ standalone.NewWithOption[*CheckoutApp](standalone.Option{
 
 ## 应用能力
 
-| 能力 | Package | 应用代码通常使用的对象 |
+| 能力 | Package | 应用代码使用的对象 |
 | --- | --- | --- |
 | 配置 | [`core/conf`](https://pkg.go.dev/go.yorun.ai/vine/core/conf) | 注入 module 或 execution 的生成配置类型 |
 | Rpc | [`core/rpc`](https://pkg.go.dev/go.yorun.ai/vine/core/rpc) | 生成的服务 client 与 server 实现 |
@@ -51,8 +51,8 @@ standalone.NewWithOption[*CheckoutApp](standalone.Option{
 | Task | [`core/task`](https://pkg.go.dev/go.yorun.ai/vine/core/task) | 生成的 launcher 与 runner |
 | Skel 运行时类型 | [`core/skel`](https://pkg.go.dev/go.yorun.ai/vine/core/skel) | 生成的 scalar/schema 辅助类型与 `MinSkelcVersion()` |
 
-生成代码已经把这些 package 接入类型安全 facade。应优先使用生成的 client、handler、
-listener 或 runner，不要手工构造 `ServiceSpec`、`WebSpec`、`EventSpec` 或 `TaskSpec`。
+生成代码已经把这些 package 接入类型安全 facade。推荐优先使用生成的 client、handler、
+listener 或 runner，而不是手工构造 `ServiceSpec`、`WebSpec`、`EventSpec` 或 `TaskSpec`。
 
 只有在构建框架集成、自定义 executor 或 transport adapter 时，才需要这些 package
 中的底层 constructor。对应参考页记录了这些高级 API：
@@ -85,7 +85,7 @@ listener 或 runner，不要手工构造 `ServiceSpec`、`WebSpec`、`EventSpec`
 | 关系型数据库、GORM 连接、类型化 DAO/query | [`infra/rdb`](https://pkg.go.dev/go.yorun.ai/vine/infra/rdb) | [RDB 指南](./rdb-guide.md) | [RDB API](../infrastructure/rdb.md) |
 | Redis client、类型化 cache、分布式 locker | [`infra/redis`](https://pkg.go.dev/go.yorun.ai/vine/infra/redis) | [Redis 指南](./redis-guide.md) | [Redis API](../infrastructure/redis.md) |
 
-应将它们声明为应用 component。这样 Vine 会在业务 module 之前创建依赖，通过 DI
+建议将它们声明为应用 component。这样 Vine 会在业务 module 之前创建依赖，通过 DI
 公开它们，并在业务 module 结束后再停止它们。
 
 ## 可复用工具
@@ -103,7 +103,7 @@ listener 或 runner，不要手工构造 `ServiceSpec`、`WebSpec`、`EventSpec`
 | [`util/vslice`](https://pkg.go.dev/go.yorun.ai/vine/util/vslice) | Slice collection、set、查找、stream 与并发辅助 |
 | [`util/vstring`](https://pkg.go.dev/go.yorun.ai/vine/util/vstring) | 字符串与分隔值辅助 |
 
-标准库函数同样清晰时，应优先使用标准库。这些 package 最适合已经处于 Vine 相关调用
+标准库函数同样清晰时，优先用标准库。这些 package 最适合已经处于 Vine 相关调用
 路径中的通用操作。
 
 ## 实际查阅顺序

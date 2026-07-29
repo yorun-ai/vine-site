@@ -49,7 +49,7 @@ type DatabaseSpec interface {
 
 ### `Database`
 
-数据库组件 `rdb.Database` 已包含应用所需的生命周期支持。业务组件只需要嵌入它并提供配置：
+数据库组件 `rdb.Database` 已包含应用所需的生命周期支持。业务组件只需嵌入它并提供配置：
 
 ```go
 type ConfigDatabase struct {
@@ -201,7 +201,7 @@ type ConfigDAO struct {
 约束：
 
 - `Limit(...)` 必须大于 0
-- `Offset(...)` 不能为负数
+- `Offset(...)` 必须为非负数
 - `Count()` 会复用当前 query 的条件，并应用已设置的 limit / offset / order
 
 复杂查询仍建议直接使用 `dao.GormDB()`。

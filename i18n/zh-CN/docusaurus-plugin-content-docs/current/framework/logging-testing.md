@@ -79,7 +79,7 @@ logger.SetLevel("app:demo.user:rpc:server", logger.LevelDebug)
 
 ## 格式与输出
 
-全局格式、级别和输出路径可以分别配置：
+全局格式、级别和输出路径分别配置：
 
 ```go title="main.go"
 logger.SetGlobalFormat(logger.FormatJSON)
@@ -101,11 +101,11 @@ auditLog := logger.New("app:demo.user:audit", logger.WithOption{
 })
 ```
 
-标准库 `log` 的输出会由名称为 `vine:stdlog` 的 logger 接管。需要替换包级默认 logger 时，可以调用 `logger.SetDefault(customLogger)`。
+标准库 `log` 的输出会由名称为 `vine:stdlog` 的 logger 接管。需要替换包级默认 logger 时，调用 `logger.SetDefault(customLogger)` 即可。
 
 ## 敏感字段与二进制
 
-Skel 字段可以使用 `@sensitive` 标记。skelc 会在对应的 Go 字段上生成 `skel:"sensitive"`，Rpc、Event 和 Task payload 日志会通过 `core/redact` 将其替换为 `<redacted>`。字段名称本身不会触发隐式遮蔽；动态 map 或 JSON 中的敏感内容需要由调用方使用 `RootSensitive` 或 `Sanitizer` 显式处理。
+Skel 字段使用 `@sensitive` 标记。skelc 会在对应的 Go 字段上生成 `skel:"sensitive"`，Rpc、Event 和 Task payload 日志会通过 `core/redact` 将其替换为 `<redacted>`。字段名称本身不会触发隐式遮蔽；动态 map 或 JSON 中的敏感内容需要由调用方使用 `RootSensitive` 或 `Sanitizer` 显式处理。
 
 ```skel
 data LoginRequest {
@@ -116,9 +116,9 @@ data LoginRequest {
 }
 ```
 
-`@sensitive` 也可以标记整个 data / config、event 的 `payload` block，以及 actor 的 `credential` / `info` block。对应生成类型会实现 `skel.Sensitive` interface 的 `SkelSensitive()` marker method，不增加数据字段，也不改变 JSON / CBOR；`core/redact` 会把该类型的值整体替换为 `<redacted>`。event 和 auth 容器本身不能标记。标记整个 Rpc method input / output 或 resource check input 时，skelc 会写入 `MethodSpec`，对应 payload 日志同样整体遮蔽；标记整个 task trigger input 时，则会写入 Task `TriggerSpec`，供处理 Task 参数的代码识别。
+`@sensitive` 能标记整个 data / config、event 的 `payload` block，以及 actor 的 `credential` / `info` block。对应生成类型会实现 `skel.Sensitive` interface 的 `SkelSensitive()` marker method，不增加数据字段，也不改变 JSON / CBOR；`core/redact` 会把该类型的值整体替换为 `<redacted>`。event 和 auth 容器本身不能标记。标记整个 Rpc method input / output 或 resource check input 时，skelc 会写入 `MethodSpec`，对应 payload 日志同样整体遮蔽；标记整个 task trigger input 时，则会写入 Task `TriggerSpec`，供处理 Task 参数的代码识别。
 
-`core/redact` 不依赖 Rpc、Event 或 Task 的具体架构，也可以直接处理普通 Go 值：
+`core/redact` 不依赖 Rpc、Event 或 Task 的具体架构，也能直接处理普通 Go 值：
 
 ```go
 rendered, err := redact.Render(value)
@@ -134,9 +134,9 @@ logger.Info("diagnostic value",
 `Render` 失败时会通过 `vine:core:redact` 额外记录一条 `ERROR` 日志，其中只包含安全的
 `failureKind` 分类，不包含可能携带敏感数据的原始错误文本；调用方仍会收到原始错误。
 
-调用方已知整个值敏感时，可以传入 `redact.Option{RootSensitive: true}`，无需依赖具体 Go 类型或字段 tag。
+调用方已知整个值敏感时，传入 `redact.Option{RootSensitive: true}`，无需依赖具体 Go 类型或字段 tag。
 
-`redact.Option{RevealSensitive: true}` 可以显式保留普通敏感字段，适合受严格控制的临时诊断。二进制值不受该选项影响：始终只输出字节数，不输出原始内容。
+`redact.Option{RevealSensitive: true}` 能显式保留普通敏感字段，适合受严格控制的临时诊断。二进制值不受该选项影响：始终只输出字节数，不输出原始内容。
 
 框架的 Rpc、Event 和 Task 日志在记录 payload 时始终调用 `core/redact`，不提供关闭脱敏或输出敏感原文的全局开关。`core/redact` 同时限制遍历深度、节点数、集合大小、字符串长度和最终 JSON 大小；发生裁剪时，`Result.Truncated` 为 `true`。
 

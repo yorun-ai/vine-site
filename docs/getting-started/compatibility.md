@@ -5,13 +5,13 @@ description: Compatibility and pinning rules for Vine, Go, and skelc.
 slug: /compatibility
 ---
 
-Three versions determine a Vine build: Go, `go.yorun.ai/vine`, and the `skelc`
+Three versions define a Vine build: Go, `go.yorun.ai/vine`, and the `skelc`
 binary that generated the contract code. Record all three. Upgrading only one
 can leave checked-in generated code out of step with the runtime.
 
 :::warning What `next` means before 1.0
 
-This site follows current Vine source. It can move ahead of the latest release,
+This site tracks current Vine source. It can move ahead of the latest release,
 and there are no per-release documentation snapshots before `v1.0.0`.
 
 For a released application, pin an exact commit or tag and treat that source as
@@ -21,9 +21,9 @@ the final word when `next` differs.
 
 ## Documentation before 1.0
 
-Vine is still before 1.0. Patch releases within the same minor line are
-intended to remain backward-compatible, while a new minor release can change
-public APIs, CLI behavior, configuration, Skel integration, or protocols.
+Vine hasn't reached 1.0 yet. Patch releases within the same minor line are meant
+to stay backward-compatible, while a new minor release can change public APIs,
+CLI behavior, configuration, Skel integration, or protocols.
 
 - Working from current source: use `next` and the same Vine checkout.
 - Building from a release: pin the release tag and check changed APIs against
@@ -39,16 +39,15 @@ public APIs, CLI behavior, configuration, Skel integration, or protocols.
 Current Vine source reports `v0.9.0` from
 `core/skel.MinSkelcVersion()`. This is a lower bound, not a version-selection
 policy. Generated schemas record their compiler version, and Vine rejects a
-schema whose compiler version is missing or lower than the runtime minimum.
+schema whose compiler version is missing or below the runtime minimum.
 
-The runtime check does not define an upper compatibility bound for future
-skelc releases. Pin a version that your application has generated, reviewed,
-and tested.
+The runtime check doesn't set an upper compatibility bound for future skelc
+releases. Pin a version your application has generated, reviewed, and tested.
 
 ## Pin a reviewed toolchain
 
-The tutorials use `main` because this site documents current source. For CI or
-a release, replace both values below with reviewed commit hashes or tags:
+The tutorials use `main` because this site documents current source. For CI or a
+release, replace both values below with reviewed commit hashes or tags:
 
 ```bash
 VINE_REVISION=main
@@ -62,11 +61,11 @@ go install go.yorun.ai/skelc/cmd/skelc@"$SKELC_REVISION"
 ```
 
 The `go` directive records the expected language version, and the `toolchain`
-directive requests the compiler. Also pin the CI image or toolchain
-installation, because an already newer default toolchain can still be
-selected. Commit `go.mod`, `go.sum`, the Skel sources, and the generated-code
-changes. Do not leave `main` or `@latest` in a production build pipeline:
-either can resolve to new code without a change to the application repository.
+directive requests the compiler. Pin the CI image or toolchain installation as
+well, since an already newer default toolchain can still end up selected. Commit
+`go.mod`, `go.sum`, the Skel sources, and the generated-code changes. Never
+leave `main` or `@latest` in a production build pipeline: either can resolve to
+new code without a change to the application repository.
 
 ### Check the tools CI will use
 
@@ -78,17 +77,17 @@ skelc version
 ```
 
 `vine version` reports the Vine version, build platform, Go version, and
-`MinSkelcVersion`. The JSON form is suitable for a CI preflight check. Make
-sure `go version` reports the intended compiler and the binary found on `PATH`
-is the same binary used by deployment automation.
+`MinSkelcVersion`. The JSON form works well for a CI preflight check. Make sure
+`go version` reports the intended compiler and that the binary found on `PATH` is
+the same one used by deployment automation.
 
 See [Vine CLI](./cli.md) for the command reference and
 [First Skel Contract](./first-contract.md) for the generation workflow.
 
 ## Read the minimum skelc version in code
 
-Applications and build tools can read the runtime requirement through the
-public `core/skel` package:
+Applications and build tools can read the runtime requirement through the public
+`core/skel` package:
 
 ```go
 package main
@@ -111,9 +110,8 @@ v0.9.0
 ```
 
 Use this value when a build system needs to compare the selected generator
-against the Vine runtime. The generated schema remains the final runtime
-check, so regenerate and test the application after changing either Vine or
-skelc.
+against the Vine runtime. The generated schema is still the final runtime check,
+so regenerate and test the application after changing either Vine or skelc.
 
 ## Upgrade the set together
 

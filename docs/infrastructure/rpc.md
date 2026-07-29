@@ -5,24 +5,25 @@ sidebar_label: Rpc API
 
 # Rpc API
 
-Use the generated client and server flow in [Using Rpc](../framework/rpc-guide.md)
+Follow the generated client and server flow in [Using Rpc](../framework/rpc-guide.md)
 for application code. The APIs below matter when tuning invocation options,
 writing an executor, or integrating a transport. The HTTP binding is documented
 separately in [vRPC over HTTP](./vrpc-http.md).
 
-`core/rpc` provides a unified Rpc abstraction. It is responsible for:
+`core/rpc` provides a unified Rpc abstraction. It handles:
 
 - Registering service and method metadata.
 - Creating clients that make calls.
 - Creating servers that receive requests.
 - Carrying trace, initiator, actor, and client metadata in context.
-- Executing methods either through direct reflection or through the `ctr/di` container.
+- Executing methods either through direct reflection or through the `ctr/di`
+  container.
 
-It is designed to be used with generated code.
+It's built for generated code.
 
 ## Relationship to Generated Code
 
-A typical workflow is:
+A typical workflow:
 
 1. Define a service in a `.skel` file.
 2. Generate Go code.
@@ -30,7 +31,7 @@ A typical workflow is:
 4. Business code implements the generated server interface.
 5. Run it with `rpc.NewClient(...)` or `rpc.NewServer(...)`.
 
-You generally should not write a complete `ServiceSpec` by hand.
+You generally shouldn't write a complete `ServiceSpec` by hand.
 
 ## Client
 
@@ -84,19 +85,20 @@ The supported options are:
 - `rpc.WithContext(ctx)`
 - `rpc.WithTimeout(duration)`
 
-Rules:
-
 - `WithTimeout(...)` must be greater than zero.
-- `WithContext(...)` only replaces the parent `context.Context` used for the underlying request lifecycle.
-- `WithContext(...)` does not replace Rpc metadata. Trace, initiator, and actor still come from the client's own `meta.Context`.
+- `WithContext(...)` only replaces the parent `context.Context` used for the
+  underlying request lifecycle.
+- `WithContext(...)` does not replace Rpc metadata. Trace, initiator, and actor
+  still come from the client's own `meta.Context`.
 - `WithContext(...)` and `WithTimeout(...)` cannot be used together.
 - When `WithContext(...)` is omitted, the default request timeout is `30s`.
 
 ### `ReturnIfSystemError`
 
-When `ReturnIfSystemError == true`, the client returns a system error to the caller instead of panicking.
+When `ReturnIfSystemError == true`, the client returns a system error to the
+caller instead of panicking.
 
-The default value is `false`.
+The default is `false`.
 
 ## Server
 
@@ -145,9 +147,11 @@ The framework includes two implementations.
 
 ### `NewDefaultExecutor()`
 
-The default executor creates the implementation object through reflection and calls its method directly.
+The default executor creates the implementation object through reflection and
+calls its method directly.
 
-If a handler struct contains exactly one field of type `spec.Context`, the default executor automatically injects the current Rpc context into it.
+If a handler struct has exactly one field of type `spec.Context`, the default
+executor automatically injects the current Rpc context into it.
 
 ### `NewContainerExecutor(...)`
 
@@ -155,7 +159,8 @@ If a handler struct contains exactly one field of type `spec.Context`, the defau
 rpc.NewContainerExecutor(filterTypes, bindAppliers)
 ```
 
-This executor integrates `core/ctr` and `core/di` and additionally injects these dependencies with `ExecutionScope`:
+This executor integrates `core/ctr` and `core/di` and additionally injects these
+dependencies with `ExecutionScope`:
 
 - `spec.Context`
 - `spec.MethodInfo`
@@ -190,7 +195,7 @@ It represents:
 
 ### `ServiceSpec`
 
-`ServiceSpec` is the registration input and is usually provided by generated code:
+`ServiceSpec` is the registration input, usually supplied by generated code:
 
 ```go
 type ServiceSpec struct {
@@ -277,8 +282,10 @@ In particular:
 
 - `FullURLPath()` has the form `/{serviceSkelName}/{methodSkelName}`.
 - `PositionArguments(...)` expands an arguments struct into positional arguments.
-- `ValidateArguments(...)` verifies that arguments satisfy the generated Skeleton constraints.
-- `ValidateResult(...)` verifies that a result satisfies the generated Skeleton constraints.
+- `ValidateArguments(...)` verifies that arguments satisfy the generated Skeleton
+  constraints.
+- `ValidateResult(...)` verifies that a result satisfies the generated Skeleton
+  constraints.
 
 ## Service Registration
 
@@ -308,9 +315,7 @@ type UserServiceServerER interface {
 }
 ```
 
-Rules:
-
-- Business errors from a normal server usually flow through the panic and recover path.
+- Business errors from a normal server flow through the panic and recover path.
 - The final return value of an ER server is always `ex.Error`.
 - A normal server can be wrapped as an ER server through `WrapperERServerCtor`.
 

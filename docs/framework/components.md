@@ -8,7 +8,7 @@ sidebar_label: Components & Modules
 Components and modules split an application into functional units that can be
 initialized, injected, and stopped independently. `app.New` creates the App
 shell, constructs and validates its specification, and captures runtime inputs;
-it does not yet construct declared components or modules. `Start` constructs
+it doesn't yet construct declared components or modules. `Start` constructs
 and injects them and runs their startup hooks. Graceful shutdown runs their
 stop hooks in reverse order.
 
@@ -40,7 +40,7 @@ See [Component Runtime Mechanisms](../runtime/mechanisms.md) and [Deployment Top
 
 ## When to use a module
 
-Business capabilities are typically implemented as modules. Modules are suitable for domain services, background work, and resources that should start and stop with the application:
+Modules are the right choice for business capabilities — domain services, background work, and resources that should start and stop with the application:
 
 ```go title="module.go"
 type UserModule struct {
@@ -88,9 +88,9 @@ flowchart LR
 
 - `BeforeAppStart`: establish connections, warm data, or verify dependencies
   before registration. An error aborts startup and is surfaced as a panic; Vine
-  does not automatically roll back hooks that already ran.
+  doesn't automatically roll back hooks that already ran.
 - `AfterAppStart`: runs after the endpoint has started and registration has
-  begun. Requests may already arrive, so do not put readiness work here.
+  begun. Requests may already arrive, so don't put readiness work here.
 - `BeforeAppStop`: stop producers and prepare for the unregister-and-drain
   phase.
 - `AfterAppStop`: releases connections and other resources.

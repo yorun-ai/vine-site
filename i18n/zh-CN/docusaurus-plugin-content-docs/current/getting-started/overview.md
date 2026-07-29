@@ -18,7 +18,7 @@ standalone 进程里即可；等到需要真实网络边界或独立运维时再
 3. 用[第一个 Skel 契约](./first-contract.md)生成服务代码。
 4. 按 [Rpc 指南](../framework/rpc-guide.md)实现并调用服务。
 
-这四步都可以在 standalone 模式完成，不需要预先启动独立运行时服务。
+这四步都能在 standalone 模式完成，不需要预先启动独立运行时服务。
 
 :::info 复制命令之前
 
@@ -62,7 +62,7 @@ standalone 会在一个进程里启动这四个角色。职责并没有变化，
 | 保存共享缓存状态或协调分布式锁 | [Redis](../framework/redis-guide.md) | 托管 client、类型化 cache 与 locker |
 | 持久化关系模型 | [RDB](../framework/rdb-guide.md) | 托管 GORM 连接与类型化 DAO |
 
-如果两个组件属于同一应用，且不需要网络 contract，应直接注入 Go 依赖，而不是额外
+如果两个组件属于同一应用，且不需要网络 contract，建议直接注入 Go 依赖，而不是额外
 创建 Rpc 服务。
 
 ## 遇到问题时再往下读
@@ -93,12 +93,12 @@ standalone 会在一个进程里启动这四个角色。职责并没有变化，
    [安全边界](../operations/production-readiness.md#保护运行时网络)
    不支持把这些 endpoint 暴露给不可信网络。
 
-## 几条不要打破的边界
+## 几条应该守住的边界
 
 - 将业务行为放在 module 与能力 handler 中，不要放进 `main`。
 - 将生成代码视为构建产物；修改 `.skel` 源文件后重新生成。
-- 必须在应用可被发现前完成的工作应放进 `BeforeAppStart`；`AfterAppStart`
-  执行时，服务和注册已经开始工作。
+- 必须在应用可被发现前完成的工作请放进 `BeforeAppStart`；`AfterAppStart`
+  执行时，服务和注册已经开始工作了。
 - 让 request scope 依赖留在创建它的 execution 内。
 - Event listener 与 Task runner 必须按幂等方式设计，因为失败交付可能重试。
 - 发起下游调用时继续使用注入的 context。

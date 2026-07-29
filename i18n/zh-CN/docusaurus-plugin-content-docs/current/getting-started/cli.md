@@ -5,7 +5,7 @@ sidebar_label: Vine CLI
 
 # Vine CLI
 
-使用 `vine` 命令启动 Hub、Link 或 Portal，也可以查看当前 binary 的构建版本。
+`vine` 命令用来启动 Hub、Link 或 Portal，也能查看当前 binary 的构建版本。
 
 - `hub` / `link` / `portal`：启动 Vine 运行时基础服务
 - `version`：查看当前 CLI 版本
@@ -38,7 +38,7 @@ which vine
 vine version
 ```
 
-正式发布应用时，应把 `main` 换成与应用 module 相同、经过审查的 commit 或 tag。
+正式发布应用时，请把 `main` 换成与应用 module 相同、经过审查的 commit 或 tag。
 升级前先看[版本兼容性](./compatibility.md)。
 
 ## hub
@@ -79,7 +79,7 @@ vine hub serve \
   --db-sqlite-file ./hub.sqlite
 ```
 
-Hub API 和内嵌 Redis 默认分别监听 `127.0.0.1:7071` 和 `127.0.0.1:7073`。需要跨主机访问时，应显式指定可达的监听地址并通过防火墙限制访问；不要将内嵌 Redis 直接暴露到不可信网络。
+Hub API 和内嵌 Redis 默认分别监听 `127.0.0.1:7071` 和 `127.0.0.1:7073`。需要跨主机访问时，请显式指定可达的监听地址并通过防火墙限制访问。特别提醒：内嵌 Redis 只能暴露在可信网络中。
 
 从 seed YAML 初始化数据：
 
@@ -99,9 +99,9 @@ vine hub serve \
   --db-sqlite-file ./hub.sqlite
 ```
 
-`--dashboard-url` 默认值是 `http://:7099/`，用于配置 Hub Dashboard 的 Portal 入口规则。可以指定 host、端口和路径，例如 `https://hub.example.com:8443/admin`。
+`--dashboard-url` 默认值是 `http://:7099/`，用于配置 Hub Dashboard 的 Portal 入口规则。支持指定 host、端口和路径，例如 `https://hub.example.com:8443/admin`。
 
-环境变量也可以提供同名配置：
+环境变量也能提供同名配置：
 
 - `VINE_API_LISTEN`
 - `VINE_REDIS_LISTEN`

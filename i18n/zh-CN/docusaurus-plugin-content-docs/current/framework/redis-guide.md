@@ -44,7 +44,7 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 }
 ```
 
-业务对象可以注入 `*MainRedis` 执行普通 Redis 命令，也可以注入专用 Cache 或 Locker：
+业务对象能注入 `*MainRedis` 执行普通 Redis 命令，也能注入专用 Cache 或 Locker：
 
 :::caution fail-fast 解锁
 
@@ -85,7 +85,7 @@ func (s *UserService) Rebuild(userID string) {
 Cache 和 Locker 默认根据完整 Go 类型生成前缀。只有当两个类型确实需要共享
 同一个 Redis 命名空间时，才应覆盖 `KeyPrefix`。
 
-默认锁带 TTL 并在持有期间续期；锁所有权失效时，`Lock.Context()` 会被取消，
+默认锁带 TTL 并在持有期间续期。锁所有权失效时，`Lock.Context()` 会被取消，
 长任务必须响应这个 context。失效的锁已不再属于当前持有者，调用 `Unlock`
 会 panic；对于可能超过租约的工作，不要无条件 `defer lock.Unlock()`。
 `IsBroken` 只是一次状态观测，并不能原子地保证紧随其后的 `Unlock` 不会
