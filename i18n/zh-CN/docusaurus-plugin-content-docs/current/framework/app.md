@@ -5,12 +5,12 @@ sidebar_label: App API
 
 # App API
 
-大多数应用代码只需要依赖 `go.yorun.ai/vine/app`。这个包负责进程生命周期、
+大多数应用代码只需要依赖 `go.yorun.ai/vine/app` 这一个包就够了。它负责进程生命周期、
 组件与模块的创建、HTTP/Rpc/Web 入口挂载，以及运行时依赖的注入。
 
 ## 对外入口
 
-业务代码通常依赖顶层包 `go.yorun.ai/vine/app`。需要组合运行时组件时，再按模式导入 `app/linked` 或 `app/standalone`。
+业务代码依赖顶层包 `go.yorun.ai/vine/app`。如果还要组合运行时组件，按模式导入 `app/linked` 或 `app/standalone`。
 
 常用入口包括：
 
@@ -61,7 +61,7 @@ app.New[*DemoApp]().StartAndWait()
 - `StopGracefully()`：执行优雅停止并阻塞到应用完全退出
 - `StartAndWait()`：启动后等待退出信号，再执行优雅停止流程
 
-生命周期调用是单次的：重复 `Start()`、未启动就 `StopGracefully()`、重复 `StopGracefully()`，或停止后再次 `Start()` 都会 panic。
+生命周期调用是单次的。重复 `Start()`、没启动就 `StopGracefully()`、重复 `StopGracefully()`，或者停止后再次 `Start()`，这些操作都会 panic。
 
 ### `ApplicationSpec`
 
@@ -76,7 +76,7 @@ type ApplicationSpec interface {
 }
 ```
 
-其中：
+字段含义：
 
 - `Name()`：应用名，必须匹配 `^[a-z]+(?:\.[a-z]+)*$`，即由点号分隔的一个或
   多个纯小写字母段，例如 `demo.checkout`
@@ -124,7 +124,7 @@ instance := app.New[*DemoApp]()
 ```
 
 `New` 会立即构造并校验 application spec，它不是 lazy factory。spec 的注入字段和
-`DIInit()` 会在该调用中执行；root context 与 listen address 也会在 `Start()` 前被
+`DIInit()` 会在这个调用中执行；root context 与 listen address 也会在 `Start()` 前被
 捕获。
 
 行为如下：
@@ -132,16 +132,16 @@ instance := app.New[*DemoApp]()
 - 同一个 spec 类型只能创建一次
 - 不同 spec 类型如果 `Name()` 相同，也不能同时创建
 
-也就是说，框架同时约束了“spec 类型唯一”和“应用名唯一”。
+说白了，框架同时约束了“spec 类型唯一”和“应用名唯一”。
 
 顶层 `app.NewWithOption(...)` 的 `Option` 提供 `LinkEndpoint`，也可以通过 `--link-endpoint` 或 `VINE_LINK_ENDPOINT` 提供。
 
 ### 运行模式构造
 
-- `linked.New(...)`：同进程启动一个 Link，再以 inproc app 形式启动业务 app；`linked.Option` 支持 `HubEndpoint` 和 `IngressListen`，也可通过 `--hub-endpoint` / `--ingress-listen` 或对应环境变量提供
-- `linked.NewBundled(...)`：多个业务 app 共享一个同进程 Link，并连接外部 Hub；被打包的 linked app 不能再带自己的 `linked.Option`
-- `standalone.New(...)`：同进程启动 Hub、Portal、Link 和一个业务 app；`standalone.Option` 支持 seed YAML、SQLite 文件、PostgreSQL URL 和 Dashboard URL
-- `standalone.NewBundled(...)`：把多个 standalone app 打包进同一套内置 Hub / Portal / Link；被打包的 standalone app 不能再带自己的 `standalone.Option`
+- `linked.New(...)`：同进程启动一个 Link，再以 inproc app 形式启动业务 app。`linked.Option` 支持 `HubEndpoint` 和 `IngressListen`，也可以通过 `--hub-endpoint` / `--ingress-listen` 或对应环境变量提供
+- `linked.NewBundled(...)`：多个业务 app 共享一个同进程 Link，并连接外部 Hub。注意，被打包的 linked app 不能再带自己的 `linked.Option`
+- `standalone.New(...)`：同进程启动 Hub、Portal、Link 和一个业务 app。`standalone.Option` 支持 seed YAML、SQLite 文件、PostgreSQL URL 和 Dashboard URL
+- `standalone.NewBundled(...)`：把多个 standalone app 打包进同一套内置 Hub / Portal / Link。注意，被打包的 standalone app 不能再带自己的 `standalone.Option`
 
 ## Flag 模型
 
@@ -157,7 +157,7 @@ app.New[*DemoApp](
 
 `With(flag)` 的约束：
 
-- `flag` 不能为 `nil`
+- `flag` 必须为非 `nil`
 - `flag` 必须是“指向 struct 的指针”
 - 同一个 flag 类型只能提供一次
 
@@ -176,7 +176,7 @@ type RunFlag struct {
 
 - `ListenAddr == ""` 时监听随机端口
 - `LinkEndpoint` 指定通过 `app.New(...)` 或 `app.NewWithOption(...)` 直接创建的
-  应用所连接的 Link API；可以通过 `app.Option`、`--link-endpoint` 或
+  应用所连接的 Link API。可以通过 `app.Option`、`--link-endpoint` 或
   `VINE_LINK_ENDPOINT` 设置
 - `Context == nil` 时回退到 `context.Background()`
 - 即使没有显式传入 `RunFlag`，框架也会自动补一个默认实例
@@ -189,9 +189,9 @@ instance := app.New[*DemoApp](
 )
 ```
 
-`BindCommon` 在 `Start()` 期间运行，此时 Vine 已经捕获 `ListenAddr`，因此在其中修改
-`AppFlag.ListenAddr` 不会改变应用 listener。如果必须由应用类型提供默认值，应在
-application spec 上实现 `DIInit()`；它会在 `New` 期间、`AppFlag` 注入后执行：
+`BindCommon` 在 `Start()` 期间运行，此时 Vine 已经捕获 `ListenAddr`。所以在这个阶段修改
+`AppFlag.ListenAddr` 是不会改变应用 listener 的。如果确实需要由应用类型提供默认值，建议在
+application spec 上实现 `DIInit()`，它会在 `New` 期间、`AppFlag` 注入后执行：
 
 ```go
 func (a *DemoApp) DIInit() {
@@ -236,11 +236,11 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 }
 ```
 
-组件会把连接、DAO、Cache 或 Locker 等对象提供给依赖注入容器。组件类型不能重复声明。
+组件会把连接、DAO、Cache 或 Locker 等对象提供给依赖注入容器。注意，组件类型不能重复声明。
 
 ### Module
 
-业务生命周期逻辑使用 `Module`。嵌入 `app.BaseModule` 后，只实现需要的生命周期方法：
+业务生命周期逻辑使用 `Module`。嵌入 `app.BaseModule` 后，只需要实现你关心的生命周期方法：
 
 ```go
 type DemoModule struct {
@@ -263,7 +263,7 @@ func (*DemoApp) InitModules(add app.TypeAdder) {
 
 ## 可选能力
 
-应用 spec 可以按需实现以下能力接口。
+应用 spec 按需实现以下能力接口即可。
 
 ### Rpc：`ServicerSpec`
 
@@ -352,7 +352,7 @@ type TaskerEnabled struct{}
 - `app.WithRunnerNoRetry()`
 - `app.WithRunnerCronScheduler(triggerSkelName, cronExpr)`
 
-其中 cron scheduler 用于给某个无参数 trigger 注册定时触发规则；`triggerSkelName` 不能为空，`cronExpr` 不能为空且必须能被标准 cron 表达式解析。带参数的 trigger 不能作为 cron scheduler 目标。
+cron scheduler 用于给某个无参数 trigger 注册定时触发规则。`triggerSkelName` 必须非空，`cronExpr` 也必须非空且能被标准 cron 表达式解析。注意，带参数的 trigger 不能作为 cron scheduler 目标。
 
 ## 路由模型
 
@@ -381,7 +381,7 @@ app 进程会按需挂载这些内建前缀：
 /demo.user.UserService/getUser
 ```
 
-模块如果实现 `PathPrefixRouteModule`，还可以主动追加自定义前缀 route。
+模块如果实现 `PathPrefixRouteModule`，还能主动追加自定义前缀 route。
 
 ## HTTP 与 inproc
 
@@ -391,7 +391,7 @@ app 进程会按需挂载这些内建前缀：
 - `ListenAddr == ""` 时监听随机端口
 - server 使用 h2c 运行
 
-框架内部还支持 inproc 模式，用于框架自带应用互联；它不是顶层 `app` 包的公共创建入口。
+框架内部还支持 inproc 模式，用于框架自带应用互联。它不是顶层 `app` 包的公共创建入口。
 
 inproc 下会注册：
 
@@ -425,11 +425,11 @@ inproc 下会注册：
 6. 逆序执行模块 `AfterAppStop()`
 7. 逆序执行组件 `AfterAppStop()`
 
-在 `linked` 模式下，外层 app 会先等待业务 app 完成 `StopGracefully()`，再停止同进程内的 Link，避免业务 app 注销时 Link 的 inproc handler 已经卸载。
+在 `linked` 模式下，外层 app 会先等待业务 app 完成 `StopGracefully()`，再停止同进程内的 Link。这样可以避免业务 app 注销时 Link 的 inproc handler 已经卸载的问题。
 
 在 `standalone` / bundled standalone 模式下，会先按逆序优雅停止业务 apps，再停止 Link、Portal、Hub 等内置运行时组件。
 
-注册会在 `AfterAppStart` 之前开始，因此不要把 readiness 关键工作放进该 hook。
+注册会在 `AfterAppStart` 之前开始，所以 readiness 关键工作请放在更早的 hook 里完成。
 启动 hook 失败会 panic，也不会自动回滚已经构造的资源。精确边界和 hook 职责见
 [应用生命周期](../runtime/application-lifecycle.md)。
 
@@ -444,18 +444,18 @@ inproc 下会注册：
 - `BindCommon(...)` 绑定的公共依赖
 - 各能力子系统额外绑定的上下文和 logger
 
-其中：
+具体来说：
 
-- `BindCommon(...)` 适合放应用级公共依赖
-- 组件/模块自己的 `Bind(...)` 适合放该对象专属依赖
+- `BindCommon(...)` 放应用级公共依赖
+- 组件/模块自己的 `Bind(...)` 放该对象专属依赖
 - Servicer / Webber / Eventer / Tasker 会把各自上下文再补到执行容器里
 
 ## 使用时需要守住的边界
 
 - 每个业务 app 都要覆写 `Name()`
-- 在构造时通过 `app.With(&app.RunFlag{ListenAddr: "..."})` 提供监听地址。
-  如果 app 必须自行选择默认值，应在 specification 的 `DIInit()` 中修改注入的
-  flag；到 `BindCommon(...)` 再修改已经太晚
+- 推荐在构造时通过 `app.With(&app.RunFlag{ListenAddr: "..."})` 提供监听地址。
+  如果 app 必须自行选择默认值，请在 specification 的 `DIInit()` 中修改注入的
+  flag。到 `BindCommon(...)` 再修改已经太晚了
 - 组件和模块都用指针类型声明
 - `BindCommon(...)` 只放共享依赖，不要在这里做路由或启动工作
-- web 路由入口收敛到单个 `WebberSpec`，如果需要更多路由，放在同一个 weber 下追加多个 handler
+- web 路由入口收敛到单个 `WebberSpec`。如果需要更多路由，放在同一个 weber 下追加多个 handler

@@ -31,7 +31,7 @@ type Option struct {
 
 规则：
 
-- `Endpoint` 不能为空
+- `Endpoint` 必须非空
 - 支持完整 Redis URL，例如：
   - `redis://127.0.0.1:6379/0`
   - `redis://user:pass@127.0.0.1:6379/2`
@@ -52,11 +52,11 @@ type RedisSpec interface {
 }
 ```
 
-其中：
+具体来说：
 
-- `InitOption(...)`：初始化 Redis 连接参数
-- `InitLockers(...)`：声明这个 Redis 组件下可注入的 locker 类型
-- `InitCaches(...)`：声明这个 Redis 组件下可注入的 cache 类型
+- `InitOption(...)` 初始化 Redis 连接参数
+- `InitLockers(...)` 声明这个 Redis 组件下可注入的 locker 类型
+- `InitCaches(...)` 声明这个 Redis 组件下可注入的 cache 类型
 
 业务组件通过嵌入 `redis.Redis` 获得该契约的默认实现。
 
@@ -103,7 +103,7 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 Vine 将用户声明的 Redis 组件作为单例提供给应用，并通过 factory 创建 Locker 和 Cache。每个 factory 会自动取得当前 `context.Context`，业务代码只需声明注入字段。
 
-业务侧如果要直接操作 Redis，直接注入自己定义的 Redis 组件即可：
+业务侧要直接操作 Redis，注入自己定义的 Redis 组件即可：
 
 ```go
 type UserService struct {
@@ -165,13 +165,13 @@ type UserService struct {
 
 ### 直接创建 locker
 
-如果不想通过注入声明 locker 类型，也可以直接：
+如果不想通过注入声明 locker 类型，可直接：
 
 ```go
 locker := cacheRedis.NewLocker(ctx, "user")
 ```
 
-如果需要运行时传入具体类型，也可以直接：
+如果需要运行时传入具体类型，可直接：
 
 ```go
 locker := cacheRedis.NewLockerByType(reflect.TypeFor[*UserLocker](), ctx).(*UserLocker)
@@ -381,7 +381,7 @@ ctx := lock.Context()
 
 `IsBroken()` 报告的只是一次状态快照；它不会保留锁，也不会与紧随其后的
 `Unlock()` 原子同步。refresh 可能在两次调用之间把锁标记为 broken，当前公共
-API 也没有原子的 `TryUnlock`。应限制临界区时长，在 `Lock.Context()` 取消后
+API 也没有原子的 `TryUnlock`。建议限制临界区时长，在 `Lock.Context()` 取消后
 立即停止工作，并把 `Unlock()` 视为 fail-fast 边界。如果业务必须把失锁当作
 普通 error 处理，应在应用自己的窄作用域 recovery/error 边界中封装此 API，
 或使用具备该契约的锁实现。
@@ -455,18 +455,18 @@ user = s.UserCache.GetOrLoad("1", time.Minute, func() *User {
 ```
 
 `GetOrLoad` 只是依次执行 get、load 和 set，并不会合并同一个 key 的并发 miss；
-多个 execution 可能同时执行 `load`。如果重复回源代价较高，应在应用层增加
+多个 execution 可能同时执行 `load`。如果重复回源代价较高，建议在应用层增加
 singleflight 或其他防止缓存击穿的机制。
 
 ### 直接创建 cache
 
-如果不想通过注入声明 cache 类型，也可以直接：
+如果不想通过注入声明 cache 类型，可直接：
 
 ```go
 cache := redis.NewCache[*User](&cacheRedis.Redis, ctx, "user")
 ```
 
-如果需要运行时传入具体类型，也可以直接：
+如果需要运行时传入具体类型，可直接：
 
 ```go
 cache := cacheRedis.NewCacheByType(reflect.TypeFor[*UserCache](), ctx).(*UserCache)
@@ -498,4 +498,4 @@ vine:cache:user:1
 - 需要缓存时，通过 `InitCaches(...)` 声明注入式 cache，或用 `NewCache(...)` 直接创建
 - 需要感知锁失效时，监听 `lock.Context()`
 - `Lock` 一旦 broken，就丢弃它并重新走一次新的 `Locker.Lock(...)`
-- 不要把 `IsBroken()` 后紧接 `Unlock()` 当成原子的安全解锁操作
+- `IsBroken()` 后紧接 `Unlock()` 不是原子的安全解锁操作，请勿依赖这种模式

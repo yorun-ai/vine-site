@@ -13,7 +13,7 @@ their recipient selection is intentionally different.
 
 | Question | Event | Task |
 | --- | --- | --- |
-| What does it mean? | “User 42 was created.” | “Rebuild index 42.” |
+| What does it mean? | "User 42 was created." | "Rebuild index 42." |
 | How many logical recipients? | One delivery for every distinct listening App name | One delivery to one runner globally |
 | How do multiple instances behave? | Instances with the same App name compete for that App's copy | All registered instances compete for the one task |
 | Does the sender wait for business work? | No; it waits for the message to be accepted | No; it waits for the message to be accepted |
@@ -241,15 +241,15 @@ app.WithRunnerConcurrency(2)
 app.WithRunnerNoRetry()
 ```
 
-`NoRetry` means “finish this message after the first failed attempt.” It does
+`NoRetry` means "finish this message after the first failed attempt." It does
 not move the message to a dead-letter queue and does not create a failure
 record that the sender can query.
 
 The streams currently use memory storage. Successful publication protects
-against an individual handler failure, but it is not a disk-durability
-guarantee across messaging-runtime restarts. Use a database-backed outbox,
-durable external workflow system, or another persisted record when loss across
-runtime restart is unacceptable.
+against an individual handler failure, but it isn't a disk-durability
+guarantee across messaging-runtime restarts. When loss across runtime restart
+is unacceptable, use a database-backed outbox, a durable external workflow
+system, or another persisted record.
 
 ## At-least-once requires idempotency
 
@@ -261,12 +261,12 @@ can execute more than once after:
 - loss of an acknowledgment;
 - reconnect or consumer reassignment.
 
-Vine does not add a public delivery ID to the generated payload. Put a stable
+Vine doesn't add a public delivery ID to the generated payload. Put a stable
 business ID such as `eventId` or `jobId` in the contract, then make the side
 effect idempotent. Common approaches are:
 
 - a database unique constraint on the business ID;
-- an atomic “record processed + apply state transition” transaction;
+- an atomic "record processed + apply state transition" transaction;
 - idempotent upserts;
 - calling an external API with its idempotency-key feature.
 
@@ -296,7 +296,7 @@ Consequences:
 
 ## Metadata and context propagation
 
-Event and Task messages do not carry the full synchronous request context:
+Event and Task messages don't carry the full synchronous request context:
 
 | Metadata | Event | Task |
 | --- | --- | --- |

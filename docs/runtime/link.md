@@ -5,7 +5,9 @@ sidebar_label: Link Runtime
 
 # Link Runtime
 
-Link is the runtime access layer deployed alongside applications. It registers local applications with Hub, maintains configuration and service-discovery state, and provides unified runtime capabilities for Rpc, Web, events, and tasks.
+Link is the runtime access layer deployed alongside applications. It registers
+local applications with Hub, maintains configuration and service-discovery
+state, and provides unified runtime capabilities for Rpc, Web, events, and tasks.
 
 ```mermaid
 flowchart LR
@@ -18,16 +20,22 @@ flowchart LR
 
 ## Responsibilities
 
-- **Application registration**: stores the facts for local application instances, registers their capabilities with Hub, and unregisters them on exit.
-- **Health and leases**: performs instance health checks and sends heartbeats to Hub in normal mode.
-- **Configuration reads**: provides configuration snapshots and watches Hub Redis for change events.
+- **Application registration**: stores the facts for local application instances,
+  registers their capabilities with Hub, and unregisters them on exit.
+- **Health and leases**: performs instance health checks and sends heartbeats to
+  Hub in normal mode.
+- **Configuration reads**: provides configuration snapshots and watches Hub Redis
+  for change events.
 - **Rpc discovery and forwarding**: selects a registered local or remote Rpc
   instance and forwards the call.
-- **Web delivery**: accepts a Portal-selected Web request and forwards it to
-  the locally owned application instance named by that request.
-- **Asynchronous message dispatch**: consumes NATS messages and delivers them to locally declared event listeners and task runners.
+- **Web delivery**: accepts a Portal-selected Web request and forwards it to the
+  locally owned application instance named by that request.
+- **Asynchronous message dispatch**: consumes NATS messages and delivers them to
+  locally declared event listeners and task runners.
 
-Link is the sole owner of local application capability state. The Rpc, Web, event, task, and configuration modules derive their runtime indexes from Link rather than maintaining separate copies of application instance state.
+Link is the sole owner of local application capability state. The Rpc, Web,
+event, task, and configuration modules derive their runtime indexes from Link
+rather than maintaining separate copies of application instance state.
 
 ## Starting Link
 
@@ -38,7 +46,9 @@ vine link serve \
   --hub-endpoint http://127.0.0.1:7071
 ```
 
-The API listens on `127.0.0.1:7079` by default. Ingress defaults to `0.0.0.0:0`; the operating system assigns a port, and Link registers the resulting endpoint with Hub. Set fixed addresses explicitly when needed:
+The API listens on `127.0.0.1:7079` by default. Ingress defaults to `0.0.0.0:0`;
+the operating system assigns a port, and Link registers the resulting endpoint
+with Hub. Set fixed addresses explicitly when needed:
 
 ```bash
 vine link serve \
@@ -47,7 +57,8 @@ vine link serve \
   --hub-endpoint http://127.0.0.1:7071
 ```
 
-The corresponding environment variables are `VINE_API_LISTEN`, `VINE_INGRESS_LISTEN`, and `VINE_HUB_ENDPOINT`.
+The corresponding environment variables are `VINE_API_LISTEN`,
+`VINE_INGRESS_LISTEN`, and `VINE_HUB_ENDPOINT`.
 
 ## Request Paths
 
@@ -56,10 +67,9 @@ The corresponding environment variables are `VINE_API_LISTEN`, `VINE_INGRESS_LIS
 When an application makes an Rpc call, the request first enters Link's
 `rpcproxy`. The proxy selects the next current service registration using
 round-robin. If that registration belongs to a local application, Link invokes
-its application endpoint directly; otherwise it forwards through the target
-Link. Locality changes the forwarding path, not selection priority. A failure
-after selection does not make that invocation automatically try another
-registration.
+its application endpoint directly; otherwise it forwards through the target Link.
+Locality changes the forwarding path, not selection priority. A failure after
+selection doesn't make that invocation automatically try another registration.
 
 ### Web
 
@@ -67,25 +77,32 @@ registration.
 owns the distributed Web endpoint snapshot and round-robin selection; it sends
 the request to the Link that owns the selected instance. That target Link
 verifies the local instance and handler, then invokes the application endpoint.
-Link does not select a remote Web target from its own discovery index. See
+Link doesn't select a remote Web target from its own discovery index. See
 [Request routing](./request-routing.md) for Portal selection, discovery
 freshness, and failure boundaries.
 
 ### Event and Task
 
-The `event` and `task` modules create NATS consumers from the declarations of local instances. Link automatically updates the corresponding consumers and dispatch state when application capabilities change.
+The `event` and `task` modules create NATS consumers from the declarations of
+local instances. Link automatically updates the corresponding consumers and
+dispatch state when application capabilities change.
 
 ## Inproc Mode
 
 `linked.New(...)` runs Link and the business application in the same process,
-while Hub remains an external service. Link still opens ingress, registers
-with Hub, and continues Hub heartbeats. The in-process App is coupled to the
-Link lifecycle, so its separate application health check is disabled.
+while Hub remains an external service. Link still opens ingress, registers with
+Hub, and continues Hub heartbeats. The in-process App is coupled to the Link
+lifecycle, so its separate application health check is disabled.
 
-Only standalone mode runs Hub, Portal, Link, and the application in a single process and uses in-process Redis and endpoints. Standalone mode does not send heartbeats. Use linked mode or a fully separated deployment to test leases and network failures.
+Only standalone mode runs Hub, Portal, Link, and the application in a single
+process and uses in-process Redis and endpoints. Standalone mode doesn't send
+heartbeats. Use linked mode or a fully separated deployment to test leases and
+network failures.
 
 ## Related Documentation
 
 - [Hub](./hub.md): the source of configuration and registration data.
-- [Portal](./portal.md): the gateway through which external requests enter applications.
-- [App](../framework/app.md): assembles applications in linked or standalone mode.
+- [Portal](./portal.md): the gateway through which external requests enter
+  applications.
+- [App](../framework/app.md): assembles applications in linked or standalone
+  mode.

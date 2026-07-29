@@ -8,7 +8,7 @@ description: Typed Vine configuration, per-instance snapshots, and runtime updat
 # Configuration
 
 Vine configuration is declared in Skel, stored by Hub, distributed through
-Link, and resolved as a typed Go dependency. Application code does not poll Hub
+Link, and resolved as a typed Go dependency. Application code doesn't poll Hub
 or decode configuration JSON itself.
 
 The important design choice is not only the fields in a configuration. It is
@@ -66,7 +66,7 @@ handler may not be read until the first matching execution.
 
 ### Instant does not mutate an existing object
 
-An instant update changes Link's snapshot. It does not modify a Go pointer that
+An instant update changes Link's snapshot. It doesn't modify a Go pointer that
 was already injected:
 
 ```mermaid
@@ -118,7 +118,7 @@ standalone.NewWithOption[*CheckoutApp](standalone.Option{
 }).StartAndWait()
 ```
 
-`SQLiteFile` here is **Hub's database**. It does not configure a business
+`SQLiteFile` here is **Hub's database**. It doesn't configure a business
 `infra/rdb` component. If the application also owns a relational database,
 declare that database separately.
 
@@ -162,7 +162,7 @@ Resolving a configuration is a strict operation:
 - Hub and Link must have a non-empty value for its fully qualified Skel name.
 - The JSON must decode into the generated Go type.
 
-If one of these conditions is not met, resolution fails rather than silently
+If any of these conditions is not met, resolution fails rather than silently
 returning a zero-value configuration. Where the failure appears depends on the
 first consumer: a module can fail application startup, while a handler-only
 configuration can first fail during a request.

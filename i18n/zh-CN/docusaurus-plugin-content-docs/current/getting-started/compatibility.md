@@ -6,7 +6,7 @@ slug: /compatibility
 ---
 
 一份 Vine 构建由三个版本共同决定：Go、`go.yorun.ai/vine`，以及生成契约代码的
-`skelc`。三者都应留下明确记录。只升级其中一个，可能导致仓库里的生成代码与
+`skelc`。三者都应留下明确记录。如果只升级其中一个，可能导致仓库里的生成代码与
 runtime 不一致。
 
 :::warning 1.0 之前的 `next`
@@ -21,8 +21,8 @@ runtime 不一致。
 
 ## 1.0 之前如何使用文档
 
-Vine 目前仍处于 1.0 之前。同一个 minor 版本线内的 patch 版本以保持向后
-兼容为目标，而新的 minor 版本可能修改公共 API、CLI 行为、配置、Skel
+Vine 目前仍处于 1.0 之前。同一个 minor 版本线内的 patch 版本尽量保持向后
+兼容，而新的 minor 版本可能修改公共 API、CLI 行为、配置、Skel
 集成或协议。
 
 - 基于当前源码开发：使用 `next`，并与同一个 Vine checkout 对照。
@@ -31,7 +31,7 @@ Vine 目前仍处于 1.0 之前。同一个 minor 版本线内的 patch 版本�
 
 ## 当前源码要求
 
-| Vine 文档 | Go | 最低 skelc | 应使用的 skelc |
+| Vine 文档 | Go | 最低 skelc | 推荐使用的 skelc |
 | --- | --- | --- | --- |
 | 当前源码 / `next` | `1.26.5` 或更高 | `v0.9.0` | 与应用一起审查过的精确 revision |
 
@@ -44,7 +44,7 @@ runtime 检查没有为未来的 skelc 版本定义兼容上限。请固定已�
 
 ## 固定经过审查的工具链
 
-教程使用 `main`，因为本站描述的是当前源码。CI 或正式发布时，应把下面两个值换成
+教程使用 `main`，因为本站描述的是当前源码。CI 或正式发布时，请把下面两个值换成
 经过审查的 commit hash 或 tag：
 
 ```bash
@@ -61,7 +61,7 @@ go install go.yorun.ai/skelc/cmd/skelc@"$SKELC_REVISION"
 `go` directive 记录预期的语言版本，`toolchain` directive 请求使用指定
 compiler。同时还应固定 CI image 或 toolchain 安装，因为已经更新的默认
 toolchain 仍可能被选中。提交 `go.mod`、`go.sum`、Skel 源文件和生成代码的
-变更。生产构建流水线不要保留 `main` 或 `@latest`；即使应用仓库没有变更，它们
+变更。生产构建流水线里，请保留 `main` 或 `@latest` 之外的手段；即使应用仓库没有变更，它们
 也可能解析到新的代码。
 
 ### 核对 CI 实际使用的工具
@@ -105,7 +105,7 @@ func main() {
 v0.9.0
 ```
 
-构建系统需要比较所选 generator 与 Vine runtime 时，可以读取这个值。生成
+构建系统需要比较所选 generator 与 Vine runtime 时，可读取这个值。生成
 schema 仍然是最终的 runtime 检查，因此修改 Vine 或 skelc 版本后都要重新
 生成并测试应用。
 
@@ -117,7 +117,7 @@ schema 仍然是最终的 runtime 检查，因此修改 Vine 或 skelc 版本后
 2. 确认所选 Vine module 要求的 Go 版本。
 3. 运行 `vine version --json`，记录它报告的最低 skelc 版本。
 4. 使用选定的 skelc binary 重新生成所有维护中的契约。
-5. 审查生成代码的差异，不要手工修改生成文件。
+5. 审查生成代码的差异，手工调整请局限在生成文件之外。
 6. 运行应用测试，并在 staging 环境验证实际部署拓扑。
 7. 将 Vine、生成后的应用代码和 runtime 服务作为一次兼容性变更发布。
 

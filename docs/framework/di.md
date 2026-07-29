@@ -153,7 +153,7 @@ injector.Resolve(&smtp) // Uses the TransientScope binding for *SMTPGateway
 
 If a struct implements `DIInit()`, the container calls it automatically after construction and field injection. If it implements `DIDispose()`, it can participate in disposal at the end of an execution.
 
-Note: `PlainInjector` does not own the application shutdown sequence and does not automatically dispose `SingletonScope` instances. The application, component, or module that created the injector should close singleton resources in a lifecycle hook such as `BeforeAppStop()` or `AfterAppStop()`.
+Note: `PlainInjector` doesn't own the application shutdown sequence and doesn't automatically dispose `SingletonScope` instances. The application, component, or module that created the injector should close singleton resources in a lifecycle hook such as `BeforeAppStop()` or `AfterAppStop()`.
 
 ## Type helper
 
@@ -164,7 +164,7 @@ di.T[*UserService]()
 di.T[MailGateway]()
 ```
 
-Supported binding target types primarily include:
+Supported binding target types include:
 
 - Interfaces.
 - Struct pointers.
@@ -190,7 +190,7 @@ b.Bind(di.T[MailGateway]()).
     In(di.SingletonScope)
 ```
 
-The following constraints apply:
+Constraints:
 
 - The target type must be an interface.
 - The implementation type must be a struct pointer.
@@ -241,7 +241,7 @@ This binding:
 
 ### Abstract factories
 
-For an interface target, you can also use `ToAbstractFactory(...)`. It is useful when the concrete implementation of an interface must be selected at runtime.
+For an interface target, you can also use `ToAbstractFactory(...)`. This helps when the concrete implementation of an interface must be selected at runtime.
 
 ## Field injection
 
@@ -295,7 +295,7 @@ execution := injector.StartExecution()
 defer execution.CompleteExecution()
 ```
 
-Resolution follows these rules:
+Resolution rules:
 
 - `SingletonScope`: reuse the root-container singleton.
 - `ExecutionScope`: cache the instance for the current execution.
@@ -325,7 +325,7 @@ execution := injector.StartExecution(func(s *di.Seeder) {
 })
 ```
 
-The following constraints apply:
+Constraints:
 
 - A seeded target type must resolve to `ExecutionScope`.
 - Seeding is only allowed inside a `SeedApplier` passed to `StartExecution(...)`; retaining and using the `Seeder` after that method returns causes a panic.
@@ -359,9 +359,9 @@ Objects can participate in disposal in two ways:
 - `ExecutionScope` instances.
 - Tracked `TransientScope` instances created during the execution.
 
-`PlainInjector` does not end the lifetime of `SingletonScope` instances automatically. Vine resource components such as RDB and Redis close shared connections while the App is stopping; resources bound by business code should follow the same pattern.
+`PlainInjector` doesn't end the lifetime of `SingletonScope` instances automatically. Vine resource components such as RDB and Redis close shared connections while the App is stopping; resources bound by business code should follow the same pattern.
 
-Therefore, if business code binds databases, Redis or MQ clients, file handles, or other singleton resources through DI, it should release them explicitly in an application, component, or module shutdown hook rather than relying on `PlainInjector` to call `DIDispose()`.
+If business code binds databases, Redis or MQ clients, file handles, or other singleton resources through DI, release them explicitly in an application, component, or module shutdown hook rather than relying on `PlainInjector` to call `DIDispose()`.
 
 ## Choosing a scope
 

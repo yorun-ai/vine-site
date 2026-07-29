@@ -5,9 +5,9 @@ sidebar_label: 组件与模块
 
 # 组件与模块
 
-组件和模块用于把应用拆成可以独立初始化、注入和停止的功能单元。`app.New`
-会创建 App 壳、构造并校验应用规格、捕获运行参数，但此时尚未构造已声明的
-组件与模块；`Start` 才会创建并注入它们、执行启动 hook。优雅停止时，停机
+组件和模块的作用是把应用拆成可以独立初始化、注入和停止的功能单元。`app.New`
+会创建 App 壳、构造并校验应用规格、捕获运行参数，但这时候还不会构造已声明的
+组件与模块。`Start` 阶段才真正创建并注入它们，然后执行启动 hook。优雅停止时，停机
 hook 按相反顺序执行。
 
 ## 能力总览
@@ -74,7 +74,7 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 }
 ```
 
-组件对外暴露的对象会进入依赖注入容器，模块、Rpc handler、Web handler、Event listener 和 Task runner 都可以直接注入使用。
+组件对外暴露的对象会进入依赖注入容器。模块、Rpc handler、Web handler、Event listener 和 Task runner 都能直接注入使用。
 
 ## 生命周期顺序
 
@@ -85,15 +85,15 @@ flowchart LR
 ```
 
 - `BeforeAppStart`：在注册前建立连接、预热数据或检查依赖。错误会中止启动并以
-  panic 暴露；Vine 不会自动回滚此前已经执行的 hook。
+  panic 暴露。注意，Vine 不会自动回滚此前已经执行的 hook。
 - `AfterAppStart`：endpoint 已启动且注册已经开始后执行。此时请求可能已经到达，
-  因此不要把 readiness 工作放在这里。
+  所以 readiness 相关工作请放在更早的 hook 中完成。
 - `BeforeAppStop`：停止生产新工作，为注销和 drain 阶段做好准备。
 - `AfterAppStop`：释放连接和其他资源。
 
-启动时，Vine 先按声明顺序执行基础设施组件，再执行模块；停止时先以相反顺序停止模块，再停止组件。这样业务模块在启动时可以使用已经就绪的数据库和 Redis，在释放这些连接前也有机会完成清理。
+启动时，Vine 先按声明顺序执行基础设施组件，再执行模块。停止时先以相反顺序停止模块，再停止组件。这样业务模块在启动时就能使用已经就绪的数据库和 Redis，在释放这些连接前也有机会完成清理。
 
-同类模块或组件不要重复声明。需要共享依赖时，在应用的 `BindCommon` 或对象自己的 `Bind` 中绑定；一次请求内的上下文依赖交给 execution scope。
+同类模块或组件不能重复声明。需要共享依赖时，在应用的 `BindCommon` 或对象自己的 `Bind` 中绑定；一次请求内的上下文依赖交给 execution scope。
 
 进一步了解绑定方式见 [依赖注入](./di.md)，完整的启动与停机顺序见
 [应用生命周期](../runtime/application-lifecycle.md)。

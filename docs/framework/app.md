@@ -56,7 +56,7 @@ Typical usage:
 app.New[*DemoApp]().StartAndWait()
 ```
 
-The methods have the following semantics:
+Here's what each method does:
 
 - `Start()`: starts the application without blocking.
 - `StopGracefully()`: performs a graceful shutdown and blocks until the application has fully stopped.
@@ -126,11 +126,11 @@ instance := app.New[*DemoApp]()
 ```
 
 `New` constructs and validates the application specification immediately. It
-is not a lazy factory: injected fields and `DIInit()` on the spec run during
+isn't a lazy factory: injected fields and `DIInit()` on the spec run during
 this call, and the root context and listen address are captured before
 `Start()`.
 
-The following rules apply:
+Two constraints to keep in mind:
 
 - Each spec type can be created only once.
 - Different spec types with the same `Name()` cannot be created together.
@@ -369,10 +369,7 @@ An application process mounts these built-in prefixes as needed:
 - `/task`
 - `/web/access/...`
 
-Routing behaves as follows:
-
-- After a prefix is matched, the framework removes it and passes the remaining path to the corresponding handler.
-- If no registered route matches, the response is `404`.
+After a prefix is matched, the framework removes it and passes the remaining path to the corresponding handler. If no registered route matches, the response is `404`.
 
 For example, when the request path is:
 
@@ -396,7 +393,7 @@ In normal mode:
 - When `ListenAddr == ""`, it listens on a randomly assigned port.
 - The server uses h2c.
 
-The framework also supports in-process mode for communication between built-in applications. It is not a public creation entry point in the top-level `app` package.
+The framework also supports in-process mode for communication between built-in applications. It isn't a public creation entry point in the top-level `app` package.
 
 In-process mode registers:
 

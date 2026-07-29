@@ -148,14 +148,14 @@ or field tag.
 
 `redact.Option{RevealSensitive: true}` explicitly preserves ordinary sensitive
 fields and should only be used for tightly controlled temporary diagnostics.
-It does not affect binary values: they are always replaced with their byte
+It doesn't affect binary values: they are always replaced with their byte
 length, never their raw contents.
 
 Framework Rpc, Event, and Task logs always call `core/redact` when they record payloads; there is no global switch that disables masking or emits sensitive values in full. `core/redact` also bounds traversal depth, node count, collection size, string length, and final JSON size. `Result.Truncated` is `true` when a value is truncated.
 
 ## Application testing
 
-`app/testkit` starts a standalone runtime in tests, overrides configuration, and creates type-safe clients. It is suitable for integration tests that cover dependency injection, Rpc handlers, Event listeners, and Task runners.
+`app/testkit` starts a standalone runtime in tests, overrides configuration, and creates type-safe clients. It works well for integration tests that cover dependency injection, Rpc handlers, Event listeners, and Task runners.
 
 ```go title="greeting_test.go"
 func TestGreeting(t *testing.T) {
@@ -170,7 +170,7 @@ func TestGreeting(t *testing.T) {
 }
 ```
 
-A Vine App is a singleton within a test process. Start a standalone runtime only once per test package. When you have multiple cases, organize them with `t.Run(...)` under the same top-level test and share the runtime; do not create the App repeatedly in separate tests.
+A Vine App is a singleton within a test process. Start a standalone runtime only once per test package. When you have multiple cases, organize them with `t.Run(...)` under the same top-level test and share the runtime; don't create the App repeatedly in separate tests.
 
 Tests should focus on observable behavior: return values, state changes, configuration overrides, and error codes. Start separate Hub, Link, and Portal processes only when you need to test real leases, network loss, or TLS ingress.
 

@@ -13,7 +13,7 @@ Rpc, Web, Event, and Task handlers all need to know where a call came from, who 
 - The current actor.
 - A `context.Context` carrying this metadata.
 
-Vine creates and propagates these objects at request boundaries. Business code normally only needs to read them from the execution context; it does not need to generate them or parse transport fields itself.
+Vine creates and propagates these objects at request boundaries. Business code normally only needs to read them from the execution context; it doesn't need to generate them or parse transport fields itself.
 
 ## Core interfaces
 
@@ -37,7 +37,7 @@ appInfo, err := meta.NewApp(
 )
 ```
 
-The following constraints apply:
+Constraints:
 
 - `name` must be a dot-separated lowercase name, such as `demo.service`.
 - `version` must be valid semantic versioning.
@@ -214,4 +214,4 @@ Typical use cases include:
 - Representing which application initiated a call consistently.
 - Passing the Actor and Initiator down through runtime context.
 
-`meta` only provides the data model; it does not format log fields.
+`meta` provides the data model; it doesn't format log fields.

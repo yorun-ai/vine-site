@@ -9,9 +9,12 @@ Start with [Using Redis](../framework/redis-guide.md) to add Redis to an
 application. Use this reference for the exact component, Cache, Locker, and
 lock-invalidation behavior exposed by `infra/redis`.
 
-The top-level `infra/redis` package exposes public types including `Option`, `TypeAdder`, `RedisSpec`, `Redis`, `Locker`, `Lock`, `Cache[T]`, and `NewCache[T](...)`.
+The top-level `infra/redis` package exposes public types including `Option`,
+`TypeAdder`, `RedisSpec`, `Redis`, `Locker`, `Lock`, `Cache[T]`, and
+`NewCache[T](...)`.
 
-`redis` does not rewrap the `go-redis` command set. It provides a consistent integration layer that:
+`redis` doesn't rewrap the `go-redis` command set. Instead, it provides a
+consistent integration layer that:
 
 - Opens a Redis connection.
 - Attaches the `go-redis` `Cmdable` to an application framework component.
@@ -30,8 +33,6 @@ type Option struct {
 }
 ```
 
-Rules:
-
 - `Endpoint` cannot be empty.
 - Full Redis URLs are supported, for example:
   - `redis://127.0.0.1:6379/0`
@@ -39,7 +40,9 @@ Rules:
 - Plain addresses are also supported:
   - `127.0.0.1:6379`
 
-`redis` first calls `go-redis`'s `ParseURL(...)`. If parsing fails, it falls back to plain-address mode. The client always uses the Redis RESP2 protocol and disables identity reporting.
+`redis` first calls `go-redis`'s `ParseURL(...)`. If that fails, it falls back to
+plain-address mode. The client always uses the Redis RESP2 protocol and disables
+identity reporting.
 
 ### `RedisSpec`
 
@@ -53,17 +56,20 @@ type RedisSpec interface {
 }
 ```
 
-Its methods have these roles:
+Its methods serve these roles:
 
 - `InitOption(...)`: initializes Redis connection options.
 - `InitLockers(...)`: declares injectable locker types for this Redis component.
 - `InitCaches(...)`: declares injectable cache types for this Redis component.
 
-A business component receives the default implementation of this contract by embedding `redis.Redis`.
+A business component receives the default implementation of this contract by
+embedding `redis.Redis`.
 
 ### `Redis`
 
-`redis.Redis` already includes application lifecycle support and the `go-redis` `Cmdable`. A business component only needs to embed it and supply connection configuration:
+`redis.Redis` already includes application lifecycle support and the `go-redis`
+`Cmdable`. A business component only needs to embed it and supply connection
+configuration:
 
 ```go
 type CacheRedis struct {
@@ -93,18 +99,22 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 ## Initialization Flow
 
-The application integrates Redis in this order during startup:
+During startup, the application integrates Redis in this order:
 
-1. The application creates the user component `*CacheRedis`.
-2. It calls `InitOption(...)`, `InitLockers(...)`, and `InitCaches(...)`.
-3. It opens the Redis client and provides `Cmdable` to the user component.
-4. It registers dependency-injection factories for the declared Lockers and Caches.
+1. Creates the user component `*CacheRedis`.
+2. Calls `InitOption(...)`, `InitLockers(...)`, and `InitCaches(...)`.
+3. Opens the Redis client and provides `Cmdable` to the user component.
+4. Registers dependency-injection factories for the declared Lockers and Caches.
 
 ## DI Semantics
 
-Vine provides the user-declared Redis component to the application as a singleton and creates Lockers and Caches through factories. Each factory automatically receives the current `context.Context`; business code only needs to declare an injected field.
+Vine provides the user-declared Redis component to the application as a singleton
+and creates Lockers and Caches through factories. Each factory automatically
+receives the current `context.Context`; business code only needs to declare an
+injected field.
 
-To execute Redis commands directly in business code, inject your own Redis component:
+To execute Redis commands directly in business code, inject your own Redis
+component:
 
 ```go
 type UserService struct {
@@ -120,7 +130,10 @@ value, err := s.CacheRedis.Get(ctx, "user:1").Result()
 
 ## Lifecycle
 
-The Redis client is created when the component starts and closed after the application stops. Caches, Lockers, and user-defined Redis components share this client; business modules do not need to open duplicate connections or close it manually.
+The Redis client is created when the component starts and closed after the
+application stops. Caches, Lockers, and user-defined Redis components all share
+this client; business modules don't need to open duplicate connections or close
+it manually.
 
 ## Locker
 
@@ -144,10 +157,12 @@ func (*UserLocker) KeyPrefix() string {
 }
 ```
 
-`KeyPrefix()` follows these rules:
+How `KeyPrefix()` works:
 
-- By default, every locker type receives a unique prefix derived from its fully qualified type name.
-- To let multiple locker types operate on the same Redis lock, explicitly override `KeyPrefix()` and return the same value from each type.
+- By default, every locker type gets a unique prefix derived from its fully
+  qualified type name.
+- To let multiple locker types operate on the same Redis lock, explicitly
+  override `KeyPrefix()` and return the same value from each type.
 
 Declare the locker in the Redis component:
 
@@ -167,7 +182,7 @@ type UserService struct {
 
 ### Creating a Locker Directly
 
-If you do not want to declare a locker type for injection, create one directly:
+If you don't want to declare a locker type for injection, create one directly:
 
 ```go
 locker := cacheRedis.NewLocker(ctx, "user")
@@ -181,7 +196,7 @@ locker := cacheRedis.NewLockerByType(reflect.TypeFor[*UserLocker](), ctx).(*User
 
 ### Complete Example
 
-The following example defines an injectable locker.
+Here's an injectable locker example.
 
 First, define the Redis component:
 
@@ -289,14 +304,14 @@ The public call is:
 lock, ok := locker.Lock(key)
 ```
 
-The return values mean:
+Return values:
 
 - `(*Lock, true)`: the lock was acquired.
 - `(*Lock, false)`: another holder already owns the lock.
 
-Redis infrastructure errors panic instead of being returned.
+Redis infrastructure errors panic rather than being returned.
 
-Actual Redis keys follow these rules:
+Actual Redis keys follow this pattern:
 
 - The global prefix is always `vine:lock:`.
 - The remaining key is always `<KeyPrefix()> + ":" + key`.
@@ -330,12 +345,13 @@ vine:lock:user:
 
 ### Default Lock
 
-By default, `Locker.Lock(...)` uses:
+`Locker.Lock(...)` defaults to:
 
 - `timeout = 30s`
 - Automatic refresh.
 
-The underlying lock therefore always has a TTL, but Vine renews it automatically while it is held.
+So the underlying lock always has a TTL, but Vine renews it automatically while
+it is held.
 
 ### `Lock.Context()`
 
@@ -355,11 +371,12 @@ This context is canceled when:
 - Refresh fails repeatedly and the lock is ultimately considered lost.
 - The application or the current execution's parent context is canceled.
 
-Listen to this context when business logic needs to detect that a lock is no longer valid.
+Listen to this context when business logic needs to detect that a lock is no
+longer valid.
 
 ### Refresh Policy
 
-The default refresh policy is:
+The default refresh policy:
 
 - Normal refresh interval: `10s`.
 - Retry interval after a failure: `3s`.
@@ -368,7 +385,7 @@ The default refresh policy is:
 When a normal refresh tick occurs:
 
 1. Vine attempts a refresh immediately.
-2. If it fails, Vine retries every `3s`.
+2. If that fails, Vine retries every `3s`.
 3. Vine considers the lock lost only after the retry threshold is reached.
 
 ### Broken State
@@ -381,13 +398,13 @@ At that point:
 - Calling `Unlock()` panics.
 - The `Lock` cannot recover.
 
-`IsBroken()` reports a snapshot. It does not reserve the lock or synchronize a
-following `Unlock()`: refresh can mark the lock broken between the two calls.
-The current public API has no atomic `TryUnlock`. Keep the critical section
-bounded, stop work when `Lock.Context()` is canceled, and treat `Unlock()` as a
-fail-fast boundary. If lock loss must be handled as an ordinary error, put this
-API behind a narrowly scoped application recovery/error boundary or use a lock
-implementation with that contract.
+`IsBroken()` reports a snapshot. It doesn't reserve the lock or synchronize a
+following `Unlock()`: refresh can mark the lock broken between the two calls. The
+current public API has no atomic `TryUnlock`. Keep the critical section bounded,
+stop work when `Lock.Context()` is canceled, and treat `Unlock()` as a fail-fast
+boundary. If lock loss must be handled as an ordinary error, wrap this API behind
+a narrow application recovery/error boundary or use a lock implementation with
+that contract.
 
 ### One-Shot Semantics
 
@@ -457,14 +474,14 @@ user = s.UserCache.GetOrLoad("1", time.Minute, func() *User {
 })
 ```
 
-`GetOrLoad` is a convenience sequence of get, load, and set. It does not
+`GetOrLoad` is a convenience sequence of get, load, and set. It doesn't
 singleflight concurrent misses: several executions can run `load` for the same
 key at once. Add application-level request coalescing or another cache-stampede
 strategy when duplicate loads are expensive.
 
 ### Creating a Cache Directly
 
-If you do not want to declare a cache type for injection, create one directly:
+If you don't want to declare a cache type for injection, create one directly:
 
 ```go
 cache := redis.NewCache[*User](&cacheRedis.Redis, ctx, "user")
@@ -492,15 +509,19 @@ vine:cache:user:1
 
 The default `KeyPrefix()` rules match those for `Locker`:
 
-- By default, every cache type receives a unique prefix derived from its fully qualified type name.
-- To let multiple cache types share the same Redis keys, explicitly override `KeyPrefix()` and return the same value from each type.
+- By default, every cache type gets a unique prefix derived from its fully
+  qualified type name.
+- To let multiple cache types share the same Redis keys, explicitly override
+  `KeyPrefix()` and return the same value from each type.
 
 ## Cache and lock rules
 
 - Embed `redis.Redis` consistently in Redis components.
 - Prefer injectable lockers for stable key prefixes.
-- Declare injectable caches through `InitCaches(...)`, or create one directly with `NewCache(...)`.
+- Declare injectable caches through `InitCaches(...)`, or create one directly
+  with `NewCache(...)`.
 - Listen to `lock.Context()` when you need to detect lock invalidation.
-- Once a `Lock` is broken, discard it and acquire a new one through `Locker.Lock(...)`.
+- Once a `Lock` is broken, discard it and acquire a new one through
+  `Locker.Lock(...)`.
 - Do not treat `IsBroken()` followed by `Unlock()` as an atomic safe-unlock
   operation.

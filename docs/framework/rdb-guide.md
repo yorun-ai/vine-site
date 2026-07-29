@@ -30,7 +30,7 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 :::warning Schema migrations
 
-Vine opens the database and constructs DAOs; it does not call GORM
+Vine opens the database and constructs DAOs; it doesn't call GORM
 `AutoMigrate` or create application tables. Run reviewed migrations as an
 explicit deployment step before instances begin serving. The
 `standalone.Option.SQLiteFile` belongs to Hub and is unrelated to this business

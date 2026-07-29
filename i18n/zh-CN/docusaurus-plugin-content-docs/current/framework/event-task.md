@@ -18,8 +18,8 @@ Event 用于发布已经发生的事实，Task 用于请求某个 runner 执行�
 | 发送方是否等待业务处理？ | 否，只等待消息被接受 | 否，只等待消息被接受 |
 | 典型设计 | 通知、投影、集成事实 | 后台工作、定时维护、作业 |
 
-Event 不是向每个进程广播，Task 也不会定向发给启动它的 App。应根据这些投递组
-选择能力，而不能只看方法名称。
+Event 不是向每个进程广播，Task 也不会定向发给启动它的 App。建议根据这些投递组
+选择能力，而不是只看方法名称。
 
 ## 启用能力
 
@@ -69,7 +69,7 @@ skelc check --skel-in ./skel
 skelc gen go --skel-in ./skel --go-out ./skeled
 ```
 
-生成代码会为 Event 提供 emitter/listener，为 Task 提供 launcher/runner。不要直接
+生成代码会为 Event 提供 emitter/listener，为 Task 提供 launcher/runner。请勿直接
 编辑生成文件。
 
 ## 发布 Event
@@ -142,8 +142,8 @@ Vine 使用 Event 的 Skel 名和监听 App 名组成 Event consumer identity：
 
 ### 注册 Runner
 
-嵌入生成的默认 runner。Cron 只能调度无输入 trigger，因此 `nightly` 可以调度，
-而 `manually` 不可以：
+嵌入生成的默认 runner。Cron 只能调度无输入 trigger，因此 `nightly` 能调度，
+而 `manually` 不能：
 
 ```go title="task.go"
 type RebuildIndexRunner struct {
@@ -205,7 +205,7 @@ App 实例都在同一个逻辑 work queue 中竞争：
 - Task 执行没有向 launcher 同步返回结果的通道。
 
 如果两个团队需要针对同一业务事实分别执行工作，应定义两个 Task，或显式启动
-两份作业。为同一个 Task 注册两个 App 名不会产生两份消息。
+两份作业。注意，为同一个 Task 注册两个 App 名不会产生两份消息。
 
 ## 投递默认值与边界
 
@@ -236,7 +236,7 @@ app.WithRunnerNoRetry()
 也不会产生发送方可查询的失败记录。
 
 当前 stream 使用内存存储。发布成功可以抵御单个 handler 失败，但并不保证消息
-运行时重启后的磁盘持久性。如果不能接受运行时重启造成的丢失，应使用数据库
+运行时重启后的磁盘持久性。如果无法接受运行时重启造成的丢失，建议使用数据库
 outbox、持久化外部工作流系统或其他持久记录。
 
 ## 至少一次要求幂等
@@ -256,19 +256,19 @@ Vine 不会向生成的 payload 添加公开 delivery ID。应在契约中放置
 - 使用幂等 upsert；
 - 调用外部 API 时使用其 idempotency-key 能力。
 
-不要仅为避免重复就给非幂等操作设置 `NoRetry`：这只是把重复风险换成第一次失败
-后的静默丢失。应选择业务能够对账和修复的结果，并在必要时保留可审计业务记录。
+不要仅为避免重复就给非幂等操作设置 `NoRetry`——这只是把重复风险换成了第一次失败
+后的静默丢失。应选择业务能对账和修复的结果，并在必要时保留可审计业务记录。
 
 ## 超时不等于执行已经停止
 
 注册 timeout 限制 Link 等待一次尝试的时间。listener 或 runner 会获得带该
 deadline 的 context，业务代码应在它被取消时停止工作。
 
-如果业务代码忽略 cancellation，Link 可以先超时，把本次尝试标记为失败并重新
+如果业务代码忽略 cancellation，Link 可能先超时，把本次尝试标记为失败并重新
 投递，而原 handler 仍在运行。网络部署如此，standalone 的进程内 transport 也
-有意保留调用方可见的相同行为。因此两次尝试可能重叠。
+有意保留调用方可见的相同行为。所以两次尝试可能重叠。
 
-这意味着：
+注意这意味着：
 
 - 长循环中以及不可逆操作前要检查注入的 context。
 - 所有可能重试的副作用都必须幂等。
@@ -304,7 +304,7 @@ Event 与 Task 消息不会携带完整的同步请求 context：
 重要边界：
 
 - trigger 必须没有输入参数。
-- option 接收 trigger 的 Skel 名，例如 `"nightly"`，而不是生成的 Go 方法名。
+- option 接收 trigger 的 Skel 名，比如 `"nightly"`，而不是生成的 Go 方法名。
 - 同一个 App 名的多个 replica 所提交的等价声明会由 Hub 去重。不同 App 名会
   创建不同 schedule，即使 Cron 表达式相同；两次发布都会进入同一个全局 Task
   queue。
@@ -315,7 +315,7 @@ Event 与 Task 消息不会携带完整的同步请求 context：
   重试和幂等要求。
 
 如果业务日程需要日历规则、严格时区治理、misfire policy、执行历史或运营人员
-控制的回放，应使用专门 scheduler/workflow 系统，再由它启动 Vine Task。
+控制的回放，建议使用专门 scheduler/workflow 系统，再由它启动 Vine Task。
 
 ## 依赖 Event 或 Task 之前
 

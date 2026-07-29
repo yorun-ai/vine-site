@@ -5,7 +5,7 @@ sidebar_label: 依赖注入
 
 # 依赖注入
 
-Vine 通过 DI 创建模块、handler、listener 和 runner。日常代码先使用字段上的
+Vine 通过 DI 创建模块、handler、listener 和 runner。日常代码推荐先使用字段上的
 `inject:""`；接口需要指定实现、构造过程需要 factory，或对象确实需要明确生命周期时，
 再增加 binding。
 
@@ -100,7 +100,7 @@ b.Bind(di.T[*B]()).In(di.ExecutionScope)
 b.Bind(di.T[*C]()).In(di.TransientScope)
 ```
 
-也可以在类型上声明默认 scope：
+也能在类型上声明默认 scope：
 
 ```go
 type Config struct {
@@ -116,8 +116,8 @@ type TempValue struct {
 }
 ```
 
-如果一个可构造类型既没有显式 `In(...)`，也没有 scope marker，最终使用的是当前
-injector 提供的 fallback scope：
+如果一个可构造类型既没有显式 `In(...)`，也没有 scope marker，
+最终使用的是当前 injector 提供的 fallback scope：
 
 - 根或子 `PlainInjector` 使用 `TransientScope`
 - `ExecutionInjector` 使用 `ExecutionScope`
@@ -127,7 +127,9 @@ injector 提供的 fallback scope：
 
 Scope 绑定在“请求的 target type”上，而不是绑定在最终创建出的 concrete instance 上。也就是说，`ToImplementation(...)`、`ToFactory(...)`、`ToInstance(...)` 这类转发或工厂式绑定，其 scope 只描述当前这条 binding 的生命周期。
 
-如果同一个 concrete implementation 既会通过接口请求，又会被直接请求，它们会分别走各自的 binding，生命周期可能不同。需要共享生命周期时，应显式绑定两边并保持 scope 一致，或者让它们转发到同一个已有实例/工厂来源。
+如果同一个 concrete implementation 既会通过接口请求，又会被直接请求，
+它们会分别走各自的 binding，生命周期可能不同。需要共享生命周期时，
+应显式绑定两边并保持 scope 一致，或者让它们转发到同一个已有实例/工厂来源。
 
 示例：
 
@@ -305,7 +307,7 @@ defer execution.CompleteExecution()
 
 ## Seeding
 
-执行期对象通常只能在运行现场拿到，可以在 `StartExecution(...)` 时 seed：
+执行期对象只能在运行现场拿到，在 `StartExecution(...)` 时 seed 即可：
 
 ```go
 execution := injector.StartExecution(func(s *di.Seeder) {
@@ -341,13 +343,13 @@ sub := injector.SubInjector(func(b *di.Binder) {
 
 特点：
 
-- 子容器可以看到父容器的绑定
-- 子容器可以追加自己的绑定
+- 子容器能看到父容器的绑定
+- 子容器能追加自己的绑定
 - 子容器自己的 fallback scope 仍然是 `TransientScope`
 
 ## 释放逻辑
 
-对象可以通过两种方式参与释放：
+对象能通过两种方式参与释放：
 
 - 类型自己实现框架约定的 dispose 能力
 - 绑定时通过 `WithDisposer(...)` 声明销毁函数
@@ -363,15 +365,14 @@ sub := injector.SubInjector(func(b *di.Binder) {
 
 ## 怎么选择 scope
 
-- 会读取请求上下文的 service、client、配置 reader、DAO、cache 和 locker，除非有更强的
-  生命周期要求，否则保持 unscoped，并且只注入 execution 持有的对象。这样它们会在
+- 会读取请求上下文的 service、client、配置 reader、DAO、cache 和 locker，建议保持 unscoped，并且只注入 execution 持有的对象，除非有更强的生命周期要求。这样它们会在
   一次 execution 内复用，也不会把上一次请求的状态带到下一次
 - 只在 execution 内有效的值应显式使用 `ExecutionScope`，尤其是 seed 进来的请求
   context、trace 和协议 metadata
 - 只有与请求上下文无关、能安全跨整个应用复用，并且有明确关闭责任人的对象，才使用
   `SingletonScope`
 - 每次解析都必须产生新实例的无状态对象使用 `TransientScope`
-- 不要仅仅为了少一次构造，就把带请求上下文的 client 或动态配置 reader 改成 singleton；
+- 不要仅仅为了少一次构造，就把带请求上下文的 client 或动态配置 reader 改成 singleton。
   这会固定第一次解析时看到的 context 或配置
 
 Rpc、Web、Event 和 Task handler 外层的 container 如何创建，见

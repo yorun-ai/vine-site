@@ -21,7 +21,7 @@ Rpc service、Web handler、Event listener 和 Task runner，但不在业务代�
 
 ## 一套应用模型，多种部署形态
 
-最小的 Vine 环境把完整运行时放在一个进程里。进入生产集群后，同样的角色可以拆成
+最小的 Vine 环境把完整运行时放在一个进程里。进入生产集群后，同样的角色能拆成
 独立 workload。下面是一种实用的 Kubernetes 布局：每个应用实例旁运行一个 Link，
 Hub 与 Portal 独立部署。
 
@@ -47,7 +47,7 @@ flowchart TB
 ```
 
 这只是其中一种布局，并不要求 Link 必须作为 sidecar。只要 Link API 与应用 endpoint
-彼此可达，两者也可以是独立 workload。
+彼此可达，两者也能是独立 workload。
 
 ### 保持不变的部分
 
@@ -66,7 +66,7 @@ flowchart TB
 | 外部流量 | 内嵌 Portal 可按配置打开 listener | 独立 Portal 将请求转发到已注册 Link |
 | 扩缩容与故障 | 只有一个进程边界 | 应用、Link、Portal 和基础设施可分别运维 |
 
-实际项目里，可以把启动入口保持得很薄，把应用 specification 放在可复用 package 中：
+实际项目里，把启动入口保持得很薄就行，应用 specification 放在可复用 package 中：
 
 ```go title="cmd/checkout-standalone/main.go"
 func main() {
@@ -87,7 +87,7 @@ VINE_LINK_ENDPOINT=http://127.0.0.1:7079 ./checkout
 ```
 
 这里变化的是几行启动装配，而不是业务代码。Vine 不负责生成 Kubernetes 资源；它解决
-的是把拓扑相关问题留在应用实现之外，让同一套能力模型可以直接带入集群。
+的是把拓扑相关问题留在应用实现之外，让同一套能力模型能直接带入集群。
 
 ### 这条边界为什么成立
 

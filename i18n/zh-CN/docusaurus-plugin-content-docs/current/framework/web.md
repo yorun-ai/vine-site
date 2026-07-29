@@ -54,6 +54,6 @@ flowchart LR
   Client["客户端"] --> Portal["Portal 站点与准入"] --> Link["Link Web proxy"] --> Handler["应用 Web handler"]
 ```
 
-standalone 模式仍走相同的匹配与转发逻辑，但 endpoint 使用进程内连接。静态资源可通过 `web.NewAssetsServer` 提供，转发已有后端可使用 `web.NewReverseProxy`。
+standalone 模式仍走相同的匹配与转发逻辑，但 endpoint 使用进程内连接。静态资源能通过 `web.NewAssetsServer` 提供，转发已有后端用 `web.NewReverseProxy`。
 
 Portal 配置见 [Portal](../runtime/portal.md)，Actor 与 Web 语法见 [Skel 语法](https://skel.yorun.ai/docs/syntax)。

@@ -29,7 +29,7 @@ HTTP 承载格式单独列在 [vRPC over HTTP](./vrpc-http.md)。
 4. 业务实现生成出的 server 接口
 5. 用 `rpc.NewClient(...)` 或 `rpc.NewServer(...)` 运行
 
-通常不建议手写完整 `ServiceSpec`。
+不推荐手写完整 `ServiceSpec`。
 
 ## Client
 
@@ -50,8 +50,8 @@ type Option struct {
 注意：
 
 - 字段名是 `ServerEndpoint`
-- `Context` 不能为空
-- `Logger` 不能为空
+- `Context` 必须非空
+- `Logger` 必须非空
 - `ReturnIfSystemError == false` 时，system error 默认会直接 panic
 
 ### 创建与调用
@@ -88,7 +88,7 @@ result, err := client.Invoke(methodInfo, arguments, options...)
 - `WithTimeout(...)` 必须大于 0
 - `WithContext(...)` 只覆盖底层请求生命周期使用的父 `context.Context`
 - `WithContext(...)` 不会覆盖 Rpc 元数据，trace / initiator / actor 仍来自 client 自己的 `meta.Context`
-- `WithContext(...)` 与 `WithTimeout(...)` 不能同时使用
+- `WithContext(...)` 与 `WithTimeout(...)` 不可同时使用
 - 不传 `WithContext(...)` 时，默认请求超时是 `30s`
 
 ### `ReturnIfSystemError`
@@ -131,7 +131,7 @@ server := rpc.NewServer(rpc.ServerOption{
 - `RpcHandler()`
 - `HTTPHandler()`
 
-其中 `HTTPHandler()` 返回标准 `http.Handler`。
+`HTTPHandler()` 返回标准 `http.Handler`。
 
 ## Executor
 
@@ -274,12 +274,12 @@ type MethodInfo interface {
 }
 ```
 
-其中：
+关键字段：
 
 - `FullURLPath()` 格式是 `/{serviceSkelName}/{methodSkelName}`
 - `PositionArguments(...)` 把 arguments struct 展成位置参数
-- `ValidateArguments(...)` 会检查参数是否满足生成的 Skeleton 约束
-- `ValidateResult(...)` 会检查返回值是否满足生成的 Skeleton 约束
+- `ValidateArguments(...)` 检查参数是否满足生成的 Skeleton 约束
+- `ValidateResult(...)` 检查返回值是否满足生成的 Skeleton 约束
 
 ## 服务注册
 

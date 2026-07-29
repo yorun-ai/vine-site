@@ -8,9 +8,9 @@ description: A first Vine application, the main capability guides, and the runti
 # Start with Vine
 
 Vine brings lifecycle, dependency injection, configuration, Rpc, Web, Event,
-Task, Redis, and relational databases under one Go application model. Start
-with a standalone process; split Hub, Link, Portal, and the business
-application only when you need the network and operational boundaries.
+Task, Redis, and relational databases under one Go application model. Start with
+a standalone process; split Hub, Link, Portal, and the business application only
+when you need the network and operational boundaries.
 
 If you are trying Vine for the first time:
 
@@ -19,15 +19,14 @@ If you are trying Vine for the first time:
 3. Generate a service from the [first Skel contract](./first-contract.md).
 4. Implement and call it with the [Rpc guide](../framework/rpc-guide.md).
 
-You can finish all four steps without starting a separate runtime service.
+You can do all four steps without starting a separate runtime service.
 
 :::info Before copying a command
 
-Before 1.0, this site maintains only **Vine next**. It follows current source
-and may be ahead of the latest release. Pin released application builds to
-exact Vine and skelc revisions, and check the
-[compatibility page](./compatibility.md) when an example differs from the
-revision you use.
+Before 1.0, this site maintains only **Vine next**. It tracks current source and
+may be ahead of the latest release. Pin released application builds to exact Vine
+and skelc revisions, and check the [compatibility page](./compatibility.md) when
+an example differs from the revision you use.
 
 :::
 
@@ -47,16 +46,14 @@ flowchart LR
   needs.
 - **Skel and skelc** define and generate type-safe contracts. Their language
   reference lives on the [Skel site](https://skel.yorun.ai/docs/).
-- **Link** is the application-side runtime access layer. It handles
-  registration, discovery, forwarding, configuration reads, and asynchronous
-  delivery.
-- **Hub** is the control plane for configuration and runtime registration
-  state.
-- **Portal** is the optional external HTTP/HTTPS gateway. Internal application
-  calls do not need to pass through Portal.
+- **Link** is the application-side runtime access layer. It handles registration,
+  discovery, forwarding, configuration reads, and asynchronous delivery.
+- **Hub** is the control plane for configuration and runtime registration state.
+- **Portal** is the optional external HTTP/HTTPS gateway. Internal
+  application-to-application calls don't go through Portal.
 
-Standalone starts all four roles in one process. Their responsibilities do not
-change; only the transport becomes in-process.
+Standalone starts all four roles in one process. Their responsibilities stay the
+same; only the transport becomes in-process.
 
 ## Pick the capability you need
 
@@ -70,15 +67,15 @@ change; only the transport becomes in-process.
 | Store shared cache state or coordinate a lock | [Redis](../framework/redis-guide.md) | Managed client, typed cache, and locker |
 | Persist relational models | [RDB](../framework/rdb-guide.md) | Managed GORM connection and typed DAO |
 
-If two components are part of the same application and do not need a network
+If two components belong to the same application and don't need a network
 contract, inject a Go dependency instead of creating an Rpc service.
 
 ## Read further when the problem appears
 
 ### As the application grows
 
-1. Learn the [application model](../framework/application-model.md) and how to compose
-   [components and modules](../framework/components.md).
+1. Learn the [application model](../framework/application-model.md) and how to
+   compose [components and modules](../framework/components.md).
 2. Add configuration and the Rpc, Web, Event, or Task capabilities you need.
 3. Add Redis or RDB only when the application owns that infrastructure
    dependency.
@@ -94,10 +91,10 @@ specific boundary you are debugging:
   readiness, shutdown, and resource ownership.
 - [Dependency and execution model](../runtime/execution-model.md) for scopes,
   request-local objects, filters, and disposal.
-- [Request routing](../runtime/request-routing.md) for registration,
-  discovery, instance selection, and drain.
-- [Trace and timeout](../framework/trace-timeout.md) for downstream deadlines
-  and call metadata.
+- [Request routing](../runtime/request-routing.md) for registration, discovery,
+  instance selection, and drain.
+- [Trace and timeout](../framework/trace-timeout.md) for downstream deadlines and
+  call metadata.
 
 ### Before deployment
 
@@ -116,7 +113,7 @@ specific boundary you are debugging:
 - Use `BeforeAppStart` for work that must finish before the application becomes
   discoverable. `AfterAppStart` runs after serving and registration begin.
 - Keep request-scoped dependencies inside the execution that created them.
-- Design Event listeners and Task runners to be idempotent because failed
+- Design Event listeners and Task runners to be idempotent, since failed
   deliveries can be retried.
 - Preserve the injected context when calling downstream services.
 

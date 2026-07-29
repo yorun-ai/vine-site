@@ -7,8 +7,8 @@ sidebar_label: First Contract
 
 Begin with one Greeting service. `skelc` checks the contract and generates its
 Go types, server interface, and client. The generated code is the handoff point
-to the [Rpc guide](../framework/rpc-guide.md), where the Vine handler is
-implemented.
+to the [Rpc guide](../framework/rpc-guide.md), where you implement the Vine
+handler.
 
 ## Install skelc
 
@@ -18,9 +18,9 @@ skelc version
 ```
 
 `@main` keeps this example aligned with the `next` documentation. A released
-application should install a reviewed commit or tag instead, record the
-selected `skelc version`, and regenerate contracts only as an explicit change.
-See [Version Compatibility](./compatibility.md).
+application should install a reviewed commit or tag instead, record the selected
+`skelc version`, and regenerate contracts only as an explicit change. See
+[Version Compatibility](./compatibility.md).
 
 ## Create the Contract Directory
 
@@ -69,7 +69,8 @@ pub service GreetingService {
 skelc check --skel-in ./skel
 ```
 
-If the command exits without an error, the domain, type references, names, and public contract rules are valid. Inspect the symbols recognized by the generator:
+If the command exits without an error, the domain, type references, names, and
+public contract rules are valid. Inspect the symbols the generator recognizes:
 
 ```bash
 skelc symbol list --skel-in ./skel
@@ -92,7 +93,7 @@ skelc gen go \
 
 The output directory contains data models, schemas, and service code. A server
 implementation outside the generated package must embed
-`DefaultGreetingServiceServer`: the generated interface has a package-private
+`DefaultGreetingServiceServer`: the generated interface carries a package-private
 seal method, so another package cannot implement it from scratch. Calls use the
 generated client. Regeneration replaces these files; make contract changes in
 `.skel`, not in the generated Go.
@@ -104,6 +105,9 @@ flowchart LR
 
 ## Next Steps
 
-- Read [Using Rpc](../framework/rpc-guide.md) to register the generated service implementation with a Vine App.
-- Read [Skel syntax](https://skel.yorun.ai/docs/syntax) to continue defining actors, permissions, events, Web endpoints, and tasks.
-- When you need separate regular/pub modules, see the [skelc guide](https://skel.yorun.ai/docs/getting-started).
+- Read [Using Rpc](../framework/rpc-guide.md) to register the generated service
+  implementation with a Vine App.
+- Read [Skel syntax](https://skel.yorun.ai/docs/syntax) to continue defining
+  actors, permissions, events, Web endpoints, and tasks.
+- When you need separate regular/pub modules, see the [skelc
+  guide](https://skel.yorun.ai/docs/getting-started).

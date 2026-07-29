@@ -38,7 +38,7 @@ flowchart TB
 
 这会带来两个重要结果。
 
-第一，构造器校验和 specification 初始化可能在 `Start()` 之前就 panic。应把构造视为真正的初始化，而不是创建一个没有行为的描述对象。
+第一，构造器校验和 specification 初始化可能在 `Start()` 之前就 panic。请把构造视为真正的初始化，而不是创建一个没有行为的描述对象。
 
 第二，构造阶段捕获的运行参数必须在构造器边界或 specification 初始化期间提供。特别是，`BindCommon(...)` 会在之后装配依赖容器时才执行；在那里修改 `AppFlag.ListenAddr`，已经无法改变应用捕获好的监听地址。
 
@@ -53,7 +53,7 @@ application := app.New[*DemoApp](
 )
 ```
 
-自定义 flags 也遵循同一规则：如果后续初始化依赖某个构造参数，应在应用 specification 的 `DIInit()` 中校验或归一化它。构造完成后，应把 flags 当作不可变输入。后续依赖容器中的对象拿到的是副本；修改某个注入的 flag 并不是进程级配置机制。
+自定义 flags 也遵循同一规则：如果后续初始化依赖某个构造参数，应在应用 specification 的 `DIInit()` 中校验或归一化它。构造完成后，请把 flags 当作不可变输入。后续依赖容器中的对象拿到的是副本；修改某个注入的 flag 并不是进程级配置机制。
 
 同一个应用类型和同一个应用名在一个进程中都只能构造一次，即使应用已经停止也一样。应用也是一次性的：不能启动两次，也不能在停止后重新启动。
 
@@ -61,7 +61,7 @@ application := app.New[*DemoApp](
 
 `Start()` 是同步方法。只有当应用完成依赖装配、启动 endpoint 和各项能力、在需要时向 Link 注册，并执行完所有 `AfterAppStart()` hooks 后，它才返回。
 
-可以把它理解为四个阶段。
+它分为四个阶段。
 
 ### 1. 连接并装配
 
@@ -117,7 +117,7 @@ Vine 按以下顺序调用 `BeforeAppStart()`：
 | `BeforeAppStop()` | Modules 后 components；按声明逆序 | 仍处于注册状态，server 与根 context 仍可用 | 停止生产者、取消并等待 worker、执行有界 flush | 无 deadline 地等待 |
 | `AfterAppStop()` | Modules 后 components；按声明逆序 | 已注销，server 已停止，根 context 已取消 | 释放应用拥有的资源、完成本地收尾 | 发起新的 Rpc、Event、Task 或依赖 context 的工作 |
 
-Components 先于 modules 启动，因此业务 modules 可以依赖已经初始化的基础设施。停止时反转这个关系，使 modules 能在 component 资源仍存在时完成收尾。
+Components 先于 modules 启动，因此业务 modules 能依赖已经初始化的基础设施。停止时反转这个关系，使 modules 能在 component 资源仍存在时完成收尾。
 
 Hook 顺序取决于声明顺序，但对象的构造顺序不一定如此。依赖解析可能提前构造被注入对象。不要用声明顺序代替真正的依赖声明。
 
@@ -144,7 +144,7 @@ sequenceDiagram
 
 这些细节是有意设计的：
 
-- `BeforeAppStop()` 执行时，根 context 和 server 仍处于活动状态。应在这里停止后台生产者并等待其 goroutine 退出。
+- `BeforeAppStop()` 执行时，根 context 和 server 仍处于活动状态。请在这里停止后台生产者并等待其 goroutine 退出。
 - Link 会从服务发现中移除实例，等待变更传播，并在其排空上限内等待已追踪的在途工作；在此期间应用 endpoint 仍然可用。
 - 然后应用优雅停止自身 server。
 - 只有 server 停止后，Vine 才取消应用根 context。

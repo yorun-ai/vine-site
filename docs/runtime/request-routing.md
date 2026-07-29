@@ -5,13 +5,13 @@ sidebar_label: Routing & Readiness
 
 # Routing & Readiness
 
-Vine routes by declared capabilities, not by addresses embedded in business
-code. An application publishes the Rpc services and Web handlers it can serve;
-Hub distributes that registration state; Link and Portal keep local snapshots
-and select an instance for each request.
+Vine routes by declared capabilities, not by addresses embedded in business code.
+An application publishes the Rpc services and Web handlers it can serve; Hub
+distributes that registration state; Link and Portal keep local snapshots and
+select an instance for each request.
 
-The important boundary is registration: listening is local process state;
-being routable means the caller's Link or Portal has observed the registration.
+The key boundary is registration: listening is local process state; being
+routable means the caller's Link or Portal has observed the registration.
 
 ## The four runtime roles
 
@@ -28,8 +28,7 @@ rather than through one global routing table.
 
 ## Registration is the routing boundary
 
-An App starts its handlers before it advertises them. Its normal startup path
-is:
+An App starts its handlers before it advertises them. Its normal startup path is:
 
 ```mermaid
 sequenceDiagram
@@ -56,16 +55,15 @@ These moments mean different things:
 - **The deployment is routable**: the Link or Portal used by a real caller has
   observed the updated snapshot.
 
-`Start` completes local registration before it returns, but Vine does not
-provide a global convergence barrier for every other Link and Portal. For
-deployment readiness, probe the application through the same Portal or Link
-path that production callers use. A process-listening check alone is
-insufficient.
+`Start` completes local registration before it returns, but Vine doesn't provide
+a global convergence barrier for every other Link and Portal. For deployment
+readiness, probe the application through the same Portal or Link path that
+production callers use. A process-listening check alone is not enough.
 
-During rollout, callers may briefly observe a configured service with no
-available endpoint, or a snapshot that still contains a departing endpoint.
-Treat availability errors as an expected distributed-system boundary and retry
-only when the operation is safe to repeat.
+During rollout, callers may briefly see a configured service with no available
+endpoint, or a snapshot that still contains a departing endpoint. Treat
+availability errors as an expected distributed-system boundary and retry only
+when the operation is safe to repeat.
 
 ## Application-to-application Rpc
 
@@ -87,28 +85,28 @@ service before invoking the App.
 
 ### Instance selection
 
-Selection is round-robin within the calling Link's current service snapshot.
-The behavior is deliberately simple:
+Selection is round-robin within the calling Link's current service snapshot. It's
+deliberately simple:
 
-- Every Link maintains its own cursor; callers using different Links do not
-  share one global sequence.
+- Every Link maintains its own cursor; callers using different Links do not share
+  one global sequence.
 - The starting order is unspecified. Registrations are rebuilt from snapshot
   data, and an add or remove can change the next observed order.
 - There is no affinity, weighting, latency-aware choice, or per-instance
   priority.
 - Registration health and leases eventually remove unavailable instances, but
   selection does not perform a live probe before every call.
-- There is no built-in circuit breaker.
-- If the selected endpoint fails, Vine returns that failure. The same call is
-  not automatically retried against another instance.
+- There isn't a built-in circuit breaker.
+- If the selected endpoint fails, Vine returns that failure. The same call is not
+  automatically retried against another instance.
 
 Application-level retry therefore needs an explicit deadline and idempotency
 decision. A read may be safe to retry; a payment, email, or state transition
-usually needs an idempotency key or a query-before-retry design.
+needs an idempotency key or a query-before-retry design.
 
 ## External Rpc and Web requests
 
-External requests enter through Portal. They do not first use an arbitrary
+External requests enter through Portal. They don't first use an arbitrary
 business application's outbound Link.
 
 ### External Rpc
@@ -122,12 +120,12 @@ flowchart LR
 ```
 
 Portal validates the vRPC request, establishes trace and caller metadata,
-performs the site's admission checks, and selects a registered service
-endpoint. The target Link then forwards to the owning App.
+performs the site's admission checks, and selects a registered service endpoint.
+The target Link then forwards to the owning App.
 
 Use a generated vRPC client for this path. The App and Link endpoints are
-runtime-internal protocol endpoints; calling them directly bypasses Portal
-policy and requires internal metadata that ordinary HTTP tools do not provide.
+runtime-internal protocol endpoints; calling them directly bypasses Portal policy
+and requires internal metadata that ordinary HTTP tools do not provide.
 
 ### External Web
 
@@ -139,13 +137,13 @@ flowchart LR
   Route --> Link["Selected target Link"] --> App["Gin Web handler"]
 ```
 
-Portal accepts normal browser HTTP, creates the Vine trace, initiator, and
-Actor metadata for the backend request, then selects a Web registration.
-Directly browsing an App's internal Web endpoint is not a supported public
-entry path: that endpoint expects Vine's internal Web metadata headers.
+Portal accepts normal browser HTTP, creates the Vine trace, initiator, and Actor
+metadata for the backend request, then selects a Web registration. Directly
+browsing an App's internal Web endpoint is not a supported public entry path:
+that endpoint expects Vine's internal Web metadata headers.
 
 Portal uses a local round-robin cursor for Rpc and Web endpoints. Like Link, it
-does not add weights, circuit breaking, or automatic same-request failover.
+doesn't add weights, circuit breaking, or automatic same-request failover.
 
 ## Graceful shutdown and drain
 
@@ -169,10 +167,10 @@ sequenceDiagram
 ```
 
 The propagation grace and drain wait reduce dropped work, but they cannot make
-every concurrent caller observe removal at the same instant. A stale caller
-can still select the instance during convergence and receive an availability
-error. Drain is also bounded; it is not permission for handlers to ignore
-deadlines indefinitely.
+every concurrent caller observe removal at the same instant. A stale caller can
+still select the instance during convergence and receive an availability error.
+Drain is also bounded; it is not permission for handlers to ignore deadlines
+indefinitely.
 
 For a controlled deployment:
 
@@ -184,8 +182,8 @@ For a controlled deployment:
 5. Stop Portal and Hub after dependent traffic has ended.
 
 The `linked` and `standalone` wrappers already stop business Apps before their
-in-process Link. In a separated deployment, preserve that ordering in the
-process supervisor.
+in-process Link. In a separated deployment, preserve that ordering in the process
+supervisor.
 
 ## Standalone and in-process routing
 
@@ -194,7 +192,7 @@ serialization boundaries. Calls still pass through Link's routing logic, and
 in-process Rpc values are cloned through the same JSON or CBOR representation
 used by network calls.
 
-It intentionally does not reproduce every distributed failure:
+What it intentionally does not reproduce:
 
 | Preserved in standalone | Requires linked or separated processes |
 | --- | --- |
@@ -206,7 +204,7 @@ It intentionally does not reproduce every distributed failure:
 
 In-process timeout or cancellation also returns without waiting for a handler
 that ignores its context to finish, matching the caller-visible behavior of a
-network timeout. It does not prove that such a handler has stopped.
+network timeout. It doesn't prove that such a handler has stopped.
 
 Use standalone for fast integration tests. Use linked or fully separated
 processes for liveness, lease, network, TLS, and restart exercises.
@@ -224,5 +222,5 @@ Before declaring a deployment ready, verify:
 - Retry policy is bounded by a deadline and only repeats idempotent work.
 
 Continue with [Deployment Modes](../getting-started/deployment-modes.md),
-[Trace & Timeout](../framework/trace-timeout.md), and
-[Events & Tasks](../framework/event-task.md).
+[Trace & Timeout](../framework/trace-timeout.md), and [Events &
+Tasks](../framework/event-task.md).

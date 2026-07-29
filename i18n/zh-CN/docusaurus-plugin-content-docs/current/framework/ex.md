@@ -5,7 +5,7 @@ sidebar_label: 错误处理
 
 # 错误处理
 
-Vine 使用 `core/ex` 在 Rpc、Web、Event、Task 和业务代码之间传递稳定的错误码。调用方可以按 `Code` 处理错误，日志仍能保留 message、reason、detail 和原始 cause。
+Vine 使用 `core/ex` 在 Rpc、Web、Event、Task 和业务代码之间传递稳定的错误码。调用方能按 `Code` 处理错误，日志仍能保留 message、reason、detail 和原始 cause。
 
 ## 适用场景
 
@@ -16,7 +16,7 @@ Vine 使用 `core/ex` 在 Rpc、Web、Event、Task 和业务代码之间传递�
 - 希望在 panic / recover 流程中区分“业务异常”与“系统异常”
 - 希望为不同错误码附带稳定的元信息，例如分类、默认文案、是否可直接抛出
 
-整体模型可以概括为：
+整体模型概括为：
 
 1. 用 `Code` 描述错误语义
 2. 用 `New(...)` 等函数构造 `ex.Error`
@@ -111,13 +111,13 @@ type Error interface {
 }
 ```
 
-其中：
+字段含义：
 
 - `Type()` 由 `Code` 派生
 - `Code()` 返回当前错误码
 - `Message()` 返回业务传入的错误消息
 - `Reason()` 返回细分原因，格式不限，用于前端或调用点在某些情况下区分同一个 `Code` 下的不同场景
-- `Detail()` 返回更细节的错误说明，主要用于内部诊断；Portal 对外返回错误时会保留 `detail` 字段但清空字段内容
+- `Detail()` 返回更细节的错误说明，主要用于内部诊断。Portal 对外返回错误时会保留 `detail` 字段但清空字段内容
 
 ## Code 元数据
 
@@ -245,7 +245,7 @@ err := ex.New(
 
 行为上：
 
-- 通过 `errors.Is(...)` 可以继续判断被包装的原始错误
+- 通过 `errors.Is(...)` 能继续判断被包装的原始错误
 - `causeError` 不会参与跨进程序列化
 
 ### 成功态与兜底错误
@@ -269,7 +269,7 @@ err := ex.New(ex.NotFound, "missing user")
 err.Type() // ApplicationError
 ```
 
-因此通常不需要单独判断“这是哪种 error 实现”，直接围绕 `Code` 和 `Type` 即可。
+因此不需要单独判断“这是哪种 error 实现”，直接围绕 `Code` 和 `Type` 就行。
 
 ### `Error()` 字符串格式
 
@@ -287,7 +287,7 @@ missing user type=APPLICATION code=NOT_FOUND
 
 所有构造函数都会检查 `Code.IsValid()`。如果传入未知错误码，会直接 panic。
 
-因此自定义逻辑里不要手工拼接一个未注册的 `Code` 字符串再传给 `New(...)`。
+因此自定义逻辑里不要手工拼接未注册的 `Code` 字符串传给 `New(...)`。
 
 ## 解析与判断
 
@@ -335,11 +335,11 @@ ex.PanicNewIfNot(user != nil, ex.NotFound, "missing user")
 ex.PanicNewIfNot(name != "", ex.ValidationFailed, ex.F("field %s is required", "name"))
 ```
 
-其中：
+语义说明：
 
 - `PanicIfError(err)` 只有在 `err != nil` 时才会 panic
-- `PanicNew(...)` 会直接构造并 panic
-- `PanicNewIfError(...)` 会把普通 `error` 映射成指定 `Code`
+- `PanicNew(...)` 直接构造并 panic
+- `PanicNewIfError(...)` 把普通 `error` 映射成指定 `Code`
 - `PanicNewIfNot(...)` 适合把条件检查写在原始调用点，方便保留更准确的 panic 栈
 
 ### `Recover(...)`
@@ -392,7 +392,7 @@ func FindUser(id string) (*User, ex.Error) {
 }
 ```
 
-如果你更偏向 panic / recover 风格，也可以写成：
+如果你更偏向 panic / recover 风格，或者写成：
 
 ```go
 func MustFindUser(id string) *User {
