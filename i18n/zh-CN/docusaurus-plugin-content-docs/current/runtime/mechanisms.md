@@ -106,17 +106,11 @@ VINE_LINK_ENDPOINT=http://127.0.0.1:7079 ./checkout
 
 ```mermaid
 flowchart LR
-  External["外部客户端"] --> Portal["Portal<br/>入口与策略"]
-  Caller["调用方应用"] --> CallerLink["调用方 Link"]
-  Portal --> TargetLink["目标 Link"]
-  CallerLink --> TargetLink
-  TargetLink --> Target["目标应用"]
-
-  Hub["Hub<br/>配置与注册"] -. 快照和变更 .-> Portal
-  Hub -. 快照和变更 .-> CallerLink
-  Hub -. 快照和变更 .-> TargetLink
-  CallerLink <--> NATS["NATS<br/>Event 与 Task 交付"]
-  TargetLink <--> NATS
+  Hub["Hub<br/>控制面"] -. 运行时状态 .-> Portal["Portal<br/>外部入口"]
+  Hub -. 运行时状态 .-> Link["Link<br/>应用边界"]
+  Portal -->|外部流量| Link
+  App["Application<br/>业务能力"] <--> Link
+  Link <--> NATS["NATS<br/>异步传输"]
 ```
 
 | 参与者 | 拥有什么 | 是否处于同步业务请求路径 |

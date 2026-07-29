@@ -118,17 +118,11 @@ Three mechanisms make the topology switch possible:
 
 ```mermaid
 flowchart LR
-  External["External client"] --> Portal["Portal<br/>entry and policy"]
-  Caller["Calling application"] --> CallerLink["Caller Link"]
-  Portal --> TargetLink["Target Link"]
-  CallerLink --> TargetLink
-  TargetLink --> Target["Target application"]
-
-  Hub["Hub<br/>configuration and registry"] -. snapshots and changes .-> Portal
-  Hub -. snapshots and changes .-> CallerLink
-  Hub -. snapshots and changes .-> TargetLink
-  CallerLink <--> NATS["NATS<br/>Event and Task delivery"]
-  TargetLink <--> NATS
+  Hub["Hub<br/>control plane"] -. runtime state .-> Portal["Portal<br/>external entry"]
+  Hub -. runtime state .-> Link["Link<br/>application boundary"]
+  Portal -->|external traffic| Link
+  App["Application<br/>business capabilities"] <--> Link
+  Link <--> NATS["NATS<br/>asynchronous transport"]
 ```
 
 | Participant | Owns | On a synchronous business request path? |
