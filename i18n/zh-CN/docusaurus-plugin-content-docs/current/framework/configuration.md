@@ -56,8 +56,8 @@ type CheckoutService struct {
 | `eternal` | 当前应用实例第一次读取时捕获的值 | 该应用实例余下生命周期始终使用同一快照 | 连接设置、schema 选择、启动策略 |
 | `instant` | Hub 发布更新时随之变化的受监听快照 | 后续 DI resolution 解码得到的新值 | Feature flag、限额、可动态调整的行为 |
 
-两种生命周期都是懒读取：只有 DI 第一次需要生成类型时才会读取。注入该配置的 module
-或 component 在应用启动时构造；仅由请求 handler 使用的配置，可能直到第一次
+两种生命周期都是懒读取：只有 DI 第一次需要生成类型时才会读取。注入该配置的 Module
+或 Component 在应用启动时构造；仅由请求 Handler 使用的配置，可能直到第一次
 对应 execution 才会读取。
 
 ### Instant 不会修改已有对象
@@ -78,11 +78,11 @@ sequenceDiagram
 
 这会影响 DI 的行为：
 
-- 普通 Rpc、Web、Event 或 Task handler 为一次 execution 创建。它注入的配置也在
+- 普通 RPC、Web、Event 或 Task Handler 为一次 execution 创建。它注入的配置也在
   该 execution 中解析，所以能看到最新 instant 快照。
-- module 与应用 component 是 application lifetime singleton。如果它把 instant 配置
+- Module 与应用 Component 是应用生命周期的单例。如果它把 instant 配置
   保存在字段中，该指针就会一直保持构造时的值。
-- 任何显式 singleton 依赖只要捕获了 instant 配置，也具有同样行为。
+- 任何显式单例依赖只要捕获了 instant 配置，也具有同样行为。
 
 长生命周期对象如果必须响应更新，建议把依赖更新的逻辑放到新建的 execution 依赖中，
 或设计显式刷新边界。不要误以为字段注入等于实时引用。
@@ -108,7 +108,7 @@ standalone.NewWithOption[*CheckoutApp](standalone.Option{
 }).StartAndWait()
 ```
 
-注意，这里的 `SQLiteFile` 是 **Hub 自己的数据库**，不会配置业务 `infra/rdb` component。
+注意，这里的 `SQLiteFile` 是 **Hub 自己的数据库**，不会配置业务 `infra/rdb` Component。
 如果应用本身还有关系型数据库，需要另外声明。
 
 独立运行 Hub 时：
@@ -149,7 +149,7 @@ standalone 通过进程内连接执行同样步骤。
 - JSON 必须能解码为生成的 Go 类型。
 
 任何条件不满足，resolution 都会失败，而不是静默返回零值配置。失败出现的位置取决于
-第一个 consumer：module 可能让应用启动失败；仅由 handler 使用的配置则可能在请求
+第一个 consumer：Module 可能让应用启动失败；仅由 Handler 使用的配置则可能在请求
 到达时才首次失败。
 
 排查配置缺失时：
@@ -158,7 +158,7 @@ standalone 通过进程内连接执行同样步骤。
 2. 确认 Hub 中的完整名称与 JSON 字段名。
 3. 确认应用所连接的 Link 能访问 Hub API 与 Redis 分发 endpoint。
 4. 确认部署的生成 schema 与配置值是一起发布的。
-5. 对 instant 配置，先创建新的 execution，再判断已经注入的 singleton 是否理应变化。
+5. 对 instant 配置，先创建新的 execution，再判断已经注入的单例是否理应变化。
 
 ## 设计建议
 

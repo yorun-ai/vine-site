@@ -20,7 +20,7 @@ flowchart LR
 ## 职责
 
 - **配置中心**：从 SQLite 或 PostgreSQL 读取配置，并同步到 Redis。
-- **服务注册中心**：接收 Link 上报的应用、Rpc、Web、事件和任务能力；维护实例状态。
+- **服务注册中心**：接收 Link 上报的应用、RPC、Web、事件和任务能力；维护实例状态。
 - **运行时分发层**：将配置、注册、Portal 规则、schema 与证书写入 Redis，供消费者读取和订阅。
 - **管理入口**：提供 Hub API 与 Dashboard；Dashboard 的外部访问由 Portal 配置决定。
 
@@ -66,7 +66,7 @@ vine hub serve \
 
 ## 注册与租约
 
-普通进程模式下，Link 为应用和 Rpc 服务注册写入带 TTL 的记录，并通过 heartbeat 续租。Hub 的 registry sweeper 发现租约过期后，会主动注销实例并发布删除事件。
+普通进程模式下，Link 为应用和 RPC 服务注册写入带 TTL 的记录，并通过心跳续租。Hub 的 registry sweeper 发现租约过期后，会主动注销实例并发布删除事件。
 
 因此，当 Link 或业务应用异常停止时，Portal 和其他 Link 会在注册失效后移除对应 endpoint，而不是持续转发到失效实例。
 
@@ -74,7 +74,7 @@ vine hub serve \
 
 Hub 能作为单进程 runtime 的内部组件运行。此时 Hub API 使用 `inproc` transport，Redis 只提供进程内连接，且不启动对外监听端口。
 
-inproc 模式不使用 TTL、heartbeat 或 registry sweeper；注册会一直保留到应用显式注销。它适合本地调试、集成测试和 standalone 应用，不用于验证断网、租约失效等分布式故障语义。
+inproc 模式不使用 TTL、心跳或 registry sweeper；注册会一直保留到应用显式注销。它适合本地调试、集成测试和 standalone 应用，不用于验证断网、租约失效等分布式故障语义。
 
 ## 相关文档
 

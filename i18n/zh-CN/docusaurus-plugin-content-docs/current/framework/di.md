@@ -5,7 +5,7 @@ sidebar_label: 依赖注入
 
 # 依赖注入
 
-Vine 通过 DI 创建模块、handler、listener 和 runner。日常代码推荐先使用字段上的
+Vine 通过 DI 创建 Module、Handler、Listener 和 Runner。日常代码推荐先使用字段上的
 `inject:""`；接口需要指定实现、构造过程需要 factory，或对象确实需要明确生命周期时，
 再增加 binding。
 
@@ -67,7 +67,7 @@ injector := di.NewInjector(func(b *di.Binder) {
 })
 ```
 
-根容器的默认 fallback scope 是 `TransientScope`。
+根容器的默认 fallback scope 是 `TransientScope`（即每次解析新建实例）。
 
 ### `ExecutionInjector`
 
@@ -122,7 +122,7 @@ type TempValue struct {
 - 根或子 `PlainInjector` 使用 `TransientScope`
 - `ExecutionInjector` 使用 `ExecutionScope`
 
-因此，同一个未标注 scope 的 handler 依赖在一次请求内会复用；直接从根 injector
+因此，同一个未标注 scope 的 Handler 依赖在一次请求内会复用；直接从根 injector
 解析时，则每次都会得到新实例。显式 scope 或类型上的 marker 始终优先于 fallback。
 
 Scope 绑定在“请求的 target type”上，而不是绑定在最终创建出的 concrete instance 上。也就是说，`ToImplementation(...)`、`ToFactory(...)`、`ToInstance(...)` 这类转发或工厂式绑定，其 scope 只描述当前这条 binding 的生命周期。
@@ -154,7 +154,7 @@ injector.Resolve(&smtp) // 使用 *SMTPGateway 这条 TransientScope binding
 
 如果结构体实现了 `DIInit()`，实例构造并完成字段注入后会自动调用；如果实现了 `DIDispose()`，则可在执行期释放时参与清理。
 
-注意：`PlainInjector` 不拥有应用停止流程，也不会自动释放 `SingletonScope` 实例。单例资源的关闭应由创建该 injector 的 app、component 或 module 生命周期负责，例如在 `BeforeAppStop()` / `AfterAppStop()` 中关闭数据库连接、Redis client 或其他外部资源。
+注意：`PlainInjector` 不拥有应用停止流程，也不会自动释放 `SingletonScope` 实例。单例资源的关闭应由创建该 injector 的 app、Component 或 Module 生命周期负责，例如在 `BeforeAppStop()` / `AfterAppStop()` 中关闭数据库连接、Redis client 或其他外部资源。
 
 ## 类型辅助函数
 
@@ -307,7 +307,7 @@ defer execution.CompleteExecution()
 
 ## Seeding
 
-执行期对象只能在运行现场拿到，在 `StartExecution(...)` 时 seed 即可：
+执行期对象只能在运行现场拿到，在 `StartExecution(...)` 时 seed（预置实例）即可：
 
 ```go
 execution := injector.StartExecution(func(s *di.Seeder) {
@@ -359,9 +359,9 @@ sub := injector.SubInjector(func(b *di.Binder) {
 - `ExecutionScope` 实例
 - execution 内创建且被跟踪到的 `TransientScope` 实例
 
-`SingletonScope` 的生命周期不由 `PlainInjector` 自动结束。Vine 的 RDB、Redis 等资源组件会在 App 停止阶段关闭共享连接；业务代码自行绑定的资源也应采用同样方式。
+`SingletonScope` 的生命周期不由 `PlainInjector` 自动结束。Vine 的 RDB、Redis 等 resource Component 会在 App 停止阶段关闭共享连接；业务代码自行绑定的资源也应采用同样方式。
 
-因此，如果业务代码通过 DI 绑定了数据库、Redis、MQ client、文件句柄等单例资源，也应该在 app/component/module 的停止钩子中明确释放，而不是依赖 `PlainInjector` 自动调用 `DIDispose()`。
+因此，如果业务代码通过 DI 绑定了数据库、Redis、MQ client、文件句柄等单例资源，也应该在 app/Component/Module 的停止钩子中明确释放，而不是依赖 `PlainInjector` 自动调用 `DIDispose()`。
 
 ## 怎么选择 scope
 
@@ -372,8 +372,8 @@ sub := injector.SubInjector(func(b *di.Binder) {
 - 只有与请求上下文无关、能安全跨整个应用复用，并且有明确关闭责任人的对象，才使用
   `SingletonScope`
 - 每次解析都必须产生新实例的无状态对象使用 `TransientScope`
-- 不要仅仅为了少一次构造，就把带请求上下文的 client 或动态配置 reader 改成 singleton。
+- 不要仅仅为了少一次构造，就把带请求上下文的 client 或动态配置 reader 改成单例。
   这会固定第一次解析时看到的 context 或配置
 
-Rpc、Web、Event 和 Task handler 外层的 container 如何创建，见
+RPC、Web、Event 和 Task Handler 外层的 container 如何创建，见
 [执行模型](../runtime/execution-model.md)。

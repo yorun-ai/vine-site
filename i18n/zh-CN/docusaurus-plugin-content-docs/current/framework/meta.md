@@ -5,7 +5,7 @@ sidebar_label: 上下文与身份
 
 # 上下文与身份
 
-Rpc、Web、Event 和 Task 的处理代码都需要知道“这次调用从哪里来、由谁发起、属于哪条调用链”。`core/meta` 用一组统一对象表达这些信息：
+RPC、Web、Event 和 Task 的处理代码都需要知道“这次调用从哪里来、由谁发起、属于哪条调用链”。`core/meta` 用一组统一对象表达这些信息：
 
 - 当前应用自身信息
 - 调用链 trace / span
@@ -210,8 +210,8 @@ decoded, err := meta.DecodeActorFromBase64(encoded)
 
 典型场景：
 
-- 在 Rpc / Web / Message 边界上传递 trace
+- 在 RPC / Web / Message 边界上传递 trace
 - 统一表示“调用来自哪个 app”
-- 把 actor 和 initiator 作为运行时上下文对象往下传
+- 把 Actor 和 Initiator 作为运行时上下文对象往下传
 
 `meta` 只负责数据模型，不负责日志字段格式化。

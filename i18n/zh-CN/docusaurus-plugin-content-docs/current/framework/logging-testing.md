@@ -105,7 +105,7 @@ auditLog := logger.New("app:demo.user:audit", logger.WithOption{
 
 ## 敏感字段与二进制
 
-Skel 字段使用 `@sensitive` 标记。skelc 会在对应的 Go 字段上生成 `skel:"sensitive"`，Rpc、Event 和 Task payload 日志会通过 `core/redact` 将其替换为 `<redacted>`。字段名称本身不会触发隐式遮蔽；动态 map 或 JSON 中的敏感内容需要由调用方使用 `RootSensitive` 或 `Sanitizer` 显式处理。
+Skel 字段使用 `@sensitive` 标记。skelc 会在对应的 Go 字段上生成 `skel:"sensitive"`，RPC、Event 和 Task payload 日志会通过 `core/redact` 将其替换为 `<redacted>`。字段名称本身不会触发隐式遮蔽；动态 map 或 JSON 中的敏感内容需要由调用方使用 `RootSensitive` 或 `Sanitizer` 显式处理。
 
 ```skel
 data LoginRequest {
@@ -116,9 +116,9 @@ data LoginRequest {
 }
 ```
 
-`@sensitive` 能标记整个 data / config、event 的 `payload` block，以及 actor 的 `credential` / `info` block。对应生成类型会实现 `skel.Sensitive` interface 的 `SkelSensitive()` marker method，不增加数据字段，也不改变 JSON / CBOR；`core/redact` 会把该类型的值整体替换为 `<redacted>`。event 和 auth 容器本身不能标记。标记整个 Rpc method input / output 或 resource check input 时，skelc 会写入 `MethodSpec`，对应 payload 日志同样整体遮蔽；标记整个 task trigger input 时，则会写入 Task `TriggerSpec`，供处理 Task 参数的代码识别。
+`@sensitive` 能标记整个 data / config、event 的 `payload` block，以及 actor 的 `credential` / `info` block。对应生成类型会实现 `skel.Sensitive` interface 的 `SkelSensitive()` marker method，不增加数据字段，也不改变 JSON / CBOR；`core/redact` 会把该类型的值整体替换为 `<redacted>`。event 和 auth 容器本身不能标记。标记整个 RPC method input / output 或 resource check input 时，skelc 会写入 `MethodSpec`，对应 payload 日志同样整体遮蔽；标记整个 task trigger input 时，则会写入 Task `TriggerSpec`，供处理 Task 参数的代码识别。
 
-`core/redact` 不依赖 Rpc、Event 或 Task 的具体架构，也能直接处理普通 Go 值：
+`core/redact` 不依赖 RPC、Event 或 Task 的具体架构，也能直接处理普通 Go 值：
 
 ```go
 rendered, err := redact.Render(value)
@@ -138,11 +138,11 @@ logger.Info("diagnostic value",
 
 `redact.Option{RevealSensitive: true}` 能显式保留普通敏感字段，适合受严格控制的临时诊断。二进制值不受该选项影响：始终只输出字节数，不输出原始内容。
 
-框架的 Rpc、Event 和 Task 日志在记录 payload 时始终调用 `core/redact`，不提供关闭脱敏或输出敏感原文的全局开关。`core/redact` 同时限制遍历深度、节点数、集合大小、字符串长度和最终 JSON 大小；发生裁剪时，`Result.Truncated` 为 `true`。
+框架的 RPC、Event 和 Task 日志在记录 payload 时始终调用 `core/redact`，不提供关闭脱敏或输出敏感原文的全局开关。`core/redact` 同时限制遍历深度、节点数、集合大小、字符串长度和最终 JSON 大小；发生裁剪时，`Result.Truncated` 为 `true`。
 
 ## 应用测试
 
-`app/testkit` 用于在测试中启动 standalone runtime、覆盖配置并创建类型安全客户端。它适合覆盖依赖注入、Rpc handler、Event listener 和 Task runner 的集成行为。
+`app/testkit` 用于在测试中启动 standalone runtime、覆盖配置并创建类型安全客户端。它适合覆盖依赖注入、RPC handler、Event listener 和 Task runner 的集成行为。
 
 ```go title="greeting_test.go"
 func TestGreeting(t *testing.T) {

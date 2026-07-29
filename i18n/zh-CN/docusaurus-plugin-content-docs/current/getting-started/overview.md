@@ -7,8 +7,8 @@ description: 第一个 Vine 应用、主要能力入口，以及随后需要理�
 
 # 从这里开始
 
-Vine 用一套 Go 应用模型组织生命周期、依赖注入、配置、Rpc、Web、Event、
-Task、Redis 和关系型数据库。刚开始时，把 Hub、Link、Portal 和业务应用都放在
+Vine 用一套 Go 应用模型组织生命周期、依赖注入、配置、RPC、Web、Event、
+Task、Redis 与 RDB。刚开始时，把 Hub、Link、Portal 和业务应用都放在
 standalone 进程里即可；等到需要真实网络边界或独立运维时再拆开。
 
 第一次使用 Vine，按下面的顺序最省事：
@@ -16,7 +16,7 @@ standalone 进程里即可；等到需要真实网络边界或独立运维时再
 1. 确认 [Go、Vine 与 skelc 的兼容版本](./compatibility.md)。
 2. 跑通[第一个应用](./tutorial-first-app.md)。
 3. 用[第一个 Skel 契约](./first-contract.md)生成服务代码。
-4. 按 [Rpc 指南](../framework/rpc-guide.md)实现并调用服务。
+4. 按 [RPC 指南](../framework/rpc-guide.md)实现并调用服务。
 
 这四步都能在 standalone 模式完成，不需要预先启动独立运行时服务。
 
@@ -54,7 +54,7 @@ standalone 会在一个进程里启动这四个角色。职责并没有变化，
 
 | 你的需求 | 从这里开始 | 核心语义 |
 | --- | --- | --- |
-| 调用另一个应用并取得结果 | [Rpc](../framework/rpc-guide.md) | 同步、类型安全的请求/响应 |
+| 调用另一个应用并取得结果 | [RPC](../framework/rpc-guide.md) | 同步、类型安全的请求/响应 |
 | 暴露由应用拥有的 HTTP 路由 | [Web](../framework/web.md) | 通过生成的 Web 边界处理 HTTP |
 | 向感兴趣的应用发布已经发生的事实 | [Event](../framework/event-task.md) | 按消费应用异步广播 |
 | 让一个可用 worker 执行工作 | [Task](../framework/event-task.md) | 异步竞争消费 |
@@ -63,15 +63,15 @@ standalone 会在一个进程里启动这四个角色。职责并没有变化，
 | 持久化关系模型 | [RDB](../framework/rdb-guide.md) | 托管 GORM 连接与类型化 DAO |
 
 如果两个组件属于同一应用，且不需要网络 contract，建议直接注入 Go 依赖，而不是额外
-创建 Rpc 服务。
+创建 RPC 服务。
 
 ## 遇到问题时再往下读
 
 ### 应用开始变大时
 
 1. 理解[应用模型](../framework/application-model.md)，并学习如何组合
-   [component 与 module](../framework/components.md)。
-2. 按需添加配置以及 Rpc、Web、Event 或 Task 能力。
+   [Component 与 Module](../framework/components.md)。
+2. 按需添加配置以及 RPC、Web、Event 或 Task 能力。
 3. 仅在应用确实拥有对应基础设施依赖时添加 Redis 或 RDB。
 4. 使用[日志与 testkit](../framework/logging-testing.md)验证可观察行为。
 
@@ -81,8 +81,8 @@ standalone 会在一个进程里启动这四个角色。职责并没有变化，
 
 - Hook 顺序、就绪、停机和资源归属：看[应用生命周期](../runtime/application-lifecycle.md)。
 - Scope、请求内对象、filter 与释放：看[依赖与执行模型](../runtime/execution-model.md)。
-- 注册、服务发现、实例选择与 drain：看[请求路由](../runtime/request-routing.md)。
-- 下游 deadline 与调用元数据：看 [Trace 与 timeout](../framework/trace-timeout.md)。
+- 注册、服务发现、实例选择与排空：看[请求路由](../runtime/request-routing.md)。
+- 下游截止时间与调用元数据：看 [Trace 与 timeout](../framework/trace-timeout.md)。
 
 ### 上线之前
 
@@ -95,12 +95,12 @@ standalone 会在一个进程里启动这四个角色。职责并没有变化，
 
 ## 几条应该守住的边界
 
-- 将业务行为放在 module 与能力 handler 中，不要放进 `main`。
+- 将业务行为放在 Module 与能力 Handler 中，不要放进 `main`。
 - 将生成代码视为构建产物；修改 `.skel` 源文件后重新生成。
 - 必须在应用可被发现前完成的工作请放进 `BeforeAppStart`；`AfterAppStart`
   执行时，服务和注册已经开始工作了。
 - 让 request scope 依赖留在创建它的 execution 内。
-- Event listener 与 Task runner 必须按幂等方式设计，因为失败交付可能重试。
+- Event Listener 与 Task Runner 必须按幂等方式设计，因为失败交付可能重试。
 - 发起下游调用时继续使用注入的 context。
 
 需要按 package 查找时，请使用[公共 package 导航](../framework/core-packages.md)或

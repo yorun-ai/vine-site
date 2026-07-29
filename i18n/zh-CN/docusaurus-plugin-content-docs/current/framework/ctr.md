@@ -5,9 +5,9 @@ sidebar_label: 容器与过滤器
 
 # 容器与过滤器
 
-Vine 的 Rpc、Web、Event 和 Task handler 都通过执行容器调用。容器为每次调用创建 execution，准备依赖与上下文，按顺序执行 filters，最后调用目标方法。
+Vine 的 RPC、Web、Event 和 Task Handler 都通过执行容器调用。容器为每次调用创建 execution，准备依赖与上下文，按顺序执行 filters，最后调用目标方法。
 
-业务 handler 会自动使用这套机制。只有要构建自定义执行入口，或为调用链增加通用过滤器时，才需要直接使用 `core/ctr`。
+业务 Handler 会自动使用这套机制。只有要构建自定义执行入口，或为调用链增加通用过滤器时，才需要直接使用 `core/ctr`。
 
 ## 核心接口
 
@@ -186,7 +186,7 @@ func (f *EnvelopeFilter) Filter(next ctr.FilterNext) {
 }
 ```
 
-## Execute 时的 seeding
+## Execute 时的 seeding（预置实例）
 
 `Execution.Execute(...)` 能额外接收 `di.SeedApplier`，把运行时对象塞进本次 execution 的 DI 容器：
 
@@ -208,7 +208,7 @@ execution.Execute([]any{"alice"}, func(s *di.Seeder) {
 
 `ctr` 特别适合这几类场景：
 
-- handler / service 方法前后挂统一逻辑
+- Handler / service 方法前后挂统一逻辑
 - 通过 filter 做鉴权、日志、埋点、路由改写
 - 希望目标对象和 filter 都由 `core/di` 托管
 

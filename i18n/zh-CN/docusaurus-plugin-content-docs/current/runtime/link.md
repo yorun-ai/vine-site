@@ -5,12 +5,12 @@ sidebar_label: Link 运行时
 
 # Link 运行时
 
-Link 是部署在应用侧的 runtime 接入层。它将本地应用注册到 Hub，维护配置和服务发现，并为 Rpc、Web、事件和任务提供统一的运行时能力。
+Link 是部署在应用侧的 runtime 接入层。它将本地应用注册到 Hub，维护配置和服务发现，并为 RPC、Web、Event 与 Task 提供统一的运行时能力。
 
 ```mermaid
 flowchart LR
   App["本地应用"] <--> Link["Link"] <--> Hub["Hub"]
-  Link --> Rpc["Rpc：发现并转发"]
+  Link --> Rpc["RPC：发现并转发"]
   Link --> Web["Web：投递给本地 App"]
   Link --> EventTask["Event / Task：消费并派发"]
   Link --> Config["Config：订阅配置变更"]
@@ -19,14 +19,14 @@ flowchart LR
 ## 职责边界
 
 - **应用注册**：保存本地应用实例事实，向 Hub 注册能力，并在退出时注销。
-- **健康与租约**：普通模式下对实例进行健康检查并向 Hub 发送 heartbeat。
+- **健康与租约**：普通模式下对实例进行健康检查并向 Hub 发送心跳。
 - **配置读取**：提供配置快照，并监听 Hub Redis 的变更事件。
-- **Rpc 发现与转发**：选择一个已注册的本地或远端 Rpc 实例并转发调用。
+- **RPC 发现与转发**：选择一个已注册的本地或远端 RPC 实例并转发调用。
 - **Web 投递**：接收 Portal 已选定的 Web 请求，并转发给请求中指定的本地应用
   实例。
-- **异步消息派发**：消费 NATS 消息，投递给本地声明的事件监听器和任务执行器。
+- **异步消息派发**：消费 NATS 消息，投递给本地声明的 Event Listener 和 Task Runner。
 
-Link 是本地应用能力的唯一 owner。Rpc、Web、事件、任务和配置模块只从它派生各自的运行时索引，不直接维护另一份应用实例状态。
+Link 是本地应用能力的唯一 owner。RPC、Web、Event、Task 与配置 Module 只从它派生各自的运行时索引，不直接维护另一份应用实例状态。
 
 ## 启动
 
@@ -50,18 +50,18 @@ vine link serve \
 
 ## 请求路径
 
-### Rpc
+### RPC
 
-应用发起 Rpc 调用时，请求先进入 Link 的 `rpcproxy`。proxy 对当前 service
-registration 执行 round-robin，选择下一条注册。注册属于本地应用时，Link 直接调用其
+应用发起 RPC 调用时，请求先进入 Link 的 `rpcproxy`。proxy 对当前 service
+registration 执行轮询（round-robin），选择下一条注册。注册属于本地应用时，Link 直接调用其
 应用 endpoint；否则经目标 Link 转发。本地性只改变转发路径，不构成选择优先级。完成
 选择后发生的失败，也不会让该次调用自动改试另一条注册。
 
 ### Web
 
-`webproxy` 只索引当前 Link 所拥有应用的 Web handler。分布式 Web endpoint
-快照和 round-robin 选择由 Portal 负责；Portal 把请求发送给选中实例所属的
-Link，目标 Link 再校验本地实例与 handler，并调用应用 endpoint。Link 不会从
+`webproxy` 只索引当前 Link 所拥有应用的 Web Handler。分布式 Web endpoint
+快照和轮询选择由 Portal 负责；Portal 把请求发送给选中实例所属的
+Link，目标 Link 再校验本地实例与 Handler，并调用应用 endpoint。Link 不会从
 自己的 discovery index 中选择远端 Web 目标。Portal 选择、发现新鲜度与失败
 边界见[请求路由](./request-routing.md)。
 
@@ -72,10 +72,10 @@ Link，目标 Link 再校验本地实例与 handler，并调用应用 endpoint�
 ## Inproc 模式
 
 `linked.New(...)` 会让 Link 与业务应用同进程，但 Hub 仍是外部服务。Link 会
-开放 ingress、向 Hub 注册并继续向 Hub 发送 heartbeat。进程内 App 与 Link
+开放 ingress、向 Hub 注册并继续向 Hub 发送心跳。进程内 App 与 Link
 生命周期绑定，因此独立的应用 healthcheck 会被禁用。
 
-standalone 才会把 Hub、Portal、Link 和应用全部放入同一进程，并使用进程内 Redis 与 endpoint；这种模式不执行 heartbeat。要验证租约和网络故障，可使用 linked 或完全分开部署。
+standalone 才会把 Hub、Portal、Link 和应用全部放入同一进程，并使用进程内 Redis 与 endpoint；这种模式不执行心跳。要验证租约和网络故障，可使用 linked 或完全分开部署。
 
 ## 相关文档
 

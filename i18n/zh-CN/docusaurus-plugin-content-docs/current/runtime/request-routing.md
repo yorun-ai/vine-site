@@ -6,7 +6,7 @@ sidebar_label: 路由与就绪
 # 路由与就绪
 
 Vine 根据能力声明路由，而不是让业务代码写死地址。应用发布自己能够处理的
-Rpc service 和 Web handler；Hub 分发注册状态；Link 与 Portal 在本地维护快照，
+RPC 服务和 Web Handler；Hub 分发注册状态；Link 与 Portal 在本地维护快照，
 并为每次请求选择实例。
 
 这里最重要的边界是注册：开始监听只是本地进程状态；真正可路由，意味着调用方使用的
@@ -16,7 +16,7 @@ Link 或 Portal 已经观察到这次注册。
 
 | 运行时 | 负责 | 不负责 |
 | --- | --- | --- |
-| App | handler 实现、应用身份与能力声明 | 跨应用发现或公开网关策略 |
+| App | Handler 实现、应用身份与能力声明 | 跨应用发现或公开网关策略 |
 | Hub | 注册状态源、网络模式下的租约与分发快照 | 逐请求转发 |
 | Link | 本地 App 所有权、配置/发现快照、实例选择与转发 | 公开站点、TLS 或外部准入策略 |
 | Portal | 公开 HTTP/HTTPS 入口、站点匹配、认证授权与外部端点选择 | 应用注册或心跳 |
@@ -26,7 +26,7 @@ Link 与 Portal 中的快照是派生状态。Hub 发布注册变化后它们才
 
 ## 注册才是路由边界
 
-App 会先启动 handler，再对外声明能力。正常启动路径是：
+App 会先启动 Handler，再对外声明能力。正常启动路径是：
 
 ```mermaid
 sequenceDiagram
@@ -58,9 +58,9 @@ sequenceDiagram
 看到即将离开的端点。请把可用性错误视为分布式系统边界；只有操作可安全重复时
 才进行重试。
 
-## 应用间 Rpc
+## 应用间 RPC
 
-生成的 Rpc client 先调用调用方的本地 Link。该 Link 从当前已知的 service 注册
+生成的 RPC client 先调用调用方的本地 Link。该 Link 从当前已知的 service 注册
 中选择一个实例：
 
 ```mermaid
@@ -77,7 +77,7 @@ flowchart LR
 
 ### 实例选择
 
-每个调用方 Link 都在自己的 service 快照内使用 round-robin。其行为有意保持
+每个调用方 Link 都在自己的 service 快照内使用轮询。其行为有意保持
 简单：
 
 - 每个 Link 都有自己的游标；使用不同 Link 的调用方不共享全局顺序。
@@ -90,18 +90,18 @@ flowchart LR
 因此应用级重试必须显式设置 deadline，并先判断幂等性。读取通常能重试；
 支付、发邮件或状态迁移通常需要幂等键，或先查询再决定是否重试。
 
-## 外部 Rpc 与 Web 请求
+## 外部 RPC 与 Web 请求
 
 外部请求从 Portal 进入，不会先经过某个任意业务应用的 outbound Link。
 
-### 外部 Rpc
+### 外部 RPC
 
 ```mermaid
 flowchart LR
-  Client["vRPC client"] --> Portal["Portal Rpc site"]
+  Client["vRPC client"] --> Portal["Portal RPC site"]
   Portal --> Admission["认证与权限准入"]
   Admission --> Route["Portal service 快照"]
-  Route --> Link["选中的目标 Link"] --> App["Rpc handler"]
+  Route --> Link["选中的目标 Link"] --> App["RPC handler"]
 ```
 
 Portal 校验 vRPC 请求，建立 trace 与调用者元数据，执行站点准入检查，然后选择
@@ -124,10 +124,10 @@ Portal 接收普通浏览器 HTTP，为后端请求创建 Vine trace、initiator
 元数据，然后选择 Web 注册。直接用浏览器访问 App 的内部 Web 端点不是受支持的
 公开入口：该端点要求 Vine 内部 Web 元数据 header。
 
-Portal 对 Rpc 与 Web 端点也使用本地 round-robin 游标。与 Link 相同，它不会
+Portal 对 RPC 与 Web 端点也使用本地轮询游标。与 Link 相同，它不会
 增加权重、断路器或同一次请求的自动故障转移。
 
-## 优雅停止与 drain
+## 优雅停止与排空
 
 App 的优雅停止会先从发现状态中移除实例，再关闭 App server：
 
@@ -148,9 +148,9 @@ sequenceDiagram
   App->>App: 执行 AfterAppStop
 ```
 
-传播宽限和 drain 等待可以减少工作丢失，但无法让所有并发调用者在同一时刻看到
+传播宽限和排空等待可以减少工作丢失，但无法让所有并发调用者在同一时刻看到
 删除结果。收敛期间，持有旧快照的调用方仍可能选中该实例，并收到可用性错误。
-drain 也是有界的，不要因此让 handler 无限忽略 deadline。
+排空也是有界的，不要因此让 Handler 无限忽略截止时间。
 
 受控发布建议按以下顺序：
 
@@ -165,8 +165,8 @@ drain 也是有界的，不要因此让 handler 无限忽略 deadline。
 
 ## Standalone 与进程内路由
 
-Standalone 会保留注册、快照、代理、round-robin、元数据和序列化边界。调用仍
-经过 Link 的路由逻辑；进程内 Rpc 值也会通过与网络调用相同的 JSON 或 CBOR
+Standalone 会保留注册、快照、代理、轮询、元数据和序列化边界。调用仍
+经过 Link 的路由逻辑；进程内 RPC 值也会通过与网络调用相同的 JSON 或 CBOR
 表示进行克隆。
 
 它有意不复现所有分布式故障：
@@ -179,8 +179,8 @@ Standalone 会保留注册、快照、代理、round-robin、元数据和序列�
 | 请求校验和值克隆 | 外部 Link ingress 与传输安全 |
 | 配置后可验证 Portal 站点/准入逻辑 | 真实 TLS listener 与证书可达性 |
 
-进程内调用超时或取消时，如果 handler 忽略 context，调用方仍会直接返回而不会
-等待 handler 结束，这与网络超时对调用方可见的行为一致；它并不能证明 handler
+进程内调用超时或取消时，如果 Handler 忽略 context，调用方仍会直接返回而不会
+等待 Handler 结束，这与网络超时对调用方可见的行为一致；它并不能证明 Handler
 已经停止。
 
 快速集成测试应使用 standalone；验证存活、租约、网络、TLS 与重启行为时，应
