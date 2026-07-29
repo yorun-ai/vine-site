@@ -25,25 +25,27 @@ Rpc service、Web handler、Event listener 和 Task runner，但不在业务代�
 独立 workload。下面是一种实用的 Kubernetes 布局：每个应用实例旁运行一个 Link，
 Hub 与 Portal 独立部署。
 
-```mermaid
-flowchart TB
-  subgraph Single["Standalone：单进程"]
-    direction LR
-    SHub["Hub"] --> SPortal["Portal"]
-    SHub --> SLink["Link"] --> SApp["业务应用"]
-  end
+**Standalone：单进程**
 
-  subgraph Cluster["Kubernetes：分离运行时"]
+```mermaid
+flowchart LR
+  SHub["Hub"] --> SPortal["Portal"]
+  SHub --> SLink["Link"] --> SApp["业务应用"]
+```
+
+**Kubernetes：分离运行时**
+
+```mermaid
+flowchart LR
+  KHub["Hub"]
+  KPortal["Portal"]
+  subgraph Pod["应用 Pod × N"]
     direction LR
-    KHub["Hub"]
-    KPortal["Portal"]
-    subgraph Pod["应用 Pod × N"]
-      KLink["Link"] <--> KApp["业务应用"]
-    end
-    KHub -. 配置与注册 .-> KPortal
-    KHub -. 配置与注册 .-> KLink
-    KPortal --> KLink
+    KLink["Link"] <--> KApp["业务应用"]
   end
+  KHub -. 配置与注册 .-> KPortal
+  KHub -. 配置与注册 .-> KLink
+  KPortal --> KLink
 ```
 
 这只是其中一种布局，并不要求 Link 必须作为 sidecar。只要 Link API 与应用 endpoint
@@ -104,17 +106,11 @@ VINE_LINK_ENDPOINT=http://127.0.0.1:7079 ./checkout
 
 ```mermaid
 flowchart LR
-  External["外部客户端"] --> Portal["Portal<br/>入口与策略"]
-  Caller["调用方应用"] --> CallerLink["调用方 Link"]
-  Portal --> TargetLink["目标 Link"]
-  CallerLink --> TargetLink
-  TargetLink --> Target["目标应用"]
-
-  Hub["Hub<br/>配置与注册"] -. 快照和变更 .-> Portal
-  Hub -. 快照和变更 .-> CallerLink
-  Hub -. 快照和变更 .-> TargetLink
-  CallerLink <--> NATS["NATS<br/>Event 与 Task 交付"]
-  TargetLink <--> NATS
+  Hub["Hub<br/>控制面"] -. 运行时状态 .-> Portal["Portal<br/>外部入口"]
+  Hub -. 运行时状态 .-> Link["Link<br/>应用边界"]
+  Portal -->|外部流量| Link
+  App["Application<br/>业务能力"] <--> Link
+  Link <--> NATS["NATS<br/>异步传输"]
 ```
 
 | 参与者 | 拥有什么 | 是否处于同步业务请求路径 |
