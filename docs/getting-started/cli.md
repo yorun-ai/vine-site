@@ -5,8 +5,10 @@ sidebar_label: Vine CLI
 
 # Vine CLI
 
-The `vine` command starts Hub, Link, or Portal and shows the build version.
+The `vine` command starts a local development runtime or individual Hub, Link,
+and Portal services, and shows the build version.
 
+- `dev`: Start a local runtime for business applications running in separate processes.
 - `hub` / `link` / `portal`: Start the Vine runtime infrastructure services.
 - `version`: Print the CLI version.
 
@@ -41,6 +43,56 @@ vine version
 For a released application, replace `main` with the same reviewed commit or tag
 used by the application module. See [Version Compatibility](./compatibility.md)
 before upgrading.
+
+## dev
+
+`dev` starts Hub, Portal, and Link in one CLI process for local application
+development:
+
+```bash
+vine dev
+```
+
+Hub RPC, Redis, NATS, Portal-to-Hub, Link-to-Hub, and Portal-to-Link traffic use
+in-process transports. Link still listens on `127.0.0.1:7079`, so a business
+application in another process can use the normal network boundary:
+
+```go title="main.go"
+app.New[*HelloApp]().StartAndWait()
+```
+
+The default Link endpoint used by `app.New` is already
+`http://127.0.0.1:7079`. Use `--link-api-listen` together with
+`VINE_LINK_ENDPOINT` or `app.Option.LinkEndpoint` when another address is
+required.
+
+When no database option is supplied, `dev` creates a temporary SQLite database
+and removes it after a graceful shutdown. Supply a database file to preserve
+Hub state between runs, and a seed file to initialize application configuration
+or Portal routes:
+
+```bash
+vine dev \
+  --db-sqlite-file ./hub-dev.sqlite \
+  --seed-yaml-file ./seed.yaml \
+  --dashboard-url http://:7099/
+```
+
+Available options:
+
+- `--link-api-listen`: Link API address for external applications; defaults to
+  `127.0.0.1:7079`.
+- `--db-sqlite-file` / `--db-postgres-url`: optional persistent Hub storage.
+- `--seed-yaml-file`: optional Hub seed data.
+- `--dashboard-url`: Hub Dashboard Portal entry; defaults to `http://:7099/`.
+
+The corresponding environment variables are `VINE_API_LISTEN`,
+`VINE_DB_SQLITE_FILE`, `VINE_DB_POSTGRES_URL`, `VINE_SEED_YAML_FILE`, and
+`VINE_DASHBOARD_URL`. Press `Ctrl+C` to stop Link, Portal, and Hub gracefully.
+
+`dev` preserves the App-to-Link and Link-to-App network boundary but does not
+simulate network failures, leases, or TTL expiry inside the local Vine runtime.
+Use the individual service commands for deployment and infrastructure testing.
 
 ## hub
 
@@ -168,6 +220,13 @@ Environment variables:
 - `VINE_HUB_ENDPOINT`
 
 ## Common workflow
+
+### Debug an external application locally
+
+```bash
+vine dev
+go run ./cmd/myapp
+```
 
 ### Start runtime services separately
 

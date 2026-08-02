@@ -21,6 +21,7 @@ this boundary works.
 | Mode | Hub / Portal / Link | Business application | Recommended for |
 | --- | --- | --- | --- |
 | standalone | Same process | Same process | Quick starts, tests, and local monolith development |
+| `vine dev` | Same CLI process with in-process control traffic; Link API remains on the network | Independent process | Local debugging with an external application process |
 | linked | Hub and Portal are separate; Link runs with the application | Same process as Link | Local development, a small number of services, and simpler application deployment |
 | Separated deployment | Hub, Portal, and Link all run separately | Independent process | Production, independent scaling, and failure testing |
 
@@ -62,6 +63,38 @@ use inproc endpoints, so no runtime service needs to be started ahead of time.
   on business HTTP/HTTPS ports according to its entry rules.
 - This mode doesn't cover cross-process networking or independent service
   restarts.
+
+## Local external application development
+
+`vine dev` keeps the business application in its own process while hosting Hub,
+Portal, and Link together:
+
+```mermaid
+flowchart LR
+  subgraph Dev["vine dev process"]
+    Hub["Hub"] -->|"inproc"| Portal["Portal"]
+    Hub -->|"inproc"| Link["Link"]
+    Portal -->|"inproc ingress"| Link
+  end
+  Client["External client"] -->|"Network"| Portal
+  Link <-->|"Network"| App["Business App process"]
+```
+
+Start the runtime and application in separate terminals:
+
+```bash
+vine dev
+go run ./cmd/myapp
+```
+
+An application created with `app.New` uses the default Link API at
+`http://127.0.0.1:7079`, so it needs no additional endpoint configuration.
+App registration, domain schemas, and application traffic cross the real
+App-to-Link network boundary. Internal Hub, Redis, NATS, and Link ingress use
+in-process transports to avoid extra ports and infrastructure failure noise.
+
+This topology is a development convenience, not a deployment topology. It does
+not exercise Hub leases, TTL expiry, or Link-to-Hub network recovery.
 
 ## Linked: separate Hub and application
 
@@ -170,6 +203,7 @@ complete distributed-system semantics.
 | Requirement | Recommended mode |
 | --- | --- |
 | Learn the framework or test a single application | standalone |
+| Debug an application in its own process with minimal local infrastructure | `vine dev` |
 | Debug multiple applications locally without maintaining a separate Link | linked |
 | Containerized deployment, multiple instances, independent releases, and realistic failure exercises | Separated deployment |
 
