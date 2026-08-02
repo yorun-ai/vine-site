@@ -46,8 +46,16 @@ skelc version
 
 :::danger 当前安全边界
 
-Vine 组件之间的身份认证和加密传输仍是 TODO。Hub 内嵌 Redis 当前允许
-客户端免密码只读连接，并会分发 runtime 配置，里面就包括 Portal TLS 私钥。
+原生传输认证与加密的 TODO 覆盖完整的网络运行时数据面。Link 到 Hub、Portal 到
+Hub 的 Rpc，应用到 Link 的 Rpc，以及 Portal/Link 代理流量当前均使用明文 h2c；
+Hub Redis 使用明文 TCP RESP，`nats://` 流量也未加密。生产目标是为 Vine 组件连接
+提供 mTLS，并为 NATS 提供 TLS 和经过认证的客户端身份。inproc transport 不跨越
+网络边界，不属于该 TODO 的范围。
+
+Hub 内嵌 Redis 已拒绝匿名数据访问，并通过最小权限 ACL 隔离 `vine.hub`、
+`vine.link`、`vine.portal` 三个用户。`vine.hub` 使用进程内随机密码；Link 与 Portal
+的空密码仅用于 inproc 和分离部署调试，因此任何能触达 Redis 的客户端仍可冒充这两个
+角色。Portal 角色能够读取 Portal TLS 私钥。
 
 请将 Hub API、Hub Redis、Link API、Link ingress、应用 listener 和内嵌
 NATS listener 全部放在 loopback 或可信私有网络中，并通过防火墙或网络策略强制执行这条边界。
@@ -73,6 +81,8 @@ NATS listener 全部放在 loopback 或可信私有网络中，并通过防火�
 - [ ] 应用和 Link 位于不同 container 或 host 时，配置 Link 可达的应用
   listener，并且不要公开暴露它。
 - [ ] 将 Hub Redis 访问权视为应用配置和 TLS 私钥材料的访问权。
+- [ ] 在原生 mTLS 实现前，将 Rpc metadata、Redis 用户名和网络可达性视为路由或
+  ACL 输入，而不是经过认证的组件身份。
 - [ ] 确认外部流量通过 Portal 进入，而不是绕过网关路由和准入。
 
 ## 配置 Hub 持久化与消息系统

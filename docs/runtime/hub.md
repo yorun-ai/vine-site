@@ -53,13 +53,25 @@ The default listen addresses are:
 
 :::warning Current security boundary
 
-Authentication and encrypted transport between components remain TODOs. The
-embedded Hub Redis server currently allows password-free, read-only client
-connections and distributes runtime configuration including Portal TLS private
-keys. Until those security capabilities are implemented, deploy the Hub API, Hub
-Redis, Link API, and Link ingress only on loopback or trusted private networks,
-restrict access with a firewall, and never expose these internal ports to an
-untrusted network.
+Native transport authentication and encryption remain TODOs across the complete
+networked runtime data plane, not only Hub Redis. Link-to-Hub and Portal-to-Hub
+Rpc, Portal/Link proxy traffic, and application-to-Link Rpc currently use
+cleartext h2c. Hub Redis uses cleartext RESP over TCP, and `nats://` connections
+to NATS are also unencrypted. The production target is mutual TLS (mTLS) for
+Vine component connections and TLS plus authenticated client identities for
+NATS. Inproc transports do not cross a network boundary and are outside this
+TODO.
+
+The embedded Hub Redis server rejects anonymous data access and separates the
+`vine.hub`, `vine.link`, and `vine.portal` users with least-privilege command,
+key, and subscription ACLs. The `vine.hub` user has a random process-local
+password, but the Link and Portal passwords are intentionally empty for inproc
+and separated-deployment debugging. Their usernames select an ACL role without
+proving the caller's identity, so any client that can reach the endpoint can
+still impersonate either role; the Portal role can read Portal TLS private keys.
+Deploy the Hub API, Hub Redis, Link API, and Link ingress only on loopback or
+trusted private networks, restrict access with a firewall, and never expose
+these internal ports to an untrusted network.
 
 :::
 
