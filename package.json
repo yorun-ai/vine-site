@@ -41,13 +41,13 @@
     "@docusaurus/module-type-aliases": "3.10.2",
     "@docusaurus/types": "3.10.2",
     "@tailwindcss/postcss": "^4.3.2",
-    "@types/node": "^26.1.1",
+    "@types/node": "^26.1.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "postcss": "^8.5.23",
+    "postcss": "^8.5.25",
     "tailwindcss": "^4.3.2",
     "typescript": "~7.0.2",
-    "wrangler": "4.114.0"
+    "wrangler": "4.115.0"
   },
   "engines": {
     "node": ">=20.0",
