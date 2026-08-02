@@ -50,12 +50,20 @@ exact revisions used by a deployment.
 
 :::danger Current security boundary
 
-Deployment-managed credentials and encrypted transport between Vine components
-remain TODOs. The embedded Hub Redis server rejects anonymous data access and
-separates `vine.hub`, `vine.link`, and `vine.portal` with least-privilege ACLs. The `vine.hub` user
-has a random process-local password; Link and Portal temporarily use empty
-passwords, so any client that can reach Redis can still impersonate either role.
-The Portal role can read Portal TLS private keys.
+Native transport authentication and encryption remain TODOs across the complete
+networked runtime data plane. Link-to-Hub and Portal-to-Hub Rpc,
+application-to-Link Rpc, and Portal/Link proxy traffic currently use cleartext
+h2c. Hub Redis uses cleartext RESP over TCP, and `nats://` traffic is also
+unencrypted. The production target is mTLS for Vine component connections and
+TLS plus authenticated client identities for NATS. Inproc transports do not
+cross a network boundary and are outside this TODO.
+
+The embedded Hub Redis server rejects anonymous data access and separates
+`vine.hub`, `vine.link`, and `vine.portal` with least-privilege ACLs. The
+`vine.hub` user has a random process-local password; Link and Portal use empty
+passwords for inproc and separated-deployment debugging, so any client that can
+reach Redis can still impersonate either role. The Portal role can read Portal
+TLS private keys.
 
 Do not expose Hub API, Hub Redis, Link API, Link ingress, application listeners,
 or an embedded NATS listener to an untrusted network. Place them on loopback or a
@@ -83,6 +91,9 @@ Inventory every listener:
   an application listener that Link can reach and do not expose it publicly.
 - [ ] Treat access to Hub Redis as access to application configuration and TLS
   private-key material.
+- [ ] Until native mTLS is implemented, treat Rpc metadata, Redis usernames, and
+  network reachability as routing or ACL inputs rather than authenticated
+  component identities.
 - [ ] Verify external traffic enters through Portal instead of bypassing gateway
   routing and admission.
 

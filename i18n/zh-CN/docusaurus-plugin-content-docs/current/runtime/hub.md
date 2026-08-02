@@ -45,13 +45,19 @@ vine hub serve \
 
 :::warning 当前安全边界
 
-由部署管理的组件凭据和传输加密仍是 TODO。Hub 内嵌 Redis 已拒绝匿名数据访问，
-并通过最小权限的命令、key 与订阅 ACL 隔离 `vine.hub`、`vine.link`、`vine.portal`
-三个用户。`vine.hub` 使用进程内随机密码，但 Link 与 Portal 的密码暂时为空；用户名只能选择 ACL
-角色，不能证明调用方身份，因此任何能触达该 endpoint 的客户端仍可冒充 Link 或
-Portal，而 Portal 角色能够读取 Portal TLS 私钥。只能将 Hub API、Hub Redis、Link
-API 和 Link ingress 部署在回环地址或受信私有网络中，并通过防火墙限制访问；绝对
-不要将这些内部端口暴露到不可信网络。
+原生传输认证与加密的 TODO 覆盖完整的网络运行时数据面，而不只限于 Hub Redis。
+Link 到 Hub、Portal 到 Hub 的 Rpc，Portal/Link 代理流量，以及应用到 Link 的 Rpc
+当前均使用明文 h2c；Hub Redis 使用明文 TCP RESP，`nats://` NATS 连接也未加密。
+生产目标是为 Vine 组件连接提供双向 TLS（mTLS），并为 NATS 提供 TLS 和经过认证的
+客户端身份。inproc transport 不跨越网络边界，不属于该 TODO 的范围。
+
+Hub 内嵌 Redis 已拒绝匿名数据访问，并通过最小权限的命令、key 与订阅 ACL 隔离
+`vine.hub`、`vine.link`、`vine.portal` 三个用户。`vine.hub` 使用进程内随机密码；
+Link 与 Portal 的空密码仅用于 inproc 和分离部署调试。用户名只能选择 ACL 角色，
+不能证明调用方身份，因此任何能触达该 endpoint 的客户端仍可冒充 Link 或 Portal，
+而 Portal 角色能够读取 Portal TLS 私钥。只能将 Hub API、Hub Redis、Link API 和
+Link ingress 部署在回环地址或受信私有网络中，并通过防火墙限制访问；绝对不要将
+这些内部端口暴露到不可信网络。
 
 :::
 
