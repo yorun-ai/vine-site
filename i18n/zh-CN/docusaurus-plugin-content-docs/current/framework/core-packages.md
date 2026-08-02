@@ -25,7 +25,7 @@ symbol 索引无法回答的问题：**应用代码应该选择哪个 package？
 
 | 任务 | Package | 从这里开始 |
 | --- | --- | --- |
-| 声明应用、Component、Module、能力与生命周期 hook | [`app`](https://pkg.go.dev/go.yorun.ai/vine/app) | [应用模型](./application-model.md) |
+| 声明应用、Component、Module、能力与生命周期 hook，并让一个或多个应用连接外部 Link 运行 | [`app`](https://pkg.go.dev/go.yorun.ai/vine/app) | [应用模型](./application-model.md) |
 | 用内嵌 Hub、Link、Portal 运行一个或多个应用 | [`app/standalone`](https://pkg.go.dev/go.yorun.ai/vine/app/standalone) | [第一个应用](../getting-started/tutorial-first-app.md) |
 | 用进程内 Link 连接外部 Hub 并运行一个或多个应用 | [`app/linked`](https://pkg.go.dev/go.yorun.ai/vine/app/linked) | [部署拓扑](../getting-started/deployment-modes.md) |
 | 在可控的 standalone 运行时中测试应用行为 | [`app/testkit`](https://pkg.go.dev/go.yorun.ai/vine/app/testkit) | [日志与测试](./logging-testing.md) |

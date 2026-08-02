@@ -212,6 +212,7 @@ mode. The wrapper controls the surrounding runtime order.
 | Mode | Startup order | Shutdown order |
 | --- | --- | --- |
 | Direct `app.New(...)` | Business application | Business application |
+| `app.NewBundled(...)` | Business applications in declaration order | Business applications in reverse order |
 | `linked.New(...)` | In-process Link, then business application | Business application, then Link |
 | `linked.NewBundled(...)` | Link, then business applications in declaration order | Business applications in reverse order, then Link |
 | `standalone.New(...)` | Hub, Portal, Link, then business application | Business application, Link, Portal, then Hub |

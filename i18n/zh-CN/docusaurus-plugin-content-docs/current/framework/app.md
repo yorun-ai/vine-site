@@ -31,6 +31,7 @@ Component 与 Module 的创建、HTTP/RPC/Web 入口挂载，以及运行时依�
 - `With(flag)`
 - `New[S](...)`
 - `NewWithOption[S](...)` / `Option`
+- `NewBundled(...)`
 - `linked.New[S](...)` / `linked.NewWithOption[S](...)` / `linked.Option`
 - `linked.NewBundled(...)` / `linked.NewBundledWithOption(...)`
 - `standalone.New[S](...)` / `standalone.NewWithOption[S](...)` / `standalone.Option`
@@ -135,6 +136,18 @@ instance := app.New[*DemoApp]()
 说白了，框架同时约束了“spec 类型唯一”和“应用名唯一”。
 
 顶层 `app.NewWithOption(...)` 的 `Option` 提供 `LinkEndpoint`，也可以通过 `--link-endpoint` 或 `VINE_LINK_ENDPOINT` 提供。
+
+`app.NewBundled(...)` 将 `app.New(...)` 或 `app.NewWithOption(...)` 创建的多个应用
+组合进同一个进程生命周期，并连接外部 Link，包括 `vine dev` 托管的 Link。应用按
+声明顺序启动、按逆序停止。bundle 不会启动 Hub、Portal 或 Link，每个子应用保留
+自己配置的 Link endpoint；多个应用共享一个 Link sidecar 时应使用同一个 endpoint。
+
+```go
+app.NewBundled(
+    app.New[*OrderApp](),
+    app.New[*PaymentApp](),
+).StartAndWait()
+```
 
 ### 运行模式构造
 

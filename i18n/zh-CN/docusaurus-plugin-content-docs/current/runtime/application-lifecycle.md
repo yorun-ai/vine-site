@@ -161,6 +161,7 @@ sequenceDiagram
 | 模式 | 启动顺序 | 停止顺序 |
 | --- | --- | --- |
 | 直接 `app.New(...)` | 业务应用 | 业务应用 |
+| `app.NewBundled(...)` | 按声明顺序启动业务应用 | 按逆序停止业务应用 |
 | `linked.New(...)` | 进程内 Link，然后业务应用 | 业务应用，然后 Link |
 | `linked.NewBundled(...)` | Link，然后按声明顺序启动业务应用 | 按逆序停止业务应用，然后 Link |
 | `standalone.New(...)` | Hub、Portal、Link，然后业务应用 | 业务应用、Link、Portal、Hub |
