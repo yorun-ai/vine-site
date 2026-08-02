@@ -32,6 +32,7 @@ Commonly used entry points include:
 - `With(flag)`
 - `New[S](...)`
 - `NewWithOption[S](...)` / `Option`
+- `NewBundled(...)`
 - `linked.New[S](...)` / `linked.NewWithOption[S](...)` / `linked.Option`
 - `linked.NewBundled(...)` / `linked.NewBundledWithOption(...)`
 - `standalone.New[S](...)` / `standalone.NewWithOption[S](...)` / `standalone.Option`
@@ -138,6 +139,20 @@ Two constraints to keep in mind:
 In other words, the framework enforces both spec-type uniqueness and application-name uniqueness.
 
 The `Option` accepted by the top-level `app.NewWithOption(...)` provides `LinkEndpoint`. You can also provide it through `--link-endpoint` or `VINE_LINK_ENDPOINT`.
+
+`app.NewBundled(...)` combines applications created by `app.New(...)` or
+`app.NewWithOption(...)` into one process lifecycle while they connect to an
+external Link, including the Link hosted by `vine dev`. It starts applications
+in declaration order and stops them in reverse order. The bundle does not start
+Hub, Portal, or Link, and every child retains its configured Link endpoint; use
+the same endpoint when the applications share one Link sidecar.
+
+```go
+app.NewBundled(
+    app.New[*OrderApp](),
+    app.New[*PaymentApp](),
+).StartAndWait()
+```
 
 ### Runtime-mode constructors
 

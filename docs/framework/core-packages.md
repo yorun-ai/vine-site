@@ -29,7 +29,7 @@ site.
 
 | Task | Package | Start here |
 | --- | --- | --- |
-| Declare an application, components, modules, capabilities, and lifecycle hooks | [`app`](https://pkg.go.dev/go.yorun.ai/vine/app) | [Application model](./application-model.md) |
+| Declare applications, components, modules, capabilities, and lifecycle hooks; run one or more applications against an external Link | [`app`](https://pkg.go.dev/go.yorun.ai/vine/app) | [Application model](./application-model.md) |
 | Run one or more applications with an embedded Hub, Link, and Portal | [`app/standalone`](https://pkg.go.dev/go.yorun.ai/vine/app/standalone) | [First application](../getting-started/tutorial-first-app.md) |
 | Run one or more applications with an in-process Link connected to an external Hub | [`app/linked`](https://pkg.go.dev/go.yorun.ai/vine/app/linked) | [Deployment topologies](../getting-started/deployment-modes.md) |
 | Test application behavior with a controlled standalone runtime | [`app/testkit`](https://pkg.go.dev/go.yorun.ai/vine/app/testkit) | [Logging and testing](./logging-testing.md) |
