@@ -84,7 +84,8 @@ Available options:
   `127.0.0.1:7079`.
 - `--db-sqlite-file` / `--db-postgres-url`: optional persistent Hub storage.
 - `--seed-yaml-file`: optional Hub seed data.
-- `--dashboard-url`: Hub Dashboard Portal entry; defaults to `http://:7099/`.
+- `--dashboard-url`: Hub Dashboard Portal entry; defaults to `http://:7099/`, or
+  `https://:7099/` when backend mTLS is enabled.
 
 The corresponding environment variables are `VINE_API_LISTEN`,
 `VINE_DB_SQLITE_FILE`, `VINE_DB_POSTGRES_URL`, `VINE_SEED_YAML_FILE`, and
@@ -126,16 +127,15 @@ Specify listen addresses:
 
 ```bash
 vine hub serve \
-  --api-listen 127.0.0.1:7071 \
-  --redis-listen 127.0.0.1:7073 \
+  --control-listen 127.0.0.1:7071 \
+  --redis-listen 127.0.0.1:7072 \
+  --admin-listen 127.0.0.1:7075 \
   --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite
 ```
 
-The Hub API defaults to `127.0.0.1:7071` and embedded Redis to `127.0.0.1:7073`.
-To allow access from another host, explicitly set a reachable listen address and
-restrict it with a firewall; never expose the embedded Redis server directly to
-an untrusted network.
+The Hub Control API defaults to `127.0.0.1:7071`, embedded Redis to
+`127.0.0.1:7072`, and the Admin API and Web listener to `127.0.0.1:7075`.
 
 Initialize data from a seed YAML file:
 
@@ -155,13 +155,17 @@ vine hub serve \
   --db-sqlite-file ./hub.sqlite
 ```
 
-`--dashboard-url` defaults to `http://:7099/`. It configures the Portal entry
-rule for the Hub Dashboard. You can supply a host, port, and path, such as
-`https://hub.example.com:8443/admin`.
+`--dashboard-url` defaults to `http://:7099/`, or `https://:7099/` when backend
+mTLS is enabled. It configures the Portal entry rule for the Hub Dashboard. You
+can supply a host, port, and path, such as
+`https://hub.example.com:8443/admin`. The mTLS HTTPS default uses Portal's
+temporary self-signed Web certificate until a matching public certificate is
+configured, so browsers will report it as untrusted during bootstrap.
 
 You can also pass these settings through environment variables:
 
-- `VINE_API_LISTEN`
+- `VINE_CONTROL_LISTEN`
+- `VINE_ADMIN_LISTEN`
 - `VINE_REDIS_LISTEN`
 - `VINE_MQ_EXTERNAL_NATS_URL`
 - `VINE_MQ_EMBEDDED_NATS`
@@ -175,6 +179,28 @@ Notes:
 - Pick exactly one of `--db-sqlite-file` and `--db-postgres-url`.
 - Pick exactly one of `--mq-external-nats-url` and `--mq-embedded-nats`.
 
+## Backend mTLS flags
+
+The `hub serve`, `link serve`, and `portal serve` commands share these flags:
+
+- `--mtls-ca-file`: CA certificate used to authenticate Vine components.
+- `--mtls-cert-file`: this component's identity certificate.
+- `--mtls-key-file`: private key for the identity certificate.
+
+All three must be supplied together. Each certificate must be an X.509-SVID
+with exactly one SPIFFE URI SAN. The required identities are
+`spiffe://<trust-domain>/vine/daemon/vine.hub`,
+`spiffe://<trust-domain>/vine/daemon/vine.link`, and
+`spiffe://<trust-domain>/vine/daemon/vine.portal`; all communicating components must use
+the same trust domain. Certificates must be valid for both server and client
+authentication. DNS SANs are not used for component authorization. The
+corresponding environment variables are `VINE_MTLS_CA_FILE`,
+`VINE_MTLS_CERT_FILE`, and `VINE_MTLS_KEY_FILE`.
+
+When Link or Portal enables mTLS, `--hub-endpoint` must use `https://`. Backend
+service registrations are also required to use HTTPS, preventing a component
+from silently accepting an older plaintext endpoint.
+
 ## link
 
 `link` is the application-side runtime. It connects to Hub, accepts ingress from
@@ -184,7 +210,10 @@ Start Link:
 
 ```bash
 vine link serve \
-  --hub-endpoint http://127.0.0.1:7071
+  --hub-endpoint https://hub.internal:7071 \
+  --mtls-ca-file /run/vine/ca.pem \
+  --mtls-cert-file /run/vine/link.pem \
+  --mtls-key-file /run/vine/link-key.pem
 ```
 
 Specify listen addresses:
@@ -212,7 +241,10 @@ Start Portal:
 
 ```bash
 vine portal serve \
-  --hub-endpoint http://127.0.0.1:7071
+  --hub-endpoint https://hub.internal:7071 \
+  --mtls-ca-file /run/vine/ca.pem \
+  --mtls-cert-file /run/vine/portal.pem \
+  --mtls-key-file /run/vine/portal-key.pem
 ```
 
 Environment variables:

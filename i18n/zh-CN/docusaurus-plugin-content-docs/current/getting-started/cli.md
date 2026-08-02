@@ -79,7 +79,8 @@ vine dev \
   `127.0.0.1:7079`
 - `--db-sqlite-file` / `--db-postgres-url`：可选的 Hub 持久化存储
 - `--seed-yaml-file`：可选的 Hub seed 数据
-- `--dashboard-url`：Hub Dashboard 的 Portal 入口，默认 `http://:7099/`
+- `--dashboard-url`：Hub Dashboard 的 Portal 入口；默认 `http://:7099/`，启用
+  后台 mTLS 时默认 `https://:7099/`
 
 对应的环境变量为 `VINE_API_LISTEN`、`VINE_DB_SQLITE_FILE`、
 `VINE_DB_POSTGRES_URL`、`VINE_SEED_YAML_FILE` 和 `VINE_DASHBOARD_URL`。
@@ -120,13 +121,15 @@ vine hub serve \
 
 ```bash
 vine hub serve \
-  --api-listen 127.0.0.1:7071 \
-  --redis-listen 127.0.0.1:7073 \
+  --control-listen 127.0.0.1:7071 \
+  --redis-listen 127.0.0.1:7072 \
+  --admin-listen 127.0.0.1:7075 \
   --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite
 ```
 
-Hub API 和内嵌 Redis 默认分别监听 `127.0.0.1:7071` 和 `127.0.0.1:7073`。需要跨主机访问时，请显式指定可达的监听地址并通过防火墙限制访问。特别提醒：内嵌 Redis 只能暴露在可信网络中。
+Hub Control API、内嵌 Redis、Admin API 与 Web listener 默认分别监听
+`127.0.0.1:7071`、`127.0.0.1:7072`、`127.0.0.1:7075`。
 
 从 seed YAML 初始化数据：
 
@@ -146,11 +149,16 @@ vine hub serve \
   --db-sqlite-file ./hub.sqlite
 ```
 
-`--dashboard-url` 默认值是 `http://:7099/`，用于配置 Hub Dashboard 的 Portal 入口规则。支持指定 host、端口和路径，例如 `https://hub.example.com:8443/admin`。
+`--dashboard-url` 默认值是 `http://:7099/`，启用后台 mTLS 时则是
+`https://:7099/`。它用于配置 Hub Dashboard 的 Portal 入口规则，支持指定 host、
+端口和路径，例如 `https://hub.example.com:8443/admin`。mTLS 下的 HTTPS 默认入口
+会使用 Portal 的临时自签 Web 证书，直到配置匹配的公开证书；因此引导阶段浏览器会
+将该证书标记为不受信任。
 
 环境变量也能提供同名配置：
 
-- `VINE_API_LISTEN`
+- `VINE_CONTROL_LISTEN`
+- `VINE_ADMIN_LISTEN`
 - `VINE_REDIS_LISTEN`
 - `VINE_MQ_EXTERNAL_NATS_URL`
 - `VINE_MQ_EMBEDDED_NATS`
@@ -164,6 +172,26 @@ vine hub serve \
 - `--db-sqlite-file` 和 `--db-postgres-url` 必须二选一
 - `--mq-external-nats-url` 和 `--mq-embedded-nats` 必须二选一
 
+## 后台 mTLS 参数
+
+`hub serve`、`link serve` 与 `portal serve` 共用以下参数：
+
+- `--mtls-ca-file`：用于认证 Vine 组件的 CA 证书。
+- `--mtls-cert-file`：当前组件的身份证书。
+- `--mtls-key-file`：身份证书对应的私钥。
+
+三个参数必须同时提供。每张证书都必须是仅含一个 SPIFFE URI SAN 的 X.509-SVID；
+Hub、Link 与 Portal 的身份分别是
+`spiffe://<trust-domain>/vine/daemon/vine.hub`、
+`spiffe://<trust-domain>/vine/daemon/vine.link` 与
+`spiffe://<trust-domain>/vine/daemon/vine.portal`，相互通讯的组件必须使用相同 trust domain。
+证书还必须同时允许 server 与 client authentication。DNS SAN 即使存在，也不参与
+组件身份授权。对应环境变量是 `VINE_MTLS_CA_FILE`、`VINE_MTLS_CERT_FILE` 和
+`VINE_MTLS_KEY_FILE`。
+
+Link 或 Portal 启用 mTLS 时，`--hub-endpoint` 必须使用 `https://`；后台服务注册
+也必须使用 HTTPS，组件不会静默接受旧的明文 endpoint。
+
 ## link
 
 `link` 是应用侧运行时，负责连接 Hub、接收 Portal 或其他 Link 的 ingress，并注册
@@ -173,7 +201,10 @@ vine hub serve \
 
 ```bash
 vine link serve \
-  --hub-endpoint http://127.0.0.1:7071
+  --hub-endpoint https://hub.internal:7071 \
+  --mtls-ca-file /run/vine/ca.pem \
+  --mtls-cert-file /run/vine/link.pem \
+  --mtls-key-file /run/vine/link-key.pem
 ```
 
 指定监听地址：
@@ -199,7 +230,10 @@ vine link serve \
 
 ```bash
 vine portal serve \
-  --hub-endpoint http://127.0.0.1:7071
+  --hub-endpoint https://hub.internal:7071 \
+  --mtls-ca-file /run/vine/ca.pem \
+  --mtls-cert-file /run/vine/portal.pem \
+  --mtls-key-file /run/vine/portal-key.pem
 ```
 
 环境变量：

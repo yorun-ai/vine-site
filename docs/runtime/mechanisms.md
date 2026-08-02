@@ -25,9 +25,8 @@ The four roles can be reduced to one sentence:
 ## One application model, different deployment shapes
 
 The quickest Vine setup is a complete runtime in one process. A production
-cluster can split the same roles across workloads. One practical Kubernetes
-layout places Link beside each application instance, while Hub and Portal run as
-independent workloads:
+cluster can split Hub and Portal into independent workloads while keeping every
+application beside its Link sidecar. A practical Kubernetes layout is:
 
 **Standalone: one process**
 
@@ -52,9 +51,10 @@ flowchart LR
   KPortal --> KLink
 ```
 
-The Kubernetes diagram shows one layout, not a required sidecar model. Link and
-the application may also be separate workloads as long as their API and
-application endpoints are mutually reachable.
+The sidecar boundary is required even when processes are separated. Link may run
+in the application process or in another process or container on the same host,
+but the pair remains one deployment workload and trust boundary. Placing Link
+and its application on different hosts is unsupported.
 
 ### What remains unchanged
 
@@ -69,10 +69,10 @@ application endpoints are mutually reachable.
 | Concern | Standalone | Kubernetes / separated deployment |
 | --- | --- | --- |
 | Process assembly | `standalone.New` starts Hub, Portal, Link, and the app | The `vine` CLI and the app binary start separate roles |
-| App-to-Link transport | In-process endpoint | `VINE_LINK_ENDPOINT` points to a reachable Link API |
+| App-to-Link transport | In-process endpoint | `VINE_LINK_ENDPOINT` points to the co-located Link sidecar API |
 | Registration and discovery | In-process endpoints and snapshots | Link registers with Hub and consumes distributed snapshots |
 | External traffic | Embedded Portal may open configured listeners | Independently deployed Portal forwards to registered Links |
-| Scaling and failure | One process boundary | Application, Link, Portal, and infrastructure can be operated independently |
+| Scaling and failure | One process boundary | Application and Link form one co-located workload; Portal and infrastructure are operated independently |
 
 In practice, keep the entry point small. Keep the application specification in a
 reusable package:

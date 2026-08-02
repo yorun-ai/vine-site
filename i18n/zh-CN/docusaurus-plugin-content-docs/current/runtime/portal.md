@@ -35,6 +35,24 @@ vine portal serve \
 
 `--hub-endpoint` 也能通过 `VINE_HUB_ENDPOINT` 设置。Portal 的实际 HTTP / HTTPS 监听地址不是命令行固定参数，而是由 Hub 中的 Portal entry 和 rule 配置驱动。
 
+网络部署中，应配置 Portal 的 `vine.portal` 后台身份：
+
+```bash
+vine portal serve \
+  --hub-endpoint https://hub.internal:7071 \
+  --mtls-ca-file /run/vine/ca.pem \
+  --mtls-cert-file /run/vine/portal.pem \
+  --mtls-key-file /run/vine/portal-key.pem
+```
+
+Portal 会把该证书用于 Hub Rpc 与 Redis client，以及到 Hub Admin 和 Link ingress
+的调用。它的精确 X.509-SVID 是
+`spiffe://<trust-domain>/vine/daemon/vine.portal`，并与 Hub、Link 使用相同 trust domain。
+浏览器侧 HTTPS listener 永远不会直接提供这些后台身份文件。启用 mTLS 且没有配置证书
+匹配请求的 SNI host 时，Portal 会在内存中单独生成一个短期自签 Web 证书。Hub 中配置的
+精确域名和通配证书始终优先。临时证书使用有上限的内存缓存，不写入 Hub，并在 Portal
+停止时消失；它能加密引导流量，但不会被浏览器信任，生产使用前仍应配置公开证书。
+
 ## 配置如何生效
 
 Portal 不需要重启来加载大多数网关变更。它监听 Hub Redis 中的以下内容：

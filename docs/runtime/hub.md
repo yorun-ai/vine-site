@@ -28,8 +28,10 @@ flowchart LR
 - **Runtime distribution layer**: writes configuration, registrations, Portal
   rules, schemas, and certificates to Redis for consumers to read and subscribe
   to.
-- **Management entry point**: provides the Hub API and Dashboard. External access
-  to the Dashboard is controlled by Portal configuration.
+- **Component control API**: provides discovery and registration services used
+  by Link and Portal.
+- **Admin entry point**: provides Dashboard Rpc and Web handlers on a separate
+  listener. External Dashboard access is controlled by Portal configuration.
 
 Hub is not on the business request path. Portal handles external requests, while
 Link discovers and forwards calls between applications.
@@ -48,30 +50,68 @@ The default listen addresses are:
 
 | Service | Default address | Purpose |
 | --- | --- | --- |
-| Hub API | `127.0.0.1:7071` | Allows Link, Portal, and management clients to connect to Hub. |
-| Hub Redis | `127.0.0.1:7073` | Provides runtime snapshot reads and subscriptions. |
+| Hub Control API | `127.0.0.1:7071` | Allows Link and Portal to discover Hub infrastructure and maintain registrations. |
+| Hub Redis | `127.0.0.1:7072` | Provides runtime snapshot reads and subscriptions. |
+| Hub Admin API and Web | `127.0.0.1:7075` | Serves Dashboard management Rpc and the embedded Dashboard Web application. |
 
-:::warning Current security boundary
+Use `--control-listen`, `--redis-listen`, and `--admin-listen` to override these
+listeners.
 
-Native transport authentication and encryption remain TODOs across the complete
-networked runtime data plane, not only Hub Redis. Link-to-Hub and Portal-to-Hub
-Rpc, Portal/Link proxy traffic, and application-to-Link Rpc currently use
-cleartext h2c. Hub Redis uses cleartext RESP over TCP, and `nats://` connections
-to NATS are also unencrypted. The production target is mutual TLS (mTLS) for
-Vine component connections and TLS plus authenticated client identities for
-NATS. Inproc transports do not cross a network boundary and are outside this
-TODO.
+The listener boundary is also expressed in Hub's Skel contracts. Link and
+Portal use the `vine.hub.control` domain, which contains `InfoService` and
+`RegistryService`. Dashboard clients use the separate `vine.hub.admin` domain
+for management Rpc services and `DashboardWeb`.
 
-The embedded Hub Redis server rejects anonymous data access and separates the
-`vine.hub`, `vine.link`, and `vine.portal` users with least-privilege command,
-key, and subscription ACLs. The `vine.hub` user has a random process-local
-password, but the Link and Portal passwords are intentionally empty for inproc
-and separated-deployment debugging. Their usernames select an ACL role without
-proving the caller's identity, so any client that can reach the endpoint can
-still impersonate either role; the Portal role can read Portal TLS private keys.
-Deploy the Hub API, Hub Redis, Link API, and Link ingress only on loopback or
-trusted private networks, restrict access with a firewall, and never expose
-these internal ports to an untrusted network.
+## Backend mTLS
+
+Hub, Link, and Portal can use one deployment-provided CA and a distinct
+certificate for each component identity. Configure all three certificate flags
+together:
+
+```bash
+vine hub serve \
+  --mtls-ca-file /run/vine/ca.pem \
+  --mtls-cert-file /run/vine/hub.pem \
+  --mtls-key-file /run/vine/hub-key.pem \
+  --mq-embedded-nats \
+  --db-sqlite-file ./hub.sqlite
+```
+
+The Hub certificate must contain exactly one SPIFFE URI SAN,
+`spiffe://<trust-domain>/vine/daemon/vine.hub`, and be valid for both TLS server
+and client authentication. Link and Portal use `/vine/daemon/vine.link` and
+`/vine/daemon/vine.portal` in the same
+trust domain. Vine verifies the complete X.509-SVID and compares the URI
+exactly; DNS SANs do not grant a component role. When configured, Hub requires
+mTLS on its Control and Admin APIs, embedded Redis, and embedded NATS. Redis
+also binds the authenticated SPIFFE identity to the matching Redis ACL user.
+Embedded NATS accepts Hub's internal Scheduler and Admin Debug publishers as
+`spiffe://<trust-domain>/vine/daemon/vine.hub`, and Link clients as
+`spiffe://<trust-domain>/vine/daemon/vine.link`; Portal is not allowed to connect.
+
+When `--dashboard-url` is omitted, enabling backend mTLS also changes the
+Dashboard Portal entry default from `http://:7099/` to `https://:7099/`. Existing
+built-in rules are migrated only when they still match the original defaults;
+customized Dashboard access is preserved.
+
+The equivalent environment variables are `VINE_MTLS_CA_FILE`,
+`VINE_MTLS_CERT_FILE`, and `VINE_MTLS_KEY_FILE`.
+
+:::warning Remaining security boundaries
+
+Backend mTLS is opt-in. Without all three certificate flags, existing h2c,
+cleartext Redis, and `nats://` development behavior remains active. Keep those
+listeners on loopback or a trusted private network.
+
+Application-to-Link communication is intentionally not covered because Link is
+the application's sidecar. Both must run on the same host and within the same
+deployment trust boundary; placing them on different hosts is unsupported.
+Portal's public listeners do not reuse the backend identity certificate. With
+mTLS enabled, a missing public certificate falls back to a short-lived,
+process-local self-signed Web certificate; a configured Portal certificate
+always takes precedence. This fallback encrypts bootstrap traffic but is not
+browser-trusted. External PostgreSQL and NATS endpoints also retain their own
+security configuration; `--mq-external-nats-url` currently accepts `nats://`.
 
 :::
 
