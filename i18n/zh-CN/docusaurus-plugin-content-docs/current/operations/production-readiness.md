@@ -46,8 +46,10 @@ skelc version
 
 :::danger 当前安全边界
 
-Vine 组件之间的身份认证和加密传输仍是 TODO。Hub 内嵌 Redis 当前允许
-客户端免密码只读连接，并会分发 runtime 配置，里面就包括 Portal TLS 私钥。
+Vine 组件之间由部署管理的凭据和加密传输仍是 TODO。Hub 内嵌 Redis 已拒绝匿名
+数据访问，并通过最小权限 ACL 隔离 `vine.hub`、`vine.link`、`vine.portal` 三个用户。`vine.hub` 使用
+进程内随机密码；Link 与 Portal 暂时使用空密码，因此任何能触达 Redis 的客户端仍可
+冒充这两个角色。Portal 角色能够读取 Portal TLS 私钥。
 
 请将 Hub API、Hub Redis、Link API、Link ingress、应用 listener 和内嵌
 NATS listener 全部放在 loopback 或可信私有网络中，并通过防火墙或网络策略强制执行这条边界。

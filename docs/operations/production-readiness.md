@@ -50,9 +50,12 @@ exact revisions used by a deployment.
 
 :::danger Current security boundary
 
-Authentication and encrypted transport between Vine components remain TODOs. The
-embedded Hub Redis server currently allows password-free, read-only connections
-and distributes runtime configuration, including Portal TLS private keys.
+Deployment-managed credentials and encrypted transport between Vine components
+remain TODOs. The embedded Hub Redis server rejects anonymous data access and
+separates `vine.hub`, `vine.link`, and `vine.portal` with least-privilege ACLs. The `vine.hub` user
+has a random process-local password; Link and Portal temporarily use empty
+passwords, so any client that can reach Redis can still impersonate either role.
+The Portal role can read Portal TLS private keys.
 
 Do not expose Hub API, Hub Redis, Link API, Link ingress, application listeners,
 or an embedded NATS listener to an untrusted network. Place them on loopback or a

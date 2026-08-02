@@ -45,10 +45,13 @@ vine hub serve \
 
 :::warning 当前安全边界
 
-组件间身份认证和传输加密仍是 TODO。Hub 内嵌 Redis 当前允许客户端免密码只读连接，
-且其中包含 Portal TLS 私钥等运行时配置。在该安全能力完成前，只能将 Hub API、Hub
-Redis、Link API 和 Link ingress 部署在回环地址或受信私有网络中，并通过防火墙限制
-访问；绝对不要将这些内部端口暴露到不可信网络。
+由部署管理的组件凭据和传输加密仍是 TODO。Hub 内嵌 Redis 已拒绝匿名数据访问，
+并通过最小权限的命令、key 与订阅 ACL 隔离 `vine.hub`、`vine.link`、`vine.portal`
+三个用户。`vine.hub` 使用进程内随机密码，但 Link 与 Portal 的密码暂时为空；用户名只能选择 ACL
+角色，不能证明调用方身份，因此任何能触达该 endpoint 的客户端仍可冒充 Link 或
+Portal，而 Portal 角色能够读取 Portal TLS 私钥。只能将 Hub API、Hub Redis、Link
+API 和 Link ingress 部署在回环地址或受信私有网络中，并通过防火墙限制访问；绝对
+不要将这些内部端口暴露到不可信网络。
 
 :::
 
