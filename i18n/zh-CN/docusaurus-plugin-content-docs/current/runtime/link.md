@@ -48,6 +48,23 @@ vine link serve \
 
 对应环境变量为 `VINE_API_LISTEN`、`VINE_INGRESS_LISTEN` 与 `VINE_HUB_ENDPOINT`。
 
+网络部署中，应配置 Link 的 `vine.link` 后台身份并使用 Hub HTTPS endpoint：
+
+```bash
+vine link serve \
+  --hub-endpoint https://hub.internal:7071 \
+  --ingress-listen 10.0.2.10:7082 \
+  --mtls-ca-file /run/vine/ca.pem \
+  --mtls-cert-file /run/vine/link.pem \
+  --mtls-key-file /run/vine/link-key.pem
+```
+
+Link 会把该证书用于 Hub Rpc、Redis 与内嵌 NATS client，并作为 Link ingress 的
+server 身份。它的精确 X.509-SVID 是
+`spiffe://<trust-domain>/vine/daemon/vine.link`，并与 Hub、Portal 使用相同 trust domain。
+远端 Link 与 Portal 代理流量必须使用 HTTPS 并认证该 SPIFFE ID。Link API 仍使用
+h2c，因为它只面向同一 host 或 network namespace 内的应用。
+
 ## 请求路径
 
 ### RPC

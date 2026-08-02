@@ -46,6 +46,27 @@ You can also set `--hub-endpoint` through `VINE_HUB_ENDPOINT`. Portal's actual
 HTTP and HTTPS listen addresses are not fixed command-line options; Portal entry
 and rule configuration stored in Hub determines them.
 
+For a network deployment, configure Portal's `vine.portal` backend identity:
+
+```bash
+vine portal serve \
+  --hub-endpoint https://hub.internal:7071 \
+  --mtls-ca-file /run/vine/ca.pem \
+  --mtls-cert-file /run/vine/portal.pem \
+  --mtls-key-file /run/vine/portal-key.pem
+```
+
+Portal uses this certificate for Hub Rpc and Redis clients and for calls to Hub
+Admin and Link ingress. Its exact X.509-SVID is
+`spiffe://<trust-domain>/vine/daemon/vine.portal`, using the same trust domain as Hub and
+Link. These backend identity files are never served directly by browser-facing
+HTTPS listeners. When mTLS is enabled and no configured certificate matches an
+SNI host, Portal generates a separate, short-lived self-signed Web certificate
+in memory. Exact and wildcard certificates from Hub always take precedence.
+Temporary certificates are bounded in an in-memory cache, are not written to
+Hub, and disappear when Portal stops. They encrypt bootstrap traffic but are not
+browser-trusted; configure a public certificate before production use.
+
 ## How Configuration Takes Effect
 
 Portal can load most gateway changes without restarting. It watches the following

@@ -48,27 +48,31 @@ exact revisions used by a deployment.
 
 ## Secure the runtime network
 
-:::danger Current security boundary
+:::warning Backend mTLS boundary
 
-Native transport authentication and encryption remain TODOs across the complete
-networked runtime data plane. Link-to-Hub and Portal-to-Hub Rpc,
-application-to-Link Rpc, and Portal/Link proxy traffic currently use cleartext
-h2c. Hub Redis uses cleartext RESP over TCP, and `nats://` traffic is also
-unencrypted. The production target is mTLS for Vine component connections and
-TLS plus authenticated client identities for NATS. Inproc transports do not
-cross a network boundary and are outside this TODO.
+Vine can require deployment-provided mTLS identities for Hub, Link, and Portal.
+When all three `--mtls-*-file` flags are configured on each process, the Hub
+Control and Admin APIs, embedded Redis and NATS, Link ingress, and component
+proxy clients use mTLS. Certificates identify components through the exact
+X.509-SVID URI SANs `spiffe://<trust-domain>/vine/daemon/vine.hub`,
+`spiffe://<trust-domain>/vine/daemon/vine.link`, and
+`spiffe://<trust-domain>/vine/daemon/vine.portal`. Every component in one deployment must
+use the same trust domain; DNS SANs do not grant component identity. Discovered
+plaintext endpoints are rejected instead of being accepted as a downgrade.
 
-The embedded Hub Redis server rejects anonymous data access and separates
-`vine.hub`, `vine.link`, and `vine.portal` with least-privilege ACLs. The
-`vine.hub` user has a random process-local password; Link and Portal use empty
-passwords for inproc and separated-deployment debugging, so any client that can
-reach Redis can still impersonate either role. The Portal role can read Portal
-TLS private keys.
+Backend mTLS is opt-in: omitting the certificate flags preserves plaintext
+development behavior. Application-to-Link traffic is also deliberately outside
+this boundary because it is expected to stay local. Portal public listeners use
+separately configured public certificates; with mTLS enabled, a missing match
+falls back to a process-local self-signed Web certificate for encrypted
+bootstrap access. That temporary certificate is not browser-trusted and is not
+a production certificate. Keep any plaintext path on loopback or a trusted
+private network.
 
-Do not expose Hub API, Hub Redis, Link API, Link ingress, application listeners,
-or an embedded NATS listener to an untrusted network. Place them on loopback or a
-trusted private network and enforce the boundary with firewall or network-policy
-rules.
+The embedded Redis ACL still separates `vine.hub`, `vine.link`, and
+`vine.portal`. With mTLS, Redis also requires the ACL username to match the
+client certificate identity. External PostgreSQL and NATS endpoints use their
+own authentication and encryption configuration.
 
 :::
 
@@ -76,24 +80,28 @@ Inventory every listener:
 
 | Boundary | Current default | Required callers | Production action |
 | --- | --- | --- | --- |
-| Hub API | `127.0.0.1:7071` | Link, Portal, and trusted management clients | Bind to a reachable private address only |
-| Hub Redis | `127.0.0.1:7073` | Link and Portal | Keep private; never publish it as a general Redis service |
+| Hub Control API | `127.0.0.1:7071` | Link and Portal | Enable backend mTLS and bind to a reachable private address |
+| Hub Redis | `127.0.0.1:7072` | Link and Portal | Enable backend mTLS; never publish it as a general Redis service |
+| Hub Admin API and Web | `127.0.0.1:7075` | Portal | Enable backend mTLS and keep it separate from component traffic |
 | Link API | `127.0.0.1:7079` | Separately running business applications | Keep private and reachable only from its applications |
-| Link ingress | `0.0.0.0:0` | Portal and remote Link instances | Set a fixed reachable address when network policy requires stable ports |
+| Link ingress | `0.0.0.0:0` | Hub debug tools, Portal, and remote Link instances | Enable backend mTLS; set a fixed reachable address when network policy requires stable ports |
 | Business application HTTP | `127.0.0.1:0` | Its Link | Keep Link in the same network namespace or set `app.RunFlag.ListenAddr` to a protected reachable address |
-| Embedded NATS in normal Hub mode | Random TCP port | Link instances | Keep the discovered port private; use an external NATS endpoint when operations require a fixed endpoint |
-| Portal entries | Defined by Hub Portal rules | External clients | Expose only the intended HTTP/HTTPS listeners |
+| Embedded NATS in normal Hub mode | Random TCP port | Hub internal publishers and Link instances | Enable backend mTLS; use an external NATS endpoint when operations require a fixed endpoint |
+| Portal entries | Dashboard defaults to `http://:7099/`, or `https://:7099/` with mTLS; other entries are defined by Hub Portal rules | External clients | Expose only intended listeners and replace temporary self-signed certificates before production use |
 
 - [ ] Permit only the caller sets shown in the table.
+- [ ] Provision one CA and distinct `vine.hub`, `vine.link`, and `vine.portal`
+  certificates with both server and client authentication usages.
+- [ ] Configure `--mtls-ca-file`, `--mtls-cert-file`, and `--mtls-key-file`
+  together on Hub, every Link, and every Portal.
 - [ ] Use `--ingress-listen` to avoid an unpredictable Link ingress port when a
   firewall needs an explicit rule.
 - [ ] If an application and Link run in different containers or hosts, configure
   an application listener that Link can reach and do not expose it publicly.
 - [ ] Treat access to Hub Redis as access to application configuration and TLS
   private-key material.
-- [ ] Until native mTLS is implemented, treat Rpc metadata, Redis usernames, and
-  network reachability as routing or ACL inputs rather than authenticated
-  component identities.
+- [ ] Keep application-to-Link traffic local. If it crosses a host or trust
+  boundary, protect it with deployment networking controls.
 - [ ] Verify external traffic enters through Portal instead of bypassing gateway
   routing and admission.
 
@@ -111,8 +119,12 @@ can start Hub with PostgreSQL and external NATS:
 
 ```bash
 vine hub serve \
-  --api-listen 10.0.1.10:7071 \
-  --redis-listen 10.0.1.10:7073 \
+  --control-listen 10.0.1.10:7071 \
+  --redis-listen 10.0.1.10:7072 \
+  --admin-listen 10.0.1.10:7075 \
+  --mtls-ca-file /run/vine/ca.pem \
+  --mtls-cert-file /run/vine/hub.pem \
+  --mtls-key-file /run/vine/hub-key.pem \
   --db-postgres-url "$VINE_DB_POSTGRES_URL" \
   --mq-external-nats-url "$VINE_MQ_EXTERNAL_NATS_URL"
 ```

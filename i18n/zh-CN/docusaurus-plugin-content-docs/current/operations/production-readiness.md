@@ -44,22 +44,26 @@ skelc version
 
 ## 保护运行时网络
 
-:::danger 当前安全边界
+:::warning 后台 mTLS 边界
 
-原生传输认证与加密的 TODO 覆盖完整的网络运行时数据面。Link 到 Hub、Portal 到
-Hub 的 Rpc，应用到 Link 的 Rpc，以及 Portal/Link 代理流量当前均使用明文 h2c；
-Hub Redis 使用明文 TCP RESP，`nats://` 流量也未加密。生产目标是为 Vine 组件连接
-提供 mTLS，并为 NATS 提供 TLS 和经过认证的客户端身份。inproc transport 不跨越
-网络边界，不属于该 TODO 的范围。
+Vine 可以为 Hub、Link 与 Portal 强制使用部署提供的 mTLS 身份。在每个进程上同时
+配置三个 `--mtls-*-file` 参数后，Hub Control API、Admin API、内嵌 Redis 与
+NATS、Link ingress，以及组件代理 client 都会使用 mTLS。证书通过精确的
+X.509-SVID URI SAN `spiffe://<trust-domain>/vine/daemon/vine.hub`、
+`spiffe://<trust-domain>/vine/daemon/vine.link`、
+`spiffe://<trust-domain>/vine/daemon/vine.portal` 标识组件；同一部署的所有组件必须使用相同
+trust domain，DNS SAN 不授予组件身份。发现到的明文 endpoint 会被拒绝，不会作为
+降级路径接受。
 
-Hub 内嵌 Redis 已拒绝匿名数据访问，并通过最小权限 ACL 隔离 `vine.hub`、
-`vine.link`、`vine.portal` 三个用户。`vine.hub` 使用进程内随机密码；Link 与 Portal
-的空密码仅用于 inproc 和分离部署调试，因此任何能触达 Redis 的客户端仍可冒充这两个
-角色。Portal 角色能够读取 Portal TLS 私钥。
+后台 mTLS 是可选配置；省略证书参数时会保留明文开发行为。应用到 Link 的通讯也有意
+不包含在该边界内，因为它预期保持在本机。Portal 对外 listener 使用独立配置的公开
+证书；启用 mTLS 后，如果没有匹配项，会回退到一个仅驻留当前进程的自签 Web 证书，
+用于加密引导访问。该临时证书不受浏览器信任，也不是生产证书。所有明文路径都必须
+限制在 loopback 或可信私有网络中。
 
-请将 Hub API、Hub Redis、Link API、Link ingress、应用 listener 和内嵌
-NATS listener 全部放在 loopback 或可信私有网络中，并通过防火墙或网络策略强制执行这条边界。
-绝对不要将这些内部端口暴露到不可信网络。
+内嵌 Redis ACL 继续隔离 `vine.hub`、`vine.link`、`vine.portal`；启用 mTLS 后，
+Redis 还要求 ACL 用户名与 client 证书身份一致。外部 PostgreSQL 和 NATS endpoint
+使用它们自己的认证与加密配置。
 
 :::
 
@@ -67,22 +71,26 @@ NATS listener 全部放在 loopback 或可信私有网络中，并通过防火�
 
 | 边界 | 当前默认值 | 必需调用方 | 生产操作 |
 | --- | --- | --- | --- |
-| Hub API | `127.0.0.1:7071` | Link、Portal 和可信管理客户端 | 只绑定到可达的私有地址 |
-| Hub Redis | `127.0.0.1:7073` | Link 与 Portal | 保持私有；不要把它发布为通用 Redis 服务 |
+| Hub Control API | `127.0.0.1:7071` | Link 与 Portal | 启用后台 mTLS，只绑定到可达的私有地址 |
+| Hub Redis | `127.0.0.1:7072` | Link 与 Portal | 启用后台 mTLS；不要把它发布为通用 Redis 服务 |
+| Hub Admin API 与 Web | `127.0.0.1:7075` | Portal | 启用后台 mTLS，并与组件流量隔离 |
 | Link API | `127.0.0.1:7079` | 独立运行的业务应用 | 保持私有，只允许它管理的应用访问 |
-| Link ingress | `0.0.0.0:0` | Portal 和远端 Link 实例 | 网络策略要求固定端口时，设置固定且可达的地址 |
+| Link ingress | `0.0.0.0:0` | Hub 调试工具、Portal 和远端 Link 实例 | 启用后台 mTLS；网络策略要求固定端口时设置固定地址 |
 | 业务应用 HTTP | `127.0.0.1:0` | 它对应的 Link | 让 Link 位于同一网络命名空间，或通过 `app.RunFlag.ListenAddr` 设置受保护的可达地址 |
-| 普通 Hub 模式的内嵌 NATS | 随机 TCP 端口 | Link 实例 | 保持发现到的端口私有；运维需要固定 endpoint 时使用外部 NATS |
-| Portal entry | 由 Hub 中的 Portal rule 定义 | 外部客户端 | 只暴露预期的 HTTP/HTTPS listener |
+| 普通 Hub 模式的内嵌 NATS | 随机 TCP 端口 | Hub 内部 publisher 与 Link 实例 | 启用后台 mTLS；运维需要固定 endpoint 时使用外部 NATS |
+| Portal entry | Dashboard 默认 `http://:7099/`，启用 mTLS 时默认 `https://:7099/`；其他入口由 Hub 中的 Portal rule 定义 | 外部客户端 | 只暴露预期的 listener，并在生产使用前替换临时自签证书 |
 
 - [ ] 只允许表格中列出的调用方集合。
+- [ ] 准备一个 CA，以及分别标识 `vine.hub`、`vine.link`、`vine.portal` 且同时
+  允许 server/client authentication 的证书。
+- [ ] 在 Hub、每个 Link 与每个 Portal 上同时配置 `--mtls-ca-file`、
+  `--mtls-cert-file`、`--mtls-key-file`。
 - [ ] 防火墙需要显式规则时，使用 `--ingress-listen` 避免不可预测的 Link
   ingress 端口。
 - [ ] 应用和 Link 位于不同 container 或 host 时，配置 Link 可达的应用
   listener，并且不要公开暴露它。
 - [ ] 将 Hub Redis 访问权视为应用配置和 TLS 私钥材料的访问权。
-- [ ] 在原生 mTLS 实现前，将 Rpc metadata、Redis 用户名和网络可达性视为路由或
-  ACL 输入，而不是经过认证的组件身份。
+- [ ] 保持应用到 Link 的通讯在本机；跨越 host 或信任边界时，使用部署网络控制保护。
 - [ ] 确认外部流量通过 Portal 进入，而不是绕过网关路由和准入。
 
 ## 配置 Hub 持久化与消息系统
@@ -99,8 +107,12 @@ Hub 必须且只能选择一种数据库来源和一种 NATS 模式：
 
 ```bash
 vine hub serve \
-  --api-listen 10.0.1.10:7071 \
-  --redis-listen 10.0.1.10:7073 \
+  --control-listen 10.0.1.10:7071 \
+  --redis-listen 10.0.1.10:7072 \
+  --admin-listen 10.0.1.10:7075 \
+  --mtls-ca-file /run/vine/ca.pem \
+  --mtls-cert-file /run/vine/hub.pem \
+  --mtls-key-file /run/vine/hub-key.pem \
   --db-postgres-url "$VINE_DB_POSTGRES_URL" \
   --mq-external-nats-url "$VINE_MQ_EXTERNAL_NATS_URL"
 ```

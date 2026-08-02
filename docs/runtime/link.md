@@ -60,6 +60,25 @@ vine link serve \
 The corresponding environment variables are `VINE_API_LISTEN`,
 `VINE_INGRESS_LISTEN`, and `VINE_HUB_ENDPOINT`.
 
+For a network deployment, configure Link's `vine.link` backend identity and use
+the Hub HTTPS endpoint:
+
+```bash
+vine link serve \
+  --hub-endpoint https://hub.internal:7071 \
+  --ingress-listen 10.0.2.10:7082 \
+  --mtls-ca-file /run/vine/ca.pem \
+  --mtls-cert-file /run/vine/link.pem \
+  --mtls-key-file /run/vine/link-key.pem
+```
+
+Link then uses this certificate for Hub Rpc, Redis, and embedded NATS clients,
+and as the server identity on Link ingress. Its exact X.509-SVID is
+`spiffe://<trust-domain>/vine/daemon/vine.link`, using the same trust domain as Hub and
+Portal. Remote Link and Portal proxy traffic must use HTTPS and authenticate
+that SPIFFE ID. The Link API remains h2c because it is intended only for
+applications on the same host or network namespace.
+
 ## Request Paths
 
 ### Rpc

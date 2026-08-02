@@ -22,7 +22,9 @@ flowchart LR
 - **配置中心**：从 SQLite 或 PostgreSQL 读取配置，并同步到 Redis。
 - **服务注册中心**：接收 Link 上报的应用、RPC、Web、事件和任务能力；维护实例状态。
 - **运行时分发层**：将配置、注册、Portal 规则、schema 与证书写入 Redis，供消费者读取和订阅。
-- **管理入口**：提供 Hub API 与 Dashboard；Dashboard 的外部访问由 Portal 配置决定。
+- **组件 Control API**：提供 Link 与 Portal 使用的发现和注册服务。
+- **管理入口**：在独立 listener 上提供 Dashboard Rpc 与 Web handler；Dashboard
+  的外部访问由 Portal 配置决定。
 
 Hub 不是业务请求的转发路径。业务的外部请求由 Portal 处理，应用间调用由 Link 发现并转发。
 
@@ -40,24 +42,58 @@ vine hub serve \
 
 | 服务 | 默认地址 | 用途 |
 | --- | --- | --- |
-| Hub API | `127.0.0.1:7071` | Link、Portal 与管理客户端连接 Hub |
-| Hub Redis | `127.0.0.1:7073` | 运行时快照读取与订阅 |
+| Hub Control API | `127.0.0.1:7071` | Link、Portal 发现 Hub 基础设施并维护注册 |
+| Hub Redis | `127.0.0.1:7072` | 运行时快照读取与订阅 |
+| Hub Admin API 与 Web | `127.0.0.1:7075` | Dashboard 管理 Rpc 与内嵌 Dashboard Web |
 
-:::warning 当前安全边界
+可用 `--control-listen`、`--redis-listen` 和 `--admin-listen` 修改这些 listener。
 
-原生传输认证与加密的 TODO 覆盖完整的网络运行时数据面，而不只限于 Hub Redis。
-Link 到 Hub、Portal 到 Hub 的 Rpc，Portal/Link 代理流量，以及应用到 Link 的 Rpc
-当前均使用明文 h2c；Hub Redis 使用明文 TCP RESP，`nats://` NATS 连接也未加密。
-生产目标是为 Vine 组件连接提供双向 TLS（mTLS），并为 NATS 提供 TLS 和经过认证的
-客户端身份。inproc transport 不跨越网络边界，不属于该 TODO 的范围。
+该 listener 边界也体现在 Hub 的 Skel 契约中。Link 与 Portal 使用
+`vine.hub.control` 域，其中包含 `InfoService` 和 `RegistryService`；Dashboard
+client 使用独立的 `vine.hub.admin` 域访问管理 Rpc 服务与 `DashboardWeb`。
 
-Hub 内嵌 Redis 已拒绝匿名数据访问，并通过最小权限的命令、key 与订阅 ACL 隔离
-`vine.hub`、`vine.link`、`vine.portal` 三个用户。`vine.hub` 使用进程内随机密码；
-Link 与 Portal 的空密码仅用于 inproc 和分离部署调试。用户名只能选择 ACL 角色，
-不能证明调用方身份，因此任何能触达该 endpoint 的客户端仍可冒充 Link 或 Portal，
-而 Portal 角色能够读取 Portal TLS 私钥。只能将 Hub API、Hub Redis、Link API 和
-Link ingress 部署在回环地址或受信私有网络中，并通过防火墙限制访问；绝对不要将
-这些内部端口暴露到不可信网络。
+## 后台 mTLS
+
+Hub、Link 与 Portal 可以使用一个由部署提供的 CA，并为每个组件身份使用不同证书。
+三个证书参数必须同时配置：
+
+```bash
+vine hub serve \
+  --mtls-ca-file /run/vine/ca.pem \
+  --mtls-cert-file /run/vine/hub.pem \
+  --mtls-key-file /run/vine/hub-key.pem \
+  --mq-embedded-nats \
+  --db-sqlite-file ./hub.sqlite
+```
+
+Hub 证书必须仅含一个 SPIFFE URI SAN
+`spiffe://<trust-domain>/vine/daemon/vine.hub`，并同时允许 TLS server 与 client
+authentication；Link 和 Portal 在相同 trust domain 中分别使用
+`/vine/daemon/vine.link` 与 `/vine/daemon/vine.portal`。Vine 会验证完整
+X.509-SVID 并精确比较 URI，DNS SAN 不授予组件
+角色。配置后，Hub 会在 Control API、Admin API、内嵌 Redis 与内嵌 NATS 上强制
+mTLS。Redis 还会把 SPIFFE 身份绑定到对应的 Redis ACL 用户。
+内嵌 NATS 接受使用 `spiffe://<trust-domain>/vine/daemon/vine.hub` 身份的 Hub
+Scheduler、Admin Debug publisher，以及使用
+`spiffe://<trust-domain>/vine/daemon/vine.link` 身份的 Link client；Portal 不允许连接。
+
+省略 `--dashboard-url` 时，启用后台 mTLS 还会把 Dashboard Portal 入口的默认值
+从 `http://:7099/` 改为 `https://:7099/`。只有仍与原始默认值一致的已有内置规则
+会被迁移，用户自定义的 Dashboard 入口会保留。
+
+对应环境变量是 `VINE_MTLS_CA_FILE`、`VINE_MTLS_CERT_FILE` 与
+`VINE_MTLS_KEY_FILE`。
+
+:::warning 仍需注意的安全边界
+
+后台 mTLS 是可选配置。未同时提供三个证书参数时，仍保留现有 h2c、明文 Redis 与
+`nats://` 开发行为，此时必须将 listener 放在 loopback 或可信私有网络中。
+
+应用到 Link 的通讯预期保持在本机，因此不属于后台 mTLS 范围。Portal 对外 listener
+不会复用后台身份证书。启用 mTLS 后，如果没有匹配的公开证书，Portal 会回退到一个短期、
+仅驻留当前进程的自签 Web 证书；配置的 Portal 证书始终优先。该回退能加密引导流量，
+但不会被浏览器信任。外部 PostgreSQL 与 NATS endpoint 也继续使用各自的安全配置；
+`--mq-external-nats-url` 当前只接受 `nats://`。
 
 :::
 
