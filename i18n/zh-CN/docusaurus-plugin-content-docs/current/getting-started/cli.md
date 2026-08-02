@@ -5,8 +5,10 @@ sidebar_label: Vine CLI
 
 # Vine CLI
 
-`vine` 命令用来启动 Hub、Link 或 Portal，也能查看当前 binary 的构建版本。
+`vine` 命令可以启动本地开发运行时或单独的 Hub、Link、Portal，也能查看当前
+binary 的构建版本。
 
+- `dev`：为独立进程中的业务应用启动本地运行时
 - `hub` / `link` / `portal`：启动 Vine 运行时基础服务
 - `version`：查看当前 CLI 版本
 
@@ -40,6 +42,51 @@ vine version
 
 正式发布应用时，请把 `main` 换成与应用 module 相同、经过审查的 commit 或 tag。
 升级前先看[版本兼容性](./compatibility.md)。
+
+## dev
+
+`dev` 在一个 CLI 进程中启动 Hub、Portal 和 Link，供本地业务应用调试：
+
+```bash
+vine dev
+```
+
+Hub Rpc、Redis、NATS、Portal 到 Hub、Link 到 Hub，以及 Portal 到 Link 的流量
+均使用进程内 transport。Link 仍监听 `127.0.0.1:7079`，因此另一个进程中的业务
+应用会保留正常的网络边界：
+
+```go title="main.go"
+app.New[*HelloApp]().StartAndWait()
+```
+
+`app.New` 默认使用的 Link endpoint 已经是 `http://127.0.0.1:7079`。需要其他地址
+时，将 `--link-api-listen` 与 `VINE_LINK_ENDPOINT` 或
+`app.Option.LinkEndpoint` 配套设置。
+
+未指定数据库时，`dev` 会创建临时 SQLite，并在优雅退出后删除。需要跨运行保留
+Hub 状态时可指定数据库文件；需要初始化应用配置或 Portal 路由时可指定 seed：
+
+```bash
+vine dev \
+  --db-sqlite-file ./hub-dev.sqlite \
+  --seed-yaml-file ./seed.yaml \
+  --dashboard-url http://:7099/
+```
+
+可用选项：
+
+- `--link-api-listen`：供外部应用连接的 Link API 地址，默认
+  `127.0.0.1:7079`
+- `--db-sqlite-file` / `--db-postgres-url`：可选的 Hub 持久化存储
+- `--seed-yaml-file`：可选的 Hub seed 数据
+- `--dashboard-url`：Hub Dashboard 的 Portal 入口，默认 `http://:7099/`
+
+对应的环境变量为 `VINE_API_LISTEN`、`VINE_DB_SQLITE_FILE`、
+`VINE_DB_POSTGRES_URL`、`VINE_SEED_YAML_FILE` 和 `VINE_DASHBOARD_URL`。
+按 `Ctrl+C` 会依次优雅停止 Link、Portal 和 Hub。
+
+`dev` 保留 App 到 Link 以及 Link 到 App 的网络边界，但不模拟本地 Vine 运行时
+内部的网络故障、租约或 TTL 过期。部署与基础设施验证仍使用各组件的独立命令。
 
 ## hub
 
@@ -160,6 +207,13 @@ vine portal serve \
 - `VINE_HUB_ENDPOINT`
 
 ## 常见工作流
+
+### 本地调试外部应用
+
+```bash
+vine dev
+go run ./cmd/myapp
+```
 
 ### 单独启动运行时基础服务
 

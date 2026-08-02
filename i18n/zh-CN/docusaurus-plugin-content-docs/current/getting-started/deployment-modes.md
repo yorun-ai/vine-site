@@ -19,6 +19,7 @@ Vine 为开发和生产提供不同的运行拓扑，而且不需要为生产环
 | 模式 | Hub / Portal / Link | 业务应用 | 适用场景 |
 | --- | --- | --- | --- |
 | standalone | 同一进程 | 同一进程 | 快速开始、测试、本地单体开发 |
+| `vine dev` | 同一 CLI 进程，内部控制流量走 inproc；Link API 保留网络入口 | 独立进程 | 使用外部应用进程进行本地调试 |
 | linked | Hub、Portal 独立；Link 与应用同进程 | 与 Link 同进程 | 本地开发、少量服务、简化应用部署 |
 | 分开部署 | Hub、Portal、Link 均独立 | 独立进程 | 生产环境、独立扩缩容、故障验证 |
 
@@ -52,6 +53,36 @@ standalone.NewWithOption[*HelloApp](standalone.Option{
 - Hub 与 Link 不启动 heartbeat、TTL 续租和 registry sweeper；应用停止时靠显式注销清理注册。
 - Hub 和 Link 不开放独立管理端口；Portal 仍可按入口规则监听业务 HTTP/HTTPS 端口。
 - 跨进程网络、服务单独重启等场景不在覆盖范围内。
+
+## 本地调试外部应用
+
+`vine dev` 让业务应用保留独立进程，同时在一个进程中托管 Hub、Portal 和 Link：
+
+```mermaid
+flowchart LR
+  subgraph Dev["vine dev 进程"]
+    Hub["Hub"] -->|"inproc"| Portal["Portal"]
+    Hub -->|"inproc"| Link["Link"]
+    Portal -->|"inproc ingress"| Link
+  end
+  Client["外部客户端"] -->|"网络"| Portal
+  Link <-->|"网络"| App["业务 App 进程"]
+```
+
+在两个终端中分别启动运行时和应用：
+
+```bash
+vine dev
+go run ./cmd/myapp
+```
+
+`app.New` 默认连接 `http://127.0.0.1:7079` 的 Link API，因此不需要额外配置
+endpoint。应用注册、domain schemas 和业务流量都会经过真实的 App 到 Link 网络
+边界；Hub、Redis、NATS 和 Link ingress 的内部流量则使用进程内 transport，避免
+额外端口和基础设施故障噪音。
+
+这个拓扑是开发快捷方式，不是部署拓扑；它不覆盖 Hub 租约、TTL 过期或 Link 到
+Hub 的网络恢复。
 
 ## Linked：Hub 与应用分开
 
@@ -146,6 +177,7 @@ Portal 的外部监听、站点规则和 TLS 证书通过 Hub 配置管理。注
 | 需求 | 推荐模式 |
 | --- | --- |
 | 学习框架或编写单应用测试 | standalone |
+| 让应用独立进程运行，同时最小化本地基础设施 | `vine dev` |
 | 本地调试多个应用、但不想单独维护 Link | linked |
 | 容器化部署、多实例、独立发布与真实故障演练 | 分开部署 |
 
