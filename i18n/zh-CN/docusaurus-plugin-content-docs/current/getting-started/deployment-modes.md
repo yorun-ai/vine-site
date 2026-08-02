@@ -21,7 +21,7 @@ Vine 为开发和生产提供不同的运行拓扑，而且不需要为生产环
 | standalone | 同一进程 | 同一进程 | 快速开始、测试、本地单体开发 |
 | `vine dev` | 同一 CLI 进程，内部控制流量走 inproc；Link API 保留网络入口 | 独立进程 | 使用外部应用进程进行本地调试 |
 | linked | Hub、Portal 独立；Link 与应用同进程 | 与 Link 同进程 | 本地开发、少量服务、简化应用部署 |
-| 分开部署 | Hub、Portal、Link 均独立 | 独立进程 | 生产环境、独立扩缩容、故障验证 |
+| 分开部署 | Hub、Portal 独立；每个 Link 作为 sidecar 进程与其应用同主机部署 | 位于 Link sidecar 主机上的独立进程 | 生产环境、workload 扩缩容、故障验证 |
 
 无论选择哪种模式，业务应用的 `ApplicationSpec`、Rpc、Web、Event 和 Task 定义
 保持不变；变化的只有部署装配与 endpoint 配置。
@@ -123,7 +123,9 @@ linked.NewWithOption[*HelloApp](linked.Option{
 
 ## 分开部署：独立 runtime 与应用
 
-在生产环境中，可将控制面、外部入口、应用侧接入层和业务应用完全拆开：
+在生产环境中，可将控制面、外部入口、应用侧接入层和业务应用拆成独立进程。进程分离
+不会改变 Link 的 sidecar 定位：每个 Link 必须与其管理的应用位于同一主机和部署
+信任边界内。
 
 ```mermaid
 flowchart LR
@@ -165,14 +167,17 @@ app.NewWithOption[*HelloApp](app.Option{
 VINE_LINK_ENDPOINT=http://127.0.0.1:7079 ./hello-app
 ```
 
-此模式下，Link 负责向 Hub 注册应用并维持 heartbeat。应用、Link、Portal
-和 Hub 具有独立的进程生命周期，但各角色的扩缩容与可用性边界并不相同。
-Portal 的外部监听、站点规则和 TLS 证书通过 Hub 配置管理。注意：进程分离
-并不直接等同于高可用；上线前请检查[生产就绪清单](../operations/production-readiness.md)。
+此模式下，Link 负责向 Hub 注册应用并维持 heartbeat。应用与 Link 拥有独立的进程
+生命周期，但构成同主机部署的一个 workload，并且必须一起扩缩容；Portal 与 Hub
+具有独立的部署边界。Portal 的外部监听、站点规则和 TLS 证书通过 Hub 配置管理。
+注意：进程分离并不直接等同于高可用；上线前请检查
+[生产就绪清单](../operations/production-readiness.md)。
 
 ## 选择拓扑
 
-从 standalone 开始。需要共享配置、应用间互相发现或对外暴露入口时，迁移到 linked。需要独立伸缩、故障隔离或验证完整分布式语义时，再拆为完全分开部署。
+从 standalone 开始。需要共享配置、应用间互相发现或对外暴露入口时，迁移到 linked。
+Hub 与 Portal 需要独立扩缩容，或需要故障隔离和完整分布式语义时，再使用分开部署；
+每个应用始终与其 Link sidecar 一起扩缩容。
 
 | 需求 | 推荐模式 |
 | --- | --- |

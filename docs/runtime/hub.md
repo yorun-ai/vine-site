@@ -103,14 +103,15 @@ Backend mTLS is opt-in. Without all three certificate flags, existing h2c,
 cleartext Redis, and `nats://` development behavior remains active. Keep those
 listeners on loopback or a trusted private network.
 
-Application-to-Link communication is intentionally not covered because it is
-expected to remain local. Portal's public listeners do not reuse the backend
-identity certificate. With mTLS enabled, a missing public certificate falls
-back to a short-lived, process-local self-signed Web certificate; a configured
-Portal certificate always takes precedence. This fallback encrypts bootstrap
-traffic but is not browser-trusted. External PostgreSQL and NATS endpoints also
-retain their own security configuration; `--mq-external-nats-url` currently
-accepts `nats://`.
+Application-to-Link communication is intentionally not covered because Link is
+the application's sidecar. Both must run on the same host and within the same
+deployment trust boundary; placing them on different hosts is unsupported.
+Portal's public listeners do not reuse the backend identity certificate. With
+mTLS enabled, a missing public certificate falls back to a short-lived,
+process-local self-signed Web certificate; a configured Portal certificate
+always takes precedence. This fallback encrypts bootstrap traffic but is not
+browser-trusted. External PostgreSQL and NATS endpoints also retain their own
+security configuration; `--mq-external-nats-url` currently accepts `nats://`.
 
 :::
 

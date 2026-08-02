@@ -61,13 +61,15 @@ use the same trust domain; DNS SANs do not grant component identity. Discovered
 plaintext endpoints are rejected instead of being accepted as a downgrade.
 
 Backend mTLS is opt-in: omitting the certificate flags preserves plaintext
-development behavior. Application-to-Link traffic is also deliberately outside
-this boundary because it is expected to stay local. Portal public listeners use
-separately configured public certificates; with mTLS enabled, a missing match
-falls back to a process-local self-signed Web certificate for encrypted
-bootstrap access. That temporary certificate is not browser-trusted and is not
-a production certificate. Keep any plaintext path on loopback or a trusted
-private network.
+development behavior. Application-to-Link traffic is deliberately outside this
+boundary because Link is the application's sidecar: both must run on the same
+host and within the same deployment trust boundary. Placing them on different
+hosts is not a supported Vine topology. Portal public listeners use separately
+configured public certificates; with mTLS enabled, a missing match falls back
+to a process-local self-signed Web certificate for encrypted bootstrap access.
+That temporary certificate is not browser-trusted and is not a production
+certificate. Keep any other plaintext path on loopback or a trusted private
+network.
 
 The embedded Redis ACL still separates `vine.hub`, `vine.link`, and
 `vine.portal`. With mTLS, Redis also requires the ACL username to match the
@@ -83,9 +85,9 @@ Inventory every listener:
 | Hub Control API | `127.0.0.1:7071` | Link and Portal | Enable backend mTLS and bind to a reachable private address |
 | Hub Redis | `127.0.0.1:7072` | Link and Portal | Enable backend mTLS; never publish it as a general Redis service |
 | Hub Admin API and Web | `127.0.0.1:7075` | Portal | Enable backend mTLS and keep it separate from component traffic |
-| Link API | `127.0.0.1:7079` | Separately running business applications | Keep private and reachable only from its applications |
+| Link API | `127.0.0.1:7079` | Co-located business applications | Keep on the sidecar host and reachable only from its applications |
 | Link ingress | `0.0.0.0:0` | Hub debug tools, Portal, and remote Link instances | Enable backend mTLS; set a fixed reachable address when network policy requires stable ports |
-| Business application HTTP | `127.0.0.1:0` | Its Link | Keep Link in the same network namespace or set `app.RunFlag.ListenAddr` to a protected reachable address |
+| Business application HTTP | `127.0.0.1:0` | Its Link sidecar | Keep the application and Link on the same host and within the same deployment trust boundary |
 | Embedded NATS in normal Hub mode | Random TCP port | Hub internal publishers and Link instances | Enable backend mTLS; use an external NATS endpoint when operations require a fixed endpoint |
 | Portal entries | Dashboard defaults to `http://:7099/`, or `https://:7099/` with mTLS; other entries are defined by Hub Portal rules | External clients | Expose only intended listeners and replace temporary self-signed certificates before production use |
 
@@ -96,12 +98,11 @@ Inventory every listener:
   together on Hub, every Link, and every Portal.
 - [ ] Use `--ingress-listen` to avoid an unpredictable Link ingress port when a
   firewall needs an explicit rule.
-- [ ] If an application and Link run in different containers or hosts, configure
-  an application listener that Link can reach and do not expose it publicly.
+- [ ] Co-locate every application with its Link sidecar on the same host and
+  within the same deployment trust boundary. Separate containers must retain a
+  private local path between them; different hosts are unsupported.
 - [ ] Treat access to Hub Redis as access to application configuration and TLS
   private-key material.
-- [ ] Keep application-to-Link traffic local. If it crosses a host or trust
-  boundary, protect it with deployment networking controls.
 - [ ] Verify external traffic enters through Portal instead of bypassing gateway
   routing and admission.
 

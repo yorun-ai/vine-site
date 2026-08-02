@@ -21,9 +21,9 @@ RPC 服务、Web Handler、Event Listener 和 Task Runner，但不在业务代�
 
 ## 一套应用模型，多种部署形态
 
-最小的 Vine 环境把完整运行时放在一个进程里。进入生产集群后，同样的角色能拆成
-独立 workload。下面是一种实用的 Kubernetes 布局：每个应用实例旁运行一个 Link，
-Hub 与 Portal 独立部署。
+最小的 Vine 环境把完整运行时放在一个进程里。进入生产集群后，Hub 与 Portal 可以
+拆成独立 workload，但每个应用必须与其 Link sidecar 部署在一起。一种实用的
+Kubernetes 布局如下：
 
 **Standalone：单进程**
 
@@ -48,8 +48,9 @@ flowchart LR
   KPortal --> KLink
 ```
 
-这只是其中一种布局，并不要求 Link 必须作为 sidecar。只要 Link API 与应用 endpoint
-彼此可达，两者也能是独立 workload。
+即使拆分进程，也必须保持 sidecar 边界。Link 可以位于应用进程内，也可以作为同一
+主机上的另一个进程或 container，但两者仍属于同一个部署 workload 与信任边界。
+不支持将 Link 与其应用部署在不同主机。
 
 ### 保持不变的部分
 
@@ -63,10 +64,10 @@ flowchart LR
 | 关注点 | Standalone | Kubernetes / 分开部署 |
 | --- | --- | --- |
 | 进程装配 | `standalone.New` 启动 Hub、Portal、Link 与应用 | `vine` CLI 和应用 binary 分别启动各个角色 |
-| 应用到 Link | 进程内 endpoint | 通过 `VINE_LINK_ENDPOINT` 指向可达的 Link API |
+| 应用到 Link | 进程内 endpoint | 通过 `VINE_LINK_ENDPOINT` 指向同主机 Link sidecar API |
 | 注册与发现 | 进程内运行时路径 | Link 向 Hub 注册并消费分布式快照 |
 | 外部流量 | 内嵌 Portal 可按配置打开 listener | 独立 Portal 将请求转发到已注册 Link |
-| 扩缩容与故障 | 只有一个进程边界 | 应用、Link、Portal 和基础设施可分别运维 |
+| 扩缩容与故障 | 只有一个进程边界 | 应用与 Link 构成同主机 workload；Portal 与基础设施独立运维 |
 
 实际项目里，把启动入口保持得很薄就行，应用 specification 放在可复用 package 中：
 

@@ -23,7 +23,7 @@ this boundary works.
 | standalone | Same process | Same process | Quick starts, tests, and local monolith development |
 | `vine dev` | Same CLI process with in-process control traffic; Link API remains on the network | Independent process | Local debugging with an external application process |
 | linked | Hub and Portal are separate; Link runs with the application | Same process as Link | Local development, a small number of services, and simpler application deployment |
-| Separated deployment | Hub, Portal, and Link all run separately | Independent process | Production, independent scaling, and failure testing |
+| Separated deployment | Hub and Portal run separately; each Link is a sidecar process co-located with its application | Independent process on the Link sidecar host | Production, workload scaling, and failure testing |
 
 Regardless of mode, the business application keeps the same `ApplicationSpec`,
 Rpc, Web, Event, and Task definitions. Only deployment assembly and endpoint
@@ -142,7 +142,9 @@ separate Link sidecar adds more complexity than it solves.
 
 In production, you can split the control plane, external entry point,
 application-side connectivity layer, and business application into independent
-processes:
+processes. Process separation does not change Link's sidecar role: every Link
+must remain on the same host and within the same deployment trust boundary as
+the applications it owns.
 
 ```mermaid
 flowchart LR
@@ -186,10 +188,10 @@ VINE_LINK_ENDPOINT=http://127.0.0.1:7079 ./hello-app
 ```
 
 In this mode, Link registers applications with Hub and maintains heartbeats. The
-application, Link, Portal, and Hub each have independent process lifecycles,
-though their scaling and availability boundaries differ. External Portal
-listeners, site rules, and TLS certificates are managed through Hub
-configuration. Review the
+application and Link have separate process lifecycles but form one co-located
+workload and scale together; Portal and Hub have independent deployment
+boundaries. External Portal listeners, site rules, and TLS certificates are
+managed through Hub configuration. Review the
 [Production Readiness Checklist](../operations/production-readiness.md) before
 treating process separation as high availability.
 
@@ -197,8 +199,9 @@ treating process separation as high availability.
 
 Start with standalone. Move to linked when you need shared configuration,
 discovery between multiple applications, or an external entry point. Use fully
-separated deployment when you need independent scaling, failure isolation, or
-complete distributed-system semantics.
+separated deployment when Hub and Portal need independent scaling or when you
+need failure isolation and complete distributed-system semantics. Scale each
+application together with its Link sidecar.
 
 | Requirement | Recommended mode |
 | --- | --- |

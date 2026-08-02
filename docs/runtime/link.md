@@ -76,8 +76,9 @@ Link then uses this certificate for Hub Rpc, Redis, and embedded NATS clients,
 and as the server identity on Link ingress. Its exact X.509-SVID is
 `spiffe://<trust-domain>/vine/daemon/vine.link`, using the same trust domain as Hub and
 Portal. Remote Link and Portal proxy traffic must use HTTPS and authenticate
-that SPIFFE ID. The Link API remains h2c because it is intended only for
-applications on the same host or network namespace.
+that SPIFFE ID. The Link API remains h2c because Link is the application's
+sidecar. The application and Link must run on the same host and within the same
+deployment trust boundary; placing them on different hosts is unsupported.
 
 ## Request Paths
 
