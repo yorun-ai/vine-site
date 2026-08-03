@@ -56,8 +56,9 @@ trust domain，DNS SAN 不授予组件身份。发现到的明文 endpoint 会�
 降级路径接受。
 
 后台 mTLS 是可选配置；省略证书参数时会保留明文开发行为。应用到 Link 的通讯有意
-不包含在该边界内，因为 Link 是应用的 sidecar：两者必须位于同一主机和部署信任
-边界内。将它们部署在不同主机不属于 Vine 支持的拓扑。Portal 对外 listener 使用
+不包含在该边界内，因为 Link 是应用的 sidecar：两者通常位于同一主机和部署信任
+边界内。Vine 允许特殊部署使用非 loopback Link API，但会告警，并且不会为这条
+跨主机 h2c 路径增加 transport 认证；必须由部署侧保护。Portal 对外 listener 使用
 独立配置的公开证书；启用 mTLS 后，如果没有匹配项，会回退到一个仅驻留当前进程的
 自签 Web 证书，用于加密引导访问。该临时证书不受浏览器信任，也不是生产证书。其他
 明文路径都必须限制在 loopback 或可信私有网络中。
@@ -75,7 +76,7 @@ Redis 还要求 ACL 用户名与 client 证书身份一致。外部 PostgreSQL �
 | Hub Control API | `127.0.0.1:7071` | Link 与 Portal | 启用后台 mTLS，只绑定到可达的私有地址 |
 | Hub Redis | `127.0.0.1:7072` | Link 与 Portal | 启用后台 mTLS；不要把它发布为通用 Redis 服务 |
 | Hub Admin API 与 Web | `127.0.0.1:7075` | Portal | 启用后台 mTLS，并与组件流量隔离 |
-| Link API | `127.0.0.1:7079` | 同主机部署的业务应用 | 保留在 sidecar 主机内，只允许它管理的应用访问 |
+| Link API | `127.0.0.1:7079` | Link 管理的业务应用 | 优先使用 loopback；非 loopback listener 会告警，且未认证 h2c 流量必须由部署侧保护 |
 | Link ingress | `0.0.0.0:0` | Hub 调试工具、Portal 和远端 Link 实例 | 启用后台 mTLS；网络策略要求固定端口时设置固定地址 |
 | 业务应用 HTTP | `127.0.0.1:0` | 它对应的 Link sidecar | 让应用与 Link 位于同一主机和部署信任边界内 |
 | 普通 Hub 模式的内嵌 NATS | 随机 TCP 端口 | Hub 内部 publisher 与 Link 实例 | 启用后台 mTLS；运维需要固定 endpoint 时使用外部 NATS |
@@ -88,8 +89,8 @@ Redis 还要求 ACL 用户名与 client 证书身份一致。外部 PostgreSQL �
   `--mtls-cert-file`、`--mtls-key-file`。
 - [ ] 防火墙需要显式规则时，使用 `--ingress-listen` 避免不可预测的 Link
   ingress 端口。
-- [ ] 将每个应用与其 Link sidecar 部署在同一主机和部署信任边界内。使用不同
-  container 时，两者之间必须保留私有本地路径；不支持部署在不同主机。
+- [ ] 优先将每个应用与其 Link sidecar 部署在同一主机和部署信任边界内。特殊拓扑
+  使用非 loopback Link API 时，必须明确保护并限制这条未认证 h2c 路径。
 - [ ] 将 Hub Redis 访问权视为应用配置和 TLS 私钥材料的访问权。
 - [ ] 确认外部流量通过 Portal 进入，而不是绕过网关路由和准入。
 

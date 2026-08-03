@@ -197,6 +197,10 @@ authentication. DNS SANs are not used for component authorization. The
 corresponding environment variables are `VINE_MTLS_CA_FILE`,
 `VINE_MTLS_CERT_FILE`, and `VINE_MTLS_KEY_FILE`.
 
+Programs using `app/linked` accept the same flags and environment variables.
+They can also configure the embedded Link directly through
+`linked.Option.MTLSCAFile`, `MTLSCertFile`, and `MTLSKeyFile`.
+
 When Link or Portal enables mTLS, `--hub-endpoint` must use `https://`. Backend
 service registrations are also required to use HTTPS, preventing a component
 from silently accepting an older plaintext endpoint.

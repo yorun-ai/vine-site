@@ -76,9 +76,11 @@ Link then uses this certificate for Hub Rpc, Redis, and embedded NATS clients,
 and as the server identity on Link ingress. Its exact X.509-SVID is
 `spiffe://<trust-domain>/vine/daemon/vine.link`, using the same trust domain as Hub and
 Portal. Remote Link and Portal proxy traffic must use HTTPS and authenticate
-that SPIFFE ID. The Link API remains h2c because Link is the application's
-sidecar. The application and Link must run on the same host and within the same
-deployment trust boundary; placing them on different hosts is unsupported.
+that SPIFFE ID. The Link API remains unauthenticated h2c because Link is the
+application's sidecar. Link and its applications normally share a host and
+deployment trust boundary. Vine still permits a non-loopback Link API for
+unusual deployments, but emits a warning; the deployment must authenticate,
+encrypt, and restrict that path itself.
 
 ## Request Paths
 
@@ -113,6 +115,11 @@ dispatch state when application capabilities change.
 while Hub remains an external service. Link still opens ingress, registers with
 Hub, and continues Hub heartbeats. The in-process App is coupled to the Link
 lifecycle, so its separate application health check is disabled.
+
+When the external Hub requires backend mTLS, configure the embedded Link with
+`linked.Option.MTLSCAFile`, `MTLSCertFile`, and `MTLSKeyFile`, or use the shared
+`--mtls-*-file` flags and `VINE_MTLS_*_FILE` environment variables. The
+certificate represents the embedded `vine.link` workload.
 
 Only standalone mode runs Hub, Portal, Link, and the application in a single
 process and uses in-process Redis and endpoints. Standalone mode doesn't send

@@ -189,6 +189,9 @@ Hub、Link 与 Portal 的身份分别是
 组件身份授权。对应环境变量是 `VINE_MTLS_CA_FILE`、`VINE_MTLS_CERT_FILE` 和
 `VINE_MTLS_KEY_FILE`。
 
+使用 `app/linked` 的程序也接受相同参数和环境变量；还可以通过
+`linked.Option.MTLSCAFile`、`MTLSCertFile` 和 `MTLSKeyFile` 直接配置进程内 Link。
+
 Link 或 Portal 启用 mTLS 时，`--hub-endpoint` 必须使用 `https://`；后台服务注册
 也必须使用 HTTPS，组件不会静默接受旧的明文 endpoint。
 
