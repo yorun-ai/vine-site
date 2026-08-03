@@ -151,7 +151,7 @@ app.NewBundled(
 
 ### 运行模式构造
 
-- `linked.New(...)`：同进程启动一个 Link，再以 inproc app 形式启动业务 app。`linked.Option` 支持 `HubEndpoint` 和 `IngressListen`，也可以通过 `--hub-endpoint` / `--ingress-listen` 或对应环境变量提供
+- `linked.New(...)`：同进程启动一个 Link，再以 inproc app 形式启动业务 app。`linked.Option` 支持 `HubEndpoint`、`IngressListen`、`MTLSCAFile`、`MTLSCertFile` 和 `MTLSKeyFile`，也可以通过对应参数或环境变量提供。证书标识的是内嵌 `vine.link` workload，而不是业务应用
 - `linked.NewBundled(...)`：多个业务 app 共享一个同进程 Link，并连接外部 Hub。注意，被打包的 linked app 不能再带自己的 `linked.Option`
 - `standalone.New(...)`：同进程启动 Hub、Portal、Link 和一个业务 app。`standalone.Option` 支持 seed YAML、SQLite 文件、PostgreSQL URL 和 Dashboard URL
 - `standalone.NewBundled(...)`：把多个 standalone app 打包进同一套内置 Hub / Portal / Link。注意，被打包的 standalone app 不能再带自己的 `standalone.Option`

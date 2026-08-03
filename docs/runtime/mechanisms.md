@@ -51,10 +51,12 @@ flowchart LR
   KPortal --> KLink
 ```
 
-The sidecar boundary is required even when processes are separated. Link may run
-in the application process or in another process or container on the same host,
-but the pair remains one deployment workload and trust boundary. Placing Link
-and its application on different hosts is unsupported.
+The sidecar boundary remains the expected topology even when processes are
+separated. Link may run in the application process or in another process or
+container on the same host, with the pair forming one deployment workload and
+trust boundary. Vine still permits a non-loopback Link API for unusual
+deployments, but warns because the App-to-Link h2c path has no transport
+authentication; the deployment must protect and restrict that path itself.
 
 ### What remains unchanged
 

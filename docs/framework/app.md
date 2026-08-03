@@ -156,7 +156,7 @@ app.NewBundled(
 
 ### Runtime-mode constructors
 
-- `linked.New(...)`: starts a Link in the same process, then starts the business application as an in-process application. `linked.Option` supports `HubEndpoint` and `IngressListen`, which can also be supplied through `--hub-endpoint` / `--ingress-listen` or the corresponding environment variables.
+- `linked.New(...)`: starts a Link in the same process, then starts the business application as an in-process application. `linked.Option` supports `HubEndpoint`, `IngressListen`, `MTLSCAFile`, `MTLSCertFile`, and `MTLSKeyFile`; the same values can be supplied through the corresponding flags and environment variables. The certificate identifies the embedded `vine.link` workload, not the business application.
 - `linked.NewBundled(...)`: lets multiple business applications share one in-process Link connected to an external Hub. A bundled linked application cannot also carry its own `linked.Option`.
 - `standalone.New(...)`: starts Hub, Portal, Link, and one business application in the same process. `standalone.Option` supports a seed YAML file, a SQLite file, a PostgreSQL URL, and a Dashboard URL.
 - `standalone.NewBundled(...)`: bundles multiple standalone applications with one embedded Hub, Portal, and Link. A bundled standalone application cannot also carry its own `standalone.Option`.

@@ -63,8 +63,9 @@ Link 会把该证书用于 Hub Rpc、Redis 与内嵌 NATS client，并作为 Lin
 server 身份。它的精确 X.509-SVID 是
 `spiffe://<trust-domain>/vine/daemon/vine.link`，并与 Hub、Portal 使用相同 trust domain。
 远端 Link 与 Portal 代理流量必须使用 HTTPS 并认证该 SPIFFE ID。Link API 仍使用
-h2c，因为 Link 是应用的 sidecar。应用与 Link 必须位于同一主机和部署信任边界内，
-不支持部署在不同主机。
+未认证 h2c，因为 Link 是应用的 sidecar。应用与 Link 通常位于同一主机和部署信任
+边界内。Vine 仍允许特殊部署使用非 loopback Link API，但会告警；必须由部署侧自行
+加密、认证并限制这条路径。
 
 ## 请求路径
 
@@ -92,6 +93,10 @@ Link，目标 Link 再校验本地实例与 Handler，并调用应用 endpoint�
 `linked.New(...)` 会让 Link 与业务应用同进程，但 Hub 仍是外部服务。Link 会
 开放 ingress、向 Hub 注册并继续向 Hub 发送心跳。进程内 App 与 Link
 生命周期绑定，因此独立的应用 healthcheck 会被禁用。
+
+外部 Hub 要求后台 mTLS 时，可通过 `linked.Option.MTLSCAFile`、`MTLSCertFile`、
+`MTLSKeyFile` 配置进程内 Link，也可使用共享的 `--mtls-*-file` 参数和
+`VINE_MTLS_*_FILE` 环境变量。该证书代表内嵌的 `vine.link` workload。
 
 standalone 才会把 Hub、Portal、Link 和应用全部放入同一进程，并使用进程内 Redis 与 endpoint；这种模式不执行心跳。要验证租约和网络故障，可使用 linked 或完全分开部署。
 

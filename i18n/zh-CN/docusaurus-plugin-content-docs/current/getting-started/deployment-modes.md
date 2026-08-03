@@ -118,14 +118,17 @@ linked.NewWithOption[*HelloApp](linked.Option{
 ```
 
 `HubEndpoint` 和 `IngressListen` 也可由 `VINE_HUB_ENDPOINT`、`VINE_INGRESS_LISTEN` 提供。
+外部 Hub 启用后台 mTLS 时，还需通过 `MTLSCAFile`、`MTLSCertFile`、
+`MTLSKeyFile`，或共享的命令行参数和环境变量，配置进程内 Link 的身份。
 
 这种模式保留了独立 Hub 的配置、注册和租约语义，但 Link 与业务应用仍同时发布、同时停止。它适合不想额外维护 Link sidecar 的开发和部署环境。
 
 ## 分开部署：独立 runtime 与应用
 
 在生产环境中，可将控制面、外部入口、应用侧接入层和业务应用拆成独立进程。进程分离
-不会改变 Link 的 sidecar 定位：每个 Link 必须与其管理的应用位于同一主机和部署
-信任边界内。
+不会改变 Link 的 sidecar 定位：Link 与其管理的应用通常位于同一主机和部署信任
+边界内。Vine 仍允许特殊部署使用非 loopback Link API，但会告警；该跨主机 h2c
+路径没有 transport 认证，必须由部署侧自行加密、认证并限制访问。
 
 ```mermaid
 flowchart LR
@@ -168,7 +171,7 @@ VINE_LINK_ENDPOINT=http://127.0.0.1:7079 ./hello-app
 ```
 
 此模式下，Link 负责向 Hub 注册应用并维持 heartbeat。应用与 Link 拥有独立的进程
-生命周期，但构成同主机部署的一个 workload，并且必须一起扩缩容；Portal 与 Hub
+生命周期，但通常构成同主机部署的一个 workload，并且应一起扩缩容；Portal 与 Hub
 具有独立的部署边界。Portal 的外部监听、站点规则和 TLS 证书通过 Hub 配置管理。
 注意：进程分离并不直接等同于高可用；上线前请检查
 [生产就绪清单](../operations/production-readiness.md)。
