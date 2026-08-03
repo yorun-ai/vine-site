@@ -350,7 +350,8 @@ ctx := lock.Context()
 这个 context 会在下面几种情况被 cancel：
 
 - 手动 `lock.Unlock()`
-- refresh 连续失败并最终判定失锁
+- Redis 返回 refresh token 已经不属于当前持有者
+- refresh 命令或下一次 retry 无法在保守的本地租约截止点前完成
 - 应用或当前执行的父 context 被取消
 
 如果业务逻辑需要感知“锁已经失效”，应该监听这个 context。
@@ -362,12 +363,19 @@ ctx := lock.Context()
 - 正常 refresh 间隔：`10s`
 - 失败后 retry 间隔：`3s`
 - 最大 retry 次数：`7`
+- 单次 refresh 命令最长执行时间：`2s`
 
 也就是说，一次正常 refresh tick 到来后：
 
 1. 先立即尝试 refresh
-2. 失败后按 `3s` 间隔继续重试
-3. 连续失败到阈值，才认定锁失效
+2. Redis 返回 `0` 已经证明 token 不再属于当前持有者，因此立即把锁标记为 broken，
+   不再重试
+3. transport 错误按 `3s` 间隔重试，但命令和下一次 retry 都不能越过保守的本地租约截止点
+4. retry 次数达到上限或租约截止点到期时标记 broken，以先发生者为准
+
+本地截止点会从 Redis TTL 中预留 10% 的安全余量，最多一秒。每次 refresh 命令
+使用“两秒 timeout”和“本地截止点”中更早的时间，因此命令及其 retry 预算都不会
+越过 Vine 仍认为有效的租约。
 
 ### broken 状态
 
