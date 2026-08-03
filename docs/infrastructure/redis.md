@@ -368,7 +368,9 @@ ctx := lock.Context()
 This context is canceled when:
 
 - You call `lock.Unlock()` manually.
-- Refresh fails repeatedly and the lock is ultimately considered lost.
+- Redis reports that the refresh token is no longer the current owner.
+- A refresh command or its next retry cannot complete before the conservative
+  local lease deadline.
 - The application or the current execution's parent context is canceled.
 
 Listen to this context when business logic needs to detect that a lock is no
@@ -381,12 +383,22 @@ The default refresh policy:
 - Normal refresh interval: `10s`.
 - Retry interval after a failure: `3s`.
 - Maximum retry count: `7`.
+- Maximum duration of one refresh command: `2s`.
 
 When a normal refresh tick occurs:
 
 1. Vine attempts a refresh immediately.
-2. If that fails, Vine retries every `3s`.
-3. Vine considers the lock lost only after the retry threshold is reached.
+2. A Redis result of `0` proves that the token is no longer the owner, so Vine
+   breaks the lock immediately without retrying.
+3. Transport errors are retried every `3s`, but only while the command and next
+   retry remain inside the conservative local lease deadline.
+4. Vine breaks the lock when the retry cap or lease deadline is reached,
+   whichever comes first.
+
+The local deadline reserves 10% of the Redis TTL, capped at one second. Each
+refresh command uses the earlier of its two-second timeout and that local
+deadline, so neither a command nor its retry budget can cross the lease Vine
+still considers valid.
 
 ### Broken State
 
