@@ -5,83 +5,60 @@ sidebar_label: Project Structure
 
 # Project Structure
 
-Vine is a Go application framework. It doesn't demand a project manifest or a
-fixed directory layout. A runnable Vine application is an ordinary Go module, and
-it can be as small as this:
+Use the following standard layout for a Vine application. It keeps one business
+boundary at the project root, using the same shape as a single domain in a larger
+Vine application:
 
 ```text
 demo/
 ├── go.mod
 ├── go.sum
-└── main.go               # Defines the app and selects standalone, linked, or app mode
+├── skel/                        # Hand-maintained contracts
+│   ├── domain.skel
+│   └── greeting_service.skel
+├── skeled/                      # Generated contract code
+│   ├── golang/
+│   └── typescript/
+└── src/
+    ├── server/
+    │   ├── app/                 # Vine App definition and dependency wiring
+    │   │   └── app.go
+    │   ├── cmd/
+    │   │   └── demo/
+    │   │       └── main.go      # Process entry point
+    │   ├── core/                # Business models, rules, and interfaces
+    │   ├── impl/                # Rpc, Web, Event, and Task adapters
+    │   └── repo/                # Persistence implementations
+    └── web/                     # Frontend package
+        ├── src/
+        ├── package.json
+        └── tsconfig.json
 ```
-
-As the project grows, separate process startup, application assembly, business
-code, and infrastructure:
-
-```text
-demo/
-├── go.mod
-├── go.sum
-├── cmd/
-│   └── demo/
-│       └── main.go       # Process entry point: arguments and runtime mode only
-├── internal/
-│   ├── application/
-│   │   ├── app.go        # ApplicationSpec, application name, and common bindings
-│   │   ├── components.go # InitComponents assembly for databases, Redis, and more
-│   │   └── modules.go    # InitModules assembly for business modules
-│   ├── account/
-│   │   ├── module.go     # Account lifecycle
-│   │   ├── service.go    # Business logic
-│   │   ├── rpc.go        # Rpc handler
-│   │   ├── web.go        # Web handler
-│   │   ├── event.go      # Event listener
-│   │   └── task.go       # Task runner
-│   ├── booking/
-│   │   └── ...           # Another business module
-│   └── platform/
-│       ├── database.go   # rdb.Database implementation and configuration
-│       └── redis.go      # redis.Redis implementation and configuration
-├── config/               # Optional: application-owned configuration files
-├── migrations/           # Optional: database migrations
-└── web/                  # Optional: separate frontend project
-```
-
-This is a starting point for a medium-sized project, not a framework
-requirement. Small applications can keep the `Application`, components, and
-modules in `main.go`. Large applications can split packages further following the
-team's existing Go conventions.
 
 ## Directory Responsibilities
 
-- `cmd/<name>/main.go`: selects an `app`, `linked`, or `standalone` constructor
-  and starts the process; it shouldn't contain business logic.
-- `internal/application/`: defines the application specification and registers
-  components, modules, and application-wide dependencies.
-- `internal/<business>/`: groups modules, services, and Rpc, Web, Event, and Task
-  entry points by business capability.
-- `internal/platform/`: contains database, Redis, and other infrastructure
-  components.
-- `config/`, `migrations/`, and `web/`: optional application-owned directories,
-  not Vine requirements.
+- `skel/` is the source of truth for contracts. Edit contracts here.
+- `skeled/` contains code generated from `skel/`. Never edit generated files
+  manually. Go consumers use `skeled/golang/`; Web consumers use
+  `skeled/typescript/`.
+- `src/server/app/` defines the Vine App and assembles Components, Modules,
+  handlers, repositories, and shared dependencies.
+- `src/server/cmd/<name>/main.go` selects the runtime mode and starts the
+  process. Keep business logic out of the process entry point.
+- `src/server/core/` contains transport-independent business models, use cases,
+  rules, and repository interfaces.
+- `src/server/impl/` adapts generated Rpc, Web, Event, and Task contracts to the
+  business logic in `core/`.
+- `src/server/repo/` implements persistence interfaces and maps database records
+  to core models.
+- `src/web/` contains the frontend package. Omit it when the application has no
+  frontend, but keep frontend code under this boundary when it does.
 
-Keep Go tests beside the source they cover. For example, test `service.go` in
-`service_test.go` in the same package instead of creating a separate test
-directory.
+Keep tests beside the source they cover, such as `service_test.go` next to
+`service.go`. Direct dependencies toward `core/`: adapters and repositories may
+depend on core interfaces and models, while `core/` must not depend on `impl/` or
+`repo/`.
 
-## Optional Skel Contracts
-
-When using Skel, you can keep a `skel/` directory and a generated-code directory
-alongside the application. Their exact locations are up to the skelc
-configuration and team conventions; Vine does not require contracts to live under
-a business domain.
-
-```text
-demo/
-├── skel/                 # Optional: manually maintained contracts
-└── skeled/               # Optional: code generated by skelc
-```
-
-Do not edit generated files manually. See [Create Your First Skel
-Contract](./first-contract.md) for the complete workflow.
+For the contract generation workflow, see [First Contract](/docs/first-skel-contract).
+Skel syntax and `skelc` command reference are maintained in the
+[Skel documentation](https://skel.yorun.ai/docs/getting-started).
