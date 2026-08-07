@@ -5,9 +5,7 @@ sidebar_label: Project Structure
 
 # Project Structure
 
-Use the following standard layout for a Vine application. It keeps one business
-boundary at the project root, using the same shape as a single domain in a larger
-Vine application:
+Vine applications use the following standard project structure:
 
 ```text
 demo/
@@ -28,7 +26,9 @@ demo/
     │   │       └── main.go      # Process entry point
     │   ├── core/                # Business models, rules, and interfaces
     │   ├── impl/                # Rpc, Web, Event, and Task adapters
-    │   └── repo/                # Persistence implementations
+    │   ├── repo/                # Persistence implementations
+    │   └── seed/                # Project configuration
+    │       └── hub.yaml         # Hub seed configuration
     └── web/                     # Frontend package
         ├── src/
         ├── package.json
@@ -39,7 +39,7 @@ demo/
 
 - `skel/` is the source of truth for contracts. Edit contracts here.
 - `skeled/` contains code generated from `skel/`. Never edit generated files
-  manually. Go consumers use `skeled/golang/`; Web consumers use
+  manually. Go consumers use `skeled/golang/`; TypeScript consumers use
   `skeled/typescript/`.
 - `src/server/app/` defines the Vine App and assembles Components, Modules,
   handlers, repositories, and shared dependencies.
@@ -51,8 +51,10 @@ demo/
   business logic in `core/`.
 - `src/server/repo/` implements persistence interfaces and maps database records
   to core models.
-- `src/web/` contains the frontend package. Omit it when the application has no
-  frontend, but keep frontend code under this boundary when it does.
+- `src/server/seed/` contains project configuration. Pass
+  `src/server/seed/hub.yaml` to runtime startup as the Hub seed file so Hub can
+  import it.
+- `src/web/` contains the frontend package.
 
 Keep tests beside the source they cover, such as `service_test.go` next to
 `service.go`. Direct dependencies toward `core/`: adapters and repositories may
