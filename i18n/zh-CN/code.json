@@ -212,7 +212,7 @@
     "message": "以 Markdown 格式复制页面"
   },
   "vine.copyPage.viewMarkdown": {
-    "message": "以 Markdown 查看 ↗"
+    "message": "以 Markdown 查看"
   },
   "vine.copyPage.viewDescription": {
     "message": "以纯文本形式查看此页面"
