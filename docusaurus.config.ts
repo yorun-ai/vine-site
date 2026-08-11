@@ -53,7 +53,7 @@ const config: Config = {
         baseUrl: '/',
       },
       'zh-CN': {
-        label: '简体中文',
+        label: '中文',
         htmlLang: 'zh-CN',
         baseUrl: '/zh-CN/',
       },
