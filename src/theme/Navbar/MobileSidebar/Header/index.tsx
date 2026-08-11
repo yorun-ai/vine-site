@@ -16,7 +16,9 @@ export default function NavbarMobileSidebarHeader(): ReactNode {
         className={styles.brand}
         onClick={mobileSidebar.toggle}
         to="/docs/">
-        <span aria-hidden="true" className="navbar__logo" />
+        <span aria-hidden="true" className="navbar__logo">
+          <img alt="" src="/brand/vine-navbar.png" />
+        </span>
         <span className={`navbar__title ${styles.title}`}>
           Vine Framework
         </span>
