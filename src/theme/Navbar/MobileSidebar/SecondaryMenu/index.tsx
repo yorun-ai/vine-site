@@ -52,9 +52,12 @@ export default function NavbarMobileSidebarSecondaryMenu(): ReactNode {
           aria-label="Switch to Skeleton DSL"
           className={styles.productSwitch}
           href="https://skel.yorun.ai">
-          <span aria-hidden="true" className={styles.productLogo}>
-            S
-          </span>
+          <img
+            alt=""
+            aria-hidden="true"
+            className={styles.productLogo}
+            src="/brand/skel-product.png"
+          />
           <span>Skeleton DSL</span>
         </a>
       </div>
