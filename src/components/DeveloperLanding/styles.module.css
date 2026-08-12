@@ -552,7 +552,7 @@
   padding: 0;
   background: transparent;
   color: var(--muted-foreground);
-  font-size: 0.3rem;
+  font-size: 12px !important;
   line-height: 1.35;
 }
 
@@ -675,7 +675,7 @@
   padding: 0;
   background: transparent;
   color: var(--muted-foreground);
-  font-size: 0.61rem;
+  font-size: 12px !important;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
