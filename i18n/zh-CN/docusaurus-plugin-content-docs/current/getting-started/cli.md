@@ -103,9 +103,33 @@ vine hub serve \
 
 指定外部 NATS：
 
+启动 Hub 或 Link 前，先使用 NATS CLI 创建必需的 JetStream stream。下面的
+示例使用文件存储和单副本；请根据实际部署拓扑调整 `--storage` 和 `--replicas`：
+
+```bash
+export VINE_MQ_EXTERNAL_NATS_URL=nats://127.0.0.1:4222
+
+nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_EVENTS \
+  --subjects "event.>" \
+  --retention interest \
+  --storage file \
+  --replicas 1 \
+  --defaults
+
+nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_TASKS \
+  --subjects "task.>" \
+  --retention workqueue \
+  --storage file \
+  --replicas 1 \
+  --defaults
+```
+
+分别执行 `nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream info
+VINE_EVENTS` 和对应的 `VINE_TASKS` 命令，确认配置无误后再启动 Hub：
+
 ```bash
 vine hub serve \
-  --mq-external-nats-url nats://127.0.0.1:4222 \
+  --mq-external-nats-url "$VINE_MQ_EXTERNAL_NATS_URL" \
   --db-sqlite-file ./hub.sqlite
 ```
 

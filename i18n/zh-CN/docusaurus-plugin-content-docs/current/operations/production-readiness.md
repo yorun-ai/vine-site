@@ -123,15 +123,37 @@ Hub 数据库是导入配置、Portal rule 和证书的事实来源。Hub 通过
 
 :::warning Event 与 Task 的持久性
 
-Vine 当前创建的 Event 和 Task JetStream stream 使用内存存储。外部 NATS
-能提供独立运维的 runtime endpoint，但当前 stream 配置并不使用磁盘
-存储。在验证精确故障场景之前，不要承诺消息能跨 NATS 或 cluster 重启
-保留。
+使用内嵌 NATS 时，Vine 会预创建 `VINE_EVENTS` 和 `VINE_TASKS` JetStream
+stream，并统一使用内存存储。
+
+使用外部 NATS 时，Vine 只使用已有 stream，不负责创建或配置；因此必须在启动
+Hub 或 Link 前完成以下准备：为 `VINE_EVENTS` 配置 `event.>` subject 和
+interest retention，为 `VINE_TASKS` 配置 `task.>` subject 和 work-queue
+retention。两者使用内存还是文件存储，由外部 NATS 部署决定。
+
+例如，可以使用 NATS CLI 创建采用文件存储的单副本 stream：
+
+```bash
+nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_EVENTS \
+  --subjects "event.>" --retention interest \
+  --storage file --replicas 1 --defaults
+
+nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_TASKS \
+  --subjects "task.>" --retention workqueue \
+  --storage file --replicas 1 --defaults
+```
+
+只有不要求跨重启持久性时才应使用 `--storage memory`。在 NATS cluster 中，
+应根据冗余要求设置 `--replicas`，不要直接照搬上述单副本示例。
+
+如果生产环境要求消息在 NATS 或 cluster 重启后仍然保留，应将文件存储及其恢复
+能力作为明确的部署要求，并针对实际故障场景完成验证。
 
 :::
 
 - [ ] 按所选拓扑规划并监控 PostgreSQL 或 SQLite 的容量。
-- [ ] 启动 Link 前，确认外部 NATS account 已启用 JetStream。
+- [ ] 启动 Hub 或 Link 前，确认外部 NATS account 已启用 JetStream，并已创建
+  两个必需的 stream。
 - [ ] 使用与生产一致的拓扑测试 NATS 断开和重连。
 - [ ] 按 retry 和重复投递设计 Event Listener 与 Task Runner；传输
   存储不应作为唯一业务记录。
