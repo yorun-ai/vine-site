@@ -123,6 +123,11 @@ function MechanismCard({
           <Translate id={mechanism.label.id}>{mechanism.label.text}</Translate>
         </span>
       </div>
+      <div className={styles.markers}>
+        {mechanism.markers.map((marker) => (
+          <code key={marker}>{marker}</code>
+        ))}
+      </div>
       <h3>
         <Translate id={mechanism.title.id}>{mechanism.title.text}</Translate>
       </h3>
@@ -131,11 +136,6 @@ function MechanismCard({
           {mechanism.description.text}
         </Translate>
       </p>
-      <div className={styles.markers}>
-        {mechanism.markers.map((marker) => (
-          <code key={marker}>{marker}</code>
-        ))}
-      </div>
       <div className={styles.mechanismLinks}>
         {mechanism.links.map((link) => (
           <InlineDocLink
@@ -393,10 +393,12 @@ export default function DeveloperLanding(): React.JSX.Element {
             {governanceStages.map((stage, index) => (
               <li key={stage.title.id}>
                 <div className={styles.stageMeta}>
-                  <span>{String(index + 1).padStart(2, '0')}</span>
                   <code>{stage.artifact}</code>
                 </div>
                 <h3>
+                  <span className={styles.stageNumber}>
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
                   <Translate id={stage.title.id}>{stage.title.text}</Translate>
                 </h3>
                 <p>
@@ -449,12 +451,14 @@ export default function DeveloperLanding(): React.JSX.Element {
 
             return (
               <article className={styles.guideGroup} key={group.title.id}>
-                <div className={styles.guideGroupIcon}>
-                  <GroupIcon aria-hidden="true" size={20} strokeWidth={1.8} />
+                <div className={styles.guideHeading}>
+                  <div className={styles.guideGroupIcon}>
+                    <GroupIcon aria-hidden="true" size={20} strokeWidth={1.8} />
+                  </div>
+                  <h3>
+                    <Translate id={group.title.id}>{group.title.text}</Translate>
+                  </h3>
                 </div>
-                <h3>
-                  <Translate id={group.title.id}>{group.title.text}</Translate>
-                </h3>
                 <p>
                   <Translate id={group.description.id}>
                     {group.description.text}

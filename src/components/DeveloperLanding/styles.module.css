@@ -52,57 +52,46 @@
 .hero {
   position: relative;
   display: grid;
-  overflow: hidden;
+  overflow: visible;
   grid-template-columns: minmax(0, 1.08fr) minmax(22rem, 0.92fr);
   gap: clamp(2.25rem, 5vw, 4.5rem);
   align-items: center;
-  padding: clamp(2.25rem, 5vw, 4rem);
-  border: 1px solid var(--landing-border);
-  border-radius: 1.15rem;
-  background:
-    radial-gradient(
-      circle at 8% 8%,
-      rgb(var(--brand-rgb) / 12%),
-      transparent 33%
-    ),
-    linear-gradient(
-      145deg,
-      color-mix(in srgb, var(--accent) 55%, var(--card)),
-      var(--card) 58%
-    );
-  box-shadow: var(--landing-shadow);
+  padding-block: clamp(2.25rem, 5vw, 4rem);
   isolation: isolate;
 }
 
-.hero::before {
+.hero::after {
   position: absolute;
-  z-index: -1;
-  top: -7rem;
-  right: -5rem;
-  width: 22rem;
-  height: 22rem;
-  border-radius: 999px;
-  background: rgb(var(--brand-rgb) / 7%);
+  right: 0;
+  bottom: -2.5rem;
+  left: 0;
+  height: 1px;
+  background: color-mix(in srgb, var(--border) 72%, transparent);
   content: '';
-  filter: blur(1px);
-  pointer-events: none;
 }
 
 .heroCopy {
+  display: flex;
   min-width: 0;
+  min-height: 100%;
+  flex-direction: column;
 }
 
 .kicker {
-  display: flex;
-  flex-wrap: wrap;
+  display: inline-flex;
+  width: fit-content;
   align-items: center;
-  gap: 0.45rem;
-  margin-bottom: 1.15rem;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+  border-radius: 999px;
+  padding: 0.48rem 0.9rem;
+  background: color-mix(in srgb, var(--primary) 4%, transparent);
   color: var(--primary);
-  font-size: 0.72rem;
-  font-weight: 650;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+  font-size: 0.68rem;
+  font-weight: 680;
+  letter-spacing: 0.025em;
+  text-transform: none;
 }
 
 .kicker span:last-child {
@@ -111,10 +100,10 @@
 
 .landing .heroCopy h1 {
   max-width: 39rem;
-  margin: 0;
+  margin: 0 !important;
   color: var(--foreground);
   font-family: var(--ifm-heading-font-family);
-  font-size: clamp(2.65rem, 5.8vw, 4.55rem);
+  font-size: 36px !important;
   font-weight: 650;
   letter-spacing: -0.06em;
   line-height: 0.98;
@@ -126,9 +115,15 @@
   white-space: nowrap;
 }
 
+.landing .heroCopy h1 span:nth-child(2) {
+  background: none;
+  color: var(--foreground) !important;
+  -webkit-text-fill-color: var(--foreground);
+}
+
 .lede {
   max-width: 42rem;
-  margin: 1.45rem 0 0;
+  margin: 0.1rem 0 0;
   color: var(--muted-foreground);
   font-size: clamp(1rem, 1.55vw, 1.12rem);
   line-height: 1.72;
@@ -204,7 +199,7 @@
 }
 
 .skelPrompt {
-  margin: 1rem 0 0;
+  margin: auto 0 0;
   color: var(--muted-foreground);
   font-size: 0.79rem;
 }
@@ -359,19 +354,21 @@
 
 .requestRoute {
   margin-top: 0.7rem;
+  border: 1px solid var(--visual-border-strong);
   border-radius: 0.52rem;
   padding: 0.65rem 0.7rem;
-  background: var(--visual-canvas);
+  background: color-mix(in srgb, var(--visual-canvas) 82%, var(--visual-raised));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 28%);
 }
 
 .requestRoute > span {
   display: block;
   margin-bottom: 0.35rem;
-  color: var(--visual-muted);
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  color: var(--visual-text);
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  text-transform: none;
 }
 
 .requestRoute > div {
@@ -388,8 +385,13 @@
 }
 
 .requestRoute small {
-  color: var(--visual-muted);
-  font-size: 0.63rem;
+  border: 1px solid var(--visual-border-strong);
+  border-radius: 0.3rem;
+  padding: 0.16rem 0.3rem;
+  background: var(--visual-accent-soft);
+  color: var(--visual-text);
+  font-size: 0.62rem;
+  font-weight: 570;
 }
 
 .requestRoute strong {
@@ -423,36 +425,41 @@
 }
 
 .sectionLead {
-  display: grid;
-  grid-template-columns: 9.5rem minmax(0, 1fr);
-  gap: 1.75rem;
-  max-width: 55rem;
+  max-width: 62rem;
   margin-bottom: 2rem;
+  text-align: left;
 }
 
 .eyebrow {
-  margin: 0.33rem 0 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.35rem;
+  margin: 0 0 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  background: color-mix(in srgb, var(--primary) 4%, transparent);
   color: var(--primary);
-  font-size: 0.7rem;
-  font-weight: 650;
-  letter-spacing: 0.085em;
-  text-transform: uppercase;
+  font-size: 12px !important;
+  font-weight: 680;
+  letter-spacing: 0.01em;
+  text-transform: none;
 }
 
 .landing .sectionLead h2 {
   margin: 0;
   color: var(--foreground);
   font-family: var(--ifm-heading-font-family);
-  font-size: clamp(1.75rem, 3.5vw, 2.45rem);
-  font-weight: 630;
-  letter-spacing: -0.04em;
-  line-height: 1.12;
-  text-wrap: balance;
+  font-size: 26px !important;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 1.06;
+  text-wrap: pretty;
 }
 
 .sectionLead div > p {
-  max-width: 45rem;
-  margin: 0.75rem 0 0;
+  max-width: 52rem;
+  margin: 0.95rem 0 0;
   color: var(--muted-foreground);
   font-size: 0.93rem;
   line-height: 1.68;
@@ -495,8 +502,8 @@
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  color: var(--muted-foreground);
-  font-size: 0.66rem;
+  color: var(--primary);
+  font-size: 0.82rem;
   font-weight: 650;
   letter-spacing: 0.075em;
   text-transform: uppercase;
@@ -513,17 +520,17 @@
 }
 
 .landing .mechanismCard h3 {
-  margin: 1rem 0 0;
+  margin: 0.75rem 0 0 !important;
   color: var(--foreground);
   font-family: var(--ifm-heading-font-family);
-  font-size: 1.08rem;
-  font-weight: 620;
+  font-size: 1.28rem;
+  font-weight: 680;
   letter-spacing: -0.02em;
   line-height: 1.35;
 }
 
 .mechanismCard > p {
-  margin: 0.55rem 0 0;
+  margin: 0.18rem 0 0;
   color: var(--muted-foreground);
   font-size: 0.82rem;
   line-height: 1.62;
@@ -532,17 +539,27 @@
 .markers {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-top: 1rem;
+  gap: 0.25rem 0.4rem;
+  margin-top: 1.3rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  padding-bottom: 2.15rem;
+  opacity: 0.72;
 }
 
 .landing .markers code {
   border: 0;
-  border-radius: 0.3rem;
-  padding: 0.2rem 0.42rem;
-  background: var(--landing-muted);
-  color: color-mix(in srgb, var(--foreground) 72%, var(--muted-foreground));
-  font-size: 0.62rem;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 0.3rem;
+  line-height: 1.35;
+}
+
+.landing .markers code + code::before {
+  margin-right: 0.4rem;
+  color: color-mix(in srgb, var(--muted-foreground) 55%, transparent);
+  content: '·';
 }
 
 .mechanismLinks {
@@ -564,9 +581,10 @@
 }
 
 .landing .mechanismLinks a svg {
-  color: var(--muted-foreground);
+  color: currentColor;
   transition: transform 140ms ease;
 }
+
 
 .landing .mechanismLinks a:hover {
   color: var(--primary);
@@ -604,7 +622,7 @@
 .workflowStages li {
   position: relative;
   min-width: 0;
-  min-height: 9.2rem;
+  min-height: 7.6rem;
   border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
   border-radius: 0.62rem;
   padding: 0.95rem;
@@ -631,16 +649,23 @@
 }
 
 .stageMeta {
+  position: absolute;
+  top: 0.95rem;
+  right: 1.9rem;
   display: flex;
+  height: 1.9rem;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 0.55rem;
 }
 
-.stageMeta > span {
+.stageNumber {
+  flex: 0 0 auto;
   color: var(--primary);
-  font-size: 0.62rem;
+  font-size: 12px;
   font-weight: 650;
+  letter-spacing: -0.08em;
+  line-height: 0.9;
   font-variant-numeric: tabular-nums;
 }
 
@@ -656,7 +681,14 @@
 }
 
 .landing .workflowStages h3 {
-  margin: 1.05rem 0 0;
+  position: absolute;
+  top: 0.95rem;
+  left: 0.95rem;
+  display: flex;
+  height: 1.9rem;
+  align-items: center;
+  gap: 0.48rem;
+  margin: 0 !important;
   color: var(--foreground);
   font-size: 0.9rem;
   font-weight: 620;
@@ -664,7 +696,11 @@
 }
 
 .workflowStages p {
-  margin: 0.35rem 0 0;
+  position: absolute;
+  top: 3.25rem;
+  right: 0.95rem;
+  left: 0.95rem;
+  margin: 0;
   color: var(--muted-foreground);
   font-size: 0.72rem;
   line-height: 1.48;
@@ -678,15 +714,15 @@
   margin-top: 0.75rem;
   border-radius: 0.55rem;
   padding: 0.72rem;
-  background: color-mix(in srgb, var(--primary) 8%, var(--card));
-  color: color-mix(in srgb, var(--foreground) 82%, var(--primary));
+  background: var(--primary);
+  color: #fff;
   font-size: 0.72rem;
   font-weight: 550;
 }
 
 .workflowReturn svg {
   flex: 0 0 auto;
-  color: var(--primary);
+  color: #fff;
 }
 
 .guideGroups {
@@ -695,18 +731,33 @@
   gap: 0.85rem;
 }
 
+.section:has(.guideGroups) .sectionLead {
+  margin-bottom: 0.7rem;
+}
+
 .guideGroup {
   display: flex;
   min-width: 0;
   flex-direction: column;
   border: 1px solid var(--landing-border);
   border-radius: 0.82rem;
-  padding: 1.25rem;
+  padding: 0.65rem 1.25rem 1.25rem;
   background: var(--card);
   box-shadow: 0 12px 32px -32px rgb(var(--ink-rgb) / 40%);
 }
 
+.guideHeading {
+  display: flex;
+  height: 2.35rem;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
 .guideGroupIcon {
+  order: 2;
+  flex: 0 0 auto;
   display: grid;
   place-items: center;
   width: 2.35rem;
@@ -717,11 +768,17 @@
 }
 
 .landing .guideGroup h3 {
-  margin: 1rem 0 0;
+  order: 1;
+  display: flex;
+  height: 2.35rem;
+  align-items: center;
+  margin: 0 !important;
   color: var(--foreground);
   font-size: 1rem;
   font-weight: 630;
   letter-spacing: -0.02em;
+  line-height: 1;
+  transform: none;
 }
 
 .guideGroup > p {
@@ -808,9 +865,11 @@
 }
 
 .statusNote {
+  position: relative;
   display: grid;
-  grid-template-columns: 7.5rem minmax(0, 1fr) auto;
-  gap: 1.35rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 1.35rem;
+  row-gap: 3rem;
   align-items: center;
   margin-top: clamp(4.5rem, 8vw, 6.5rem);
   border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--border));
@@ -819,12 +878,25 @@
   background: color-mix(in srgb, var(--accent) 62%, var(--card));
 }
 
+.statusNote::before {
+  position: absolute;
+  top: 4.43rem;
+  right: 1.3rem;
+  left: 1.3rem;
+  height: 1px;
+  background: color-mix(in srgb, var(--border) 82%, transparent);
+  content: '';
+}
+
 .statusLabel {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
   color: var(--primary);
-  font-size: 0.67rem;
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+  font-size: 1rem;
   font-weight: 680;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -833,8 +905,16 @@
 .statusNote > div:nth-child(2) strong {
   display: block;
   color: var(--foreground);
-  font-size: 0.84rem;
-  font-weight: 630;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 1.06;
+}
+
+.statusNote > div:nth-child(2) {
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
 }
 
 .statusNote > div:nth-child(2) p {
@@ -847,24 +927,49 @@
 .statusLinks {
   display: flex;
   flex-wrap: wrap;
+  grid-column: 2;
+  grid-row: 2;
+  align-self: start;
   justify-content: flex-end;
-  gap: 0.45rem 0.9rem;
+  gap: 0.65rem;
+  margin: 0;
 }
 
 .landing .statusLinks a {
   display: inline-flex;
+  min-height: 2.7rem;
   align-items: center;
+  justify-content: center;
   gap: 0.28rem;
-  color: var(--foreground);
-  font-size: 0.7rem;
+  border: 1px solid var(--landing-border);
+  border-radius: 0.55rem;
+  padding: 0.7rem 1rem;
+  background: color-mix(in srgb, var(--card) 82%, transparent);
+  color: var(--primary) !important;
+  font-size: 0.82rem;
   font-weight: 620;
   text-decoration: none;
   white-space: nowrap;
 }
 
 .landing .statusLinks a:hover {
-  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 60%, var(--border));
+  background: color-mix(in srgb, var(--primary) 10%, var(--card));
+  color: var(--primary) !important;
   text-decoration: none;
+}
+
+.landing .statusLinks a:first-child {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff !important;
+  box-shadow: 0 8px 20px -12px rgb(var(--brand-rgb) / 80%);
+}
+
+.landing .statusLinks a:first-child:hover {
+  border-color: var(--ifm-color-primary-dark);
+  background: var(--ifm-color-primary-dark);
+  color: #fff !important;
 }
 
 @media (max-width: 1000px) {
@@ -901,12 +1006,11 @@
 
 @media (max-width: 780px) {
   .sectionLead {
-    grid-template-columns: 1fr;
-    gap: 0.55rem;
+    max-width: none;
   }
 
   .eyebrow {
-    margin-top: 0;
+    margin-bottom: 0.55rem;
   }
 
   .mechanismGrid {
