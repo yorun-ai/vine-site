@@ -179,8 +179,6 @@ export default function DeveloperLanding(): React.JSX.Element {
   const docsPath = useDocsPath()
   const firstApplicationPath = useBaseUrl(docsPath('/tutorial-first-app'))
   const architecturePath = useBaseUrl(docsPath('/runtime-mechanisms'))
-  const compatibilityPath = useBaseUrl(docsPath('/compatibility'))
-  const productionPath = useBaseUrl(docsPath('/production-readiness'))
   const actionsLabel = translate({
     id: 'homepage.a11y.actions',
     message: 'Overview actions',
@@ -199,17 +197,6 @@ export default function DeveloperLanding(): React.JSX.Element {
     <div className={`developer-landing ${styles.landing}`}>
       <header className={styles.hero}>
         <div className={styles.heroCopy}>
-          <div className={styles.kicker}>
-            <span>
-              <Translate id="homepage.kicker">Vine for Go applications</Translate>
-            </span>
-            <span aria-hidden="true">·</span>
-            <span>
-              <Translate id="homepage.kicker.detail">
-                Contract-aware runtime
-              </Translate>
-            </span>
-          </div>
           <h1>
             {heroTitleBreak >= 0 ? (
               <>
@@ -479,42 +466,6 @@ export default function DeveloperLanding(): React.JSX.Element {
         </div>
       </section>
 
-      <aside className={styles.statusNote}>
-        <div className={styles.statusLabel}>
-          <GitBranch aria-hidden="true" size={16} strokeWidth={1.8} />
-          <span>
-            <Translate id="homepage.status.label">Before 1.0</Translate>
-          </span>
-        </div>
-        <div>
-          <strong>
-            <Translate id="homepage.status.title">
-              Pin the runtime you review.
-            </Translate>
-          </strong>
-          <p>
-            <Translate id="homepage.status.description">
-              Vine&apos;s public API is still stabilizing. Pin reviewed Vine
-              and skelc revisions, and keep runtime endpoints on a trusted
-              network.
-            </Translate>
-          </p>
-        </div>
-        <div className={styles.statusLinks}>
-          <Link to={compatibilityPath}>
-            <Translate id="homepage.status.compatibility">
-              Compatibility
-            </Translate>
-            <ArrowRight aria-hidden="true" size={14} strokeWidth={1.8} />
-          </Link>
-          <Link to={productionPath}>
-            <Translate id="homepage.status.production">
-              Production checks
-            </Translate>
-            <ArrowRight aria-hidden="true" size={14} strokeWidth={1.8} />
-          </Link>
-        </div>
-      </aside>
     </div>
   )
 }

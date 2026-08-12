@@ -77,27 +77,6 @@
   flex-direction: column;
 }
 
-.kicker {
-  display: inline-flex;
-  width: fit-content;
-  align-items: center;
-  gap: 0.35rem;
-  margin-bottom: 1rem;
-  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
-  border-radius: 999px;
-  padding: 0.48rem 0.9rem;
-  background: color-mix(in srgb, var(--primary) 4%, transparent);
-  color: var(--primary);
-  font-size: 0.68rem;
-  font-weight: 680;
-  letter-spacing: 0.025em;
-  text-transform: none;
-}
-
-.kicker span:last-child {
-  color: var(--muted-foreground);
-}
-
 .landing .heroCopy h1 {
   max-width: 39rem;
   margin: 0 !important;
@@ -123,7 +102,7 @@
 
 .lede {
   max-width: 42rem;
-  margin: 0.1rem 0 0;
+  margin: 1rem 0 0;
   color: var(--muted-foreground);
   font-size: clamp(1rem, 1.55vw, 1.12rem);
   line-height: 1.72;
@@ -192,8 +171,7 @@
 .actions a:focus-visible,
 .skelPrompt a:focus-visible,
 .mechanismLinks a:focus-visible,
-.guideLink:focus-visible,
-.statusLinks a:focus-visible {
+.guideLink:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 3px;
 }
@@ -864,114 +842,6 @@
   transform: translateX(2px);
 }
 
-.statusNote {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  column-gap: 1.35rem;
-  row-gap: 3rem;
-  align-items: center;
-  margin-top: clamp(4.5rem, 8vw, 6.5rem);
-  border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--border));
-  border-radius: 0.82rem;
-  padding: 1.2rem 1.3rem;
-  background: color-mix(in srgb, var(--accent) 62%, var(--card));
-}
-
-.statusNote::before {
-  position: absolute;
-  top: 4.43rem;
-  right: 1.3rem;
-  left: 1.3rem;
-  height: 1px;
-  background: color-mix(in srgb, var(--border) 82%, transparent);
-  content: '';
-}
-
-.statusLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  color: var(--primary);
-  grid-column: 1;
-  grid-row: 1;
-  justify-self: start;
-  font-size: 1rem;
-  font-weight: 680;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.statusNote > div:nth-child(2) strong {
-  display: block;
-  color: var(--foreground);
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.05em;
-  line-height: 1.06;
-}
-
-.statusNote > div:nth-child(2) {
-  grid-column: 1;
-  grid-row: 2;
-  min-width: 0;
-}
-
-.statusNote > div:nth-child(2) p {
-  margin: 0.25rem 0 0;
-  color: var(--muted-foreground);
-  font-size: 0.72rem;
-  line-height: 1.5;
-}
-
-.statusLinks {
-  display: flex;
-  flex-wrap: wrap;
-  grid-column: 2;
-  grid-row: 2;
-  align-self: start;
-  justify-content: flex-end;
-  gap: 0.65rem;
-  margin: 0;
-}
-
-.landing .statusLinks a {
-  display: inline-flex;
-  min-height: 2.7rem;
-  align-items: center;
-  justify-content: center;
-  gap: 0.28rem;
-  border: 1px solid var(--landing-border);
-  border-radius: 0.55rem;
-  padding: 0.7rem 1rem;
-  background: color-mix(in srgb, var(--card) 82%, transparent);
-  color: var(--primary) !important;
-  font-size: 0.82rem;
-  font-weight: 620;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.landing .statusLinks a:hover {
-  border-color: color-mix(in srgb, var(--primary) 60%, var(--border));
-  background: color-mix(in srgb, var(--primary) 10%, var(--card));
-  color: var(--primary) !important;
-  text-decoration: none;
-}
-
-.landing .statusLinks a:first-child {
-  border-color: var(--primary);
-  background: var(--primary);
-  color: #fff !important;
-  box-shadow: 0 8px 20px -12px rgb(var(--brand-rgb) / 80%);
-}
-
-.landing .statusLinks a:first-child:hover {
-  border-color: var(--ifm-color-primary-dark);
-  background: var(--ifm-color-primary-dark);
-  color: #fff !important;
-}
-
 @media (max-width: 1000px) {
   .hero {
     grid-template-columns: 1fr;
@@ -994,14 +864,6 @@
     min-height: 0;
   }
 
-  .statusNote {
-    grid-template-columns: 7.5rem minmax(0, 1fr);
-  }
-
-  .statusLinks {
-    grid-column: 2;
-    justify-content: flex-start;
-  }
 }
 
 @media (max-width: 780px) {
@@ -1100,15 +962,6 @@
     grid-column: auto;
   }
 
-  .statusNote {
-    grid-template-columns: 1fr;
-    gap: 0.7rem;
-    margin-top: 4.25rem;
-  }
-
-  .statusLinks {
-    grid-column: auto;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
