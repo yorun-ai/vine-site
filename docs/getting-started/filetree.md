@@ -52,14 +52,13 @@ demo/
 - `src/server/repo/` implements persistence interfaces and maps database records
   to core models.
 - `src/server/seed/` contains project configuration. Pass
-  `src/server/seed/hub.yaml` to runtime startup as the Hub seed file so Hub can
-  import it.
+  `src/server/seed/hub.yaml` to runtime startup as the Hub seed file.
 - `src/web/` contains the frontend package.
 
-Keep tests beside the source they cover, such as `service_test.go` next to
-`service.go`. Direct dependencies toward `core/`: adapters and repositories may
-depend on core interfaces and models, while `core/` must not depend on `impl/` or
-`repo/`.
+Keep tests next to the source they cover, such as `service_test.go` alongside
+`service.go`. Keep dependencies pointing toward `core/`: adapters and
+repositories may depend on core interfaces and models, but `core/` must not
+depend on `impl/` or `repo/`.
 
 For the contract generation workflow, see [First Contract](/docs/first-skel-contract).
 Skel syntax and `skelc` command reference are maintained in the

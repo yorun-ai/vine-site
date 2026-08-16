@@ -131,10 +131,10 @@ linked.NewWithOption[*HelloApp](linked.Option{
 ```
 
 `HubEndpoint` and `IngressListen` can also come from `VINE_HUB_ENDPOINT` and
-`VINE_INGRESS_LISTEN`. When the external Hub requires backend mTLS, provide the
-in-process Link's identity through `MTLSCAFile`, `MTLSCertFile`, and
-`MTLSKeyFile`, or through the matching `VINE_MTLS_*` variables and
-`--mtls-*-file` flags.
+`VINE_INGRESS_LISTEN`. When the external Hub requires backend mTLS, set the
+embedded Link's identity through `MTLSCAFile`, `MTLSCertFile`, and
+`MTLSKeyFile`, or the matching `VINE_MTLS_*` variables and `--mtls-*-file`
+flags.
 
 This mode keeps the configuration, registration, and lease semantics of an
 independent Hub, but Link and the business application are still released and
@@ -147,9 +147,9 @@ In production, you can split the control plane, external entry point,
 application-side connectivity layer, and business application into independent
 processes. Process separation does not change Link's sidecar role: Link and its
 applications normally remain on the same host and within one deployment trust
-boundary. A non-loopback Link API is allowed for unusual deployments, but Link
-warns because that cross-host h2c path is unauthenticated and is not the
-expected topology.
+boundary. A non-loopback Link API is permitted for unusual deployments, but Link
+warns that this cross-host h2c path is unauthenticated and not the expected
+topology.
 
 ```mermaid
 flowchart LR

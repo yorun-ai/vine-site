@@ -246,11 +246,12 @@ not move the message to a dead-letter queue and does not create a failure
 record that the sender can query.
 
 Embedded NATS provisions the streams with memory storage. With external NATS,
-the pre-provisioned streams determine the storage policy. Successful
-publication protects against an individual handler failure, but only a tested
-file-backed external deployment can provide durability across messaging-runtime
-restarts. When such loss is unacceptable, also consider a database-backed
-outbox, a durable external workflow system, or another persisted record.
+the pre-provisioned streams determine the storage policy. A successfully
+published message survives an individual handler failure, but durability across
+messaging-runtime restarts requires a file-backed external deployment that has
+been tested for recovery. If message loss across a restart is unacceptable,
+consider a database-backed outbox, a durable external workflow system, or
+another persisted record.
 
 ## At-least-once requires idempotency
 

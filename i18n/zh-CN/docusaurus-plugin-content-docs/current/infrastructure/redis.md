@@ -347,10 +347,10 @@ if !ok {
 ctx := lock.Context()
 ```
 
-这个 context 会在下面几种情况被 cancel：
+在以下情况下，这个 context 会被 cancel：
 
-- 手动 `lock.Unlock()`
-- Redis 返回 refresh token 已经不属于当前持有者
+- 手动调用 `lock.Unlock()`
+- Redis 返回结果表明 refresh token 已不属于当前持有者
 - refresh 命令或下一次 retry 无法在保守的本地租约截止点前完成
 - 应用或当前执行的父 context 被取消
 
@@ -365,17 +365,18 @@ ctx := lock.Context()
 - 最大 retry 次数：`7`
 - 单次 refresh 命令最长执行时间：`2s`
 
-也就是说，一次正常 refresh tick 到来后：
+当一次正常的 refresh tick 到来时：
 
 1. 先立即尝试 refresh
-2. Redis 返回 `0` 已经证明 token 不再属于当前持有者，因此立即把锁标记为 broken，
-   不再重试
-3. transport 错误按 `3s` 间隔重试，但命令和下一次 retry 都不能越过保守的本地租约截止点
+2. Redis 返回 `0`，说明 token 已不再属于当前持有者，Vine 会立即把锁标记为
+   broken，不再重试
+3. transport 错误每 `3s` 重试一次，但仅当命令和下一次 retry 仍处于保守的本地
+   租约截止点内时才重试
 4. retry 次数达到上限或租约截止点到期时标记 broken，以先发生者为准
 
-本地截止点会从 Redis TTL 中预留 10% 的安全余量，最多一秒。每次 refresh 命令
-使用“两秒 timeout”和“本地截止点”中更早的时间，因此命令及其 retry 预算都不会
-越过 Vine 仍认为有效的租约。
+本地截止点会预留 Redis TTL 的 10%（最多 1 秒）作为安全余量。每次 refresh 命令
+使用“两秒 timeout”和“本地截止点”中更早的时间，因此命令和它的 retry 预算都
+不可能超出 Vine 仍视为有效的租约。
 
 ### broken 状态
 

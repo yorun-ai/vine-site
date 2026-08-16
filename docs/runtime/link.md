@@ -80,7 +80,7 @@ that SPIFFE ID. The Link API remains unauthenticated h2c because Link is the
 application's sidecar. Link and its applications normally share a host and
 deployment trust boundary. Vine still permits a non-loopback Link API for
 unusual deployments, but emits a warning; the deployment must authenticate,
-encrypt, and restrict that path itself.
+encrypt, and restrict the path itself.
 
 ## Request Paths
 

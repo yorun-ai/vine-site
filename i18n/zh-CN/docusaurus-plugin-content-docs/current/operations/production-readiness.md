@@ -126,10 +126,10 @@ Hub 数据库是导入配置、Portal rule 和证书的事实来源。Hub 通过
 使用内嵌 NATS 时，Vine 会预创建 `VINE_EVENTS` 和 `VINE_TASKS` JetStream
 stream，并统一使用内存存储。
 
-使用外部 NATS 时，Vine 只使用已有 stream，不负责创建或配置；因此必须在启动
-Hub 或 Link 前完成以下准备：为 `VINE_EVENTS` 配置 `event.>` subject 和
+使用外部 NATS 时，Vine 只使用已有 stream，不会自行创建或配置；因此必须在启动
+Hub 或 Link 前完成以下配置：为 `VINE_EVENTS` 配置 `event.>` subject 和
 interest retention，为 `VINE_TASKS` 配置 `task.>` subject 和 work-queue
-retention。两者使用内存还是文件存储，由外部 NATS 部署决定。
+retention。每个 stream 使用内存还是文件存储，由外部 NATS 部署决定。
 
 例如，可以使用 NATS CLI 创建采用文件存储的单副本 stream：
 
@@ -146,8 +146,8 @@ nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_TASKS \
 只有不要求跨重启持久性时才应使用 `--storage memory`。在 NATS cluster 中，
 应根据冗余要求设置 `--replicas`，不要直接照搬上述单副本示例。
 
-如果生产环境要求消息在 NATS 或 cluster 重启后仍然保留，应将文件存储及其恢复
-能力作为明确的部署要求，并针对实际故障场景完成验证。
+如果生产环境要求消息在 NATS 或 cluster 重启后依然保留，就应把文件存储和经过
+验证的恢复行为写进部署要求。
 
 :::
 
