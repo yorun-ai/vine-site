@@ -165,26 +165,34 @@ sequenceDiagram
 
 ## Standalone 与进程内路由
 
-Standalone 会保留注册、快照、代理、轮询、元数据和序列化边界。调用仍
-经过 Link 的路由逻辑；进程内 RPC 值也会通过与网络调用相同的 JSON 或 CBOR
-表示进行克隆。
+Standalone 会保留注册、快照、代理、轮询、元数据和值隔离边界，调用仍经过
+Link 的路由逻辑。在 Vine v0.13.1 或更高版本中，由 skelc v0.12.0 或更高版本
+生成的 method spec 会对进程内 Rpc 参数和结果执行结构化克隆。skelc v0.11.x
+生成的 spec 不包含这些 hook，因此 Vine 会使用基于序列化的兼容 fallback。
+无论使用哪条路径，caller 与 handler 的修改都不会越过 Rpc 边界。
+
+进程内 Rpc 只保证值隔离。JSON 或 CBOR 编解码、传输规范化、自定义
+marshal/unmarshal 方法和 codec 错误不属于它的契约，可能因生成 spec 而不同。
+Vine 的兼容保证只覆盖由 skelc 管理的生成 package，不覆盖加入其中的手写文件；
+package 所有权规则见 [Skel Go 生成](https://skel.yorun.ai/docs/generation/go)。如果
+测试必须经过应用 Rpc 的 wire 边界，应使用 `vine dev` 或分离部署。
 
 它有意不复现所有分布式故障：
 
-| Standalone 中保留 | 需要 linked 或分离进程 |
+| Standalone 中保留 | 需要真实传输或进程边界 |
 | --- | --- |
 | 能力注册与移除 | 独立进程崩溃 |
 | Service 与 Web 选择 | 真实网络分区和端口不可达 |
 | 类本地/远端转发决策 | 心跳失败与租约过期 |
-| 请求校验和值克隆 | 外部 Link ingress 与传输安全 |
+| 请求校验和值隔离 | JSON/CBOR 行为与 codec 错误 |
 | 配置后可验证 Portal 站点/准入逻辑 | 真实 TLS listener 与证书可达性 |
 
 进程内调用超时或取消时，如果 Handler 忽略 context，调用方仍会直接返回而不会
 等待 Handler 结束，这与网络超时对调用方可见的行为一致；它并不能证明 Handler
 已经停止。
 
-快速集成测试应使用 standalone；验证存活、租约、网络、TLS 与重启行为时，应
-使用 linked 或完全分离的进程。
+快速集成测试应使用 standalone；应用 Rpc wire 测试应使用 `vine dev` 或完全分离
+的进程；验证存活、租约、网络、TLS 与重启行为时应使用真实进程边界。
 
 ## 把实例标记为就绪之前
 
