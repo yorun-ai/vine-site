@@ -41,7 +41,7 @@ vine version --json
 skelc version
 ```
 
-Current Vine source requires Go `1.26.5` or later and reports a minimum skelc
+Current Vine source requires Go `1.26.6` or later and reports a minimum skelc
 version of `v0.9.0`. The `next` site is not a frozen release; [Version
 Compatibility](../getting-started/compatibility.md) explains how to record the
 exact revisions used by a deployment.

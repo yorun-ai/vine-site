@@ -12,7 +12,7 @@ slug: /tutorial-first-app
 
 ## 前提条件
 
-- Go 1.26.5 或更高版本。
+- Go 1.26.6 或更高版本。
 - 能够下载 `go.yorun.ai/vine` module，或本地已有对应 module cache。
 
 新建一个空目录并初始化 Go module：

@@ -34,7 +34,7 @@ CLI behavior, configuration, Skel integration, or protocols.
 
 | Vine documentation | Go | Minimum skelc | skelc to use |
 | --- | --- | --- | --- |
-| Current source / `next` | `1.26.5` or later | `v0.9.0` | The exact revision reviewed with the application |
+| Current source / `next` | `1.26.6` or later | `v0.9.0` | The exact revision reviewed with the application |
 
 Current Vine source reports `v0.9.0` from
 `core/skel.MinSkelcVersion()`. This is a lower bound, not a version-selection
@@ -53,7 +53,7 @@ release, replace both values below with reviewed commit hashes or tags:
 VINE_REVISION=main
 SKELC_REVISION=main
 
-go mod edit -go=1.26.5 -toolchain=go1.26.5
+go mod edit -go=1.26.6 -toolchain=go1.26.6
 go get go.yorun.ai/vine@"$VINE_REVISION"
 
 go install go.yorun.ai/vine/cmd/vine@"$VINE_REVISION"
