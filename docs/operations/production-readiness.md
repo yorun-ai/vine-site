@@ -142,8 +142,8 @@ distribution layer; Redis is not a replacement for the database.
 With embedded NATS, Vine provisions the `VINE_EVENTS` and `VINE_TASKS`
 JetStream streams using memory storage.
 
-With external NATS, Vine only uses existing streams and does not create or
-configure them. Before starting Hub or Link, provision `VINE_EVENTS` with the
+With external NATS, Vine uses existing streams and never creates or
+configures them itself. Before starting Hub or Link, provision `VINE_EVENTS` with the
 `event.>` subject and interest retention, and `VINE_TASKS` with the `task.>`
 subject and work-queue retention. The external NATS deployment determines
 whether each stream uses memory or file storage.
@@ -164,8 +164,8 @@ Use `--storage memory` only when restart durability is not required. In a NATS
 cluster, set `--replicas` to the required redundancy level rather than copying
 the single-replica example unchanged.
 
-If production messages must survive NATS or cluster restarts, require
-file-backed storage and verified recovery behavior as part of the deployment.
+If production messages must survive NATS or cluster restarts, make file-backed
+storage and verified recovery behavior part of the deployment.
 
 :::
 

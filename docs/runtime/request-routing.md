@@ -197,9 +197,9 @@ cross the Rpc boundary.
 
 In-process Rpc guarantees value isolation only. JSON or CBOR encoding,
 transport normalization, custom marshal/unmarshal methods, and codec failures
-are not part of its contract and may differ by generated spec. Vine
-compatibility covers skelc-managed generated packages; it does not cover
-handwritten files added to those packages. See
+are outside its contract and may vary with the generated spec. Vine's
+compatibility guarantee covers skelc-managed generated packages, not
+handwritten files added to them. See
 [Skel Go generation](https://skel.yorun.ai/docs/generation/go) for the package
 ownership rules. Use `vine dev` or a separated deployment when a test must
 exercise the application Rpc wire boundary.
@@ -218,9 +218,9 @@ In-process timeout or cancellation also returns without waiting for a handler
 that ignores its context to finish, matching the caller-visible behavior of a
 network timeout. It doesn't prove that such a handler has stopped.
 
-Use standalone for fast integration tests. Use `vine dev` or fully separated
-processes for application Rpc wire tests, and use real process boundaries for
-liveness, lease, network, TLS, and restart exercises.
+Use standalone for fast integration tests, `vine dev` or fully separated
+processes for Rpc wire tests, and real process boundaries for liveness, lease,
+network, TLS, and restart exercises.
 
 ## Before marking an instance ready
 

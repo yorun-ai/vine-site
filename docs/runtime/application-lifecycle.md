@@ -196,11 +196,11 @@ The details are intentional:
   release, not remote work.
 
 Lifecycle hooks don't receive an automatic timeout. Each hook must bound its own
-network calls and goroutine joins. A panic in a shutdown hook is also not
+network calls and goroutine joins. A panic in a shutdown hook is likewise not
 converted into a recoverable lifecycle error. It immediately interrupts the
 remaining shutdown sequence and propagates to the lifecycle owner. Treat a
-lifecycle panic as fatal; recovering and continuing to use that runtime is not
-supported.
+lifecycle panic as fatal: recovering and continuing to use the runtime afterward
+is not supported.
 
 `RunFlag.Context` is the parent of the injected application context, but
 cancelling it doesn't itself call `StopGracefully()`. `StartAndWait()` waits for

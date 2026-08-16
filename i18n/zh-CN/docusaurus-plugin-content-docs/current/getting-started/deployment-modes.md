@@ -117,9 +117,10 @@ linked.NewWithOption[*HelloApp](linked.Option{
 }).StartAndWait()
 ```
 
-`HubEndpoint` 和 `IngressListen` 也可由 `VINE_HUB_ENDPOINT`、`VINE_INGRESS_LISTEN` 提供。
-外部 Hub 启用后台 mTLS 时，还需通过 `MTLSCAFile`、`MTLSCertFile`、
-`MTLSKeyFile`，或共享的命令行参数和环境变量，配置进程内 Link 的身份。
+`HubEndpoint` 和 `IngressListen` 也可以通过 `VINE_HUB_ENDPOINT`、`VINE_INGRESS_LISTEN`
+设置。外部 Hub 启用后台 mTLS 时，可通过 `MTLSCAFile`、`MTLSCertFile`、
+`MTLSKeyFile` 配置内嵌 Link 的身份，或使用对应的 `VINE_MTLS_*` 环境变量和
+`--mtls-*-file` 命令行参数。
 
 这种模式保留了独立 Hub 的配置、注册和租约语义，但 Link 与业务应用仍同时发布、同时停止。它适合不想额外维护 Link sidecar 的开发和部署环境。
 
@@ -127,8 +128,8 @@ linked.NewWithOption[*HelloApp](linked.Option{
 
 在生产环境中，可将控制面、外部入口、应用侧接入层和业务应用拆成独立进程。进程分离
 不会改变 Link 的 sidecar 定位：Link 与其管理的应用通常位于同一主机和部署信任
-边界内。Vine 仍允许特殊部署使用非 loopback Link API，但会告警；该跨主机 h2c
-路径没有 transport 认证，必须由部署侧自行加密、认证并限制访问。
+边界内。Vine 仍允许特殊部署使用非 loopback Link API，但 Link 会告警：这类跨主机
+h2c 路径未经认证，也不在预期拓扑内。
 
 ```mermaid
 flowchart LR

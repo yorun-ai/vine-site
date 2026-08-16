@@ -89,9 +89,10 @@ Scheduler、Admin Debug publisher，以及使用
 后台 mTLS 是可选配置。未同时提供三个证书参数时，仍保留现有 h2c、明文 Redis 与
 `nats://` 开发行为，此时必须将 listener 放在 loopback 或可信私有网络中。
 
-应用到 Link 的通讯不属于后台 mTLS 范围，因为 Link 是应用的 sidecar。两者位于
-同一主机和部署信任边界内是预期拓扑。特殊部署仍可使用非 loopback Link API，但会
-告警，并且这条 h2c 路径没有 transport 认证，必须由部署侧保护。Portal 对外 listener 不会复用
+应用到 Link 的通信不属于后台 mTLS 范围，因为 Link 是应用的 sidecar。两者通常
+位于同一主机和部署信任边界内，这是预期拓扑。特殊部署仍可使用非 loopback Link
+API，但会收到告警，这条 h2c 路径也保持未经认证的状态；部署方必须自行保护这条
+路径。Portal 对外 listener 不会复用
 后台身份证书。启用 mTLS 后，如果没有匹配的公开证书，Portal 会回退到一个短期、
 仅驻留当前进程的自签 Web 证书；配置的 Portal 证书始终优先。该回退能加密引导流量，
 但不会被浏览器信任。外部 PostgreSQL 与 NATS endpoint 也继续使用各自的安全配置；

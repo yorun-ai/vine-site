@@ -390,15 +390,15 @@ When a normal refresh tick occurs:
 1. Vine attempts a refresh immediately.
 2. A Redis result of `0` proves that the token is no longer the owner, so Vine
    breaks the lock immediately without retrying.
-3. Transport errors are retried every `3s`, but only while the command and next
-   retry remain inside the conservative local lease deadline.
+3. Transport errors are retried every `3s`, but only as long as the command and
+   its next retry stay within the conservative local lease deadline.
 4. Vine breaks the lock when the retry cap or lease deadline is reached,
    whichever comes first.
 
 The local deadline reserves 10% of the Redis TTL, capped at one second. Each
 refresh command uses the earlier of its two-second timeout and that local
-deadline, so neither a command nor its retry budget can cross the lease Vine
-still considers valid.
+deadline, so a command and its retry budget can never extend beyond the lease
+Vine still considers valid.
 
 ### Broken State
 

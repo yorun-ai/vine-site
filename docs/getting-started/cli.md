@@ -131,9 +131,9 @@ nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_TASKS \
   --defaults
 ```
 
-Verify both definitions with `nats --server "$VINE_MQ_EXTERNAL_NATS_URL"
-stream info VINE_EVENTS` and the corresponding `VINE_TASKS` command. Then
-start Hub:
+Verify both streams with `nats --server "$VINE_MQ_EXTERNAL_NATS_URL"
+stream info VINE_EVENTS` and the matching `VINE_TASKS` command, then start
+Hub:
 
 ```bash
 vine hub serve \

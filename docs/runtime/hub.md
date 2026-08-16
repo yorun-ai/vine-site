@@ -105,9 +105,9 @@ listeners on loopback or a trusted private network.
 
 Application-to-Link communication is intentionally not covered because Link is
 the application's sidecar. Both normally run on the same host and within the
-same deployment trust boundary. A non-loopback Link API is allowed for unusual
-deployments, but emits a warning and remains unauthenticated h2c; the deployment
-must protect that path itself.
+same deployment trust boundary. A non-loopback Link API is permitted for unusual
+deployments, but it emits a warning and stays unauthenticated h2c; the
+deployment must protect the path itself.
 Portal's public listeners do not reuse the backend identity certificate. With
 mTLS enabled, a missing public certificate falls back to a short-lived,
 process-local self-signed Web certificate; a configured Portal certificate

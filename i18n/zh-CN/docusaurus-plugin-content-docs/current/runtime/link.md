@@ -63,9 +63,9 @@ Link 会把该证书用于 Hub Rpc、Redis 与内嵌 NATS client，并作为 Lin
 server 身份。它的精确 X.509-SVID 是
 `spiffe://<trust-domain>/vine/daemon/vine.link`，并与 Hub、Portal 使用相同 trust domain。
 远端 Link 与 Portal 代理流量必须使用 HTTPS 并认证该 SPIFFE ID。Link API 仍使用
-未认证 h2c，因为 Link 是应用的 sidecar。应用与 Link 通常位于同一主机和部署信任
-边界内。Vine 仍允许特殊部署使用非 loopback Link API，但会告警；必须由部署侧自行
-加密、认证并限制这条路径。
+未经认证的 h2c，因为 Link 是应用的 sidecar。应用与 Link 通常位于同一主机和部署
+信任边界内。Vine 仍允许特殊部署使用非 loopback Link API，但会发出告警；部署方
+必须自行认证、加密并限制这条路径。
 
 ## 请求路径
 
