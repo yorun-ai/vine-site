@@ -38,7 +38,7 @@ vine version --json
 skelc version
 ```
 
-当前 Vine 源码要求 Go `1.26.5` 或更高，并报告最低 skelc 版本 `v0.9.0`。`next`
+当前 Vine 源码要求 Go `1.26.6` 或更高，并报告最低 skelc 版本 `v0.9.0`。`next`
 并不是冻结的发行版；如何记录部署实际使用的 revision，见
 [版本兼容性](../getting-started/compatibility.md)。
 

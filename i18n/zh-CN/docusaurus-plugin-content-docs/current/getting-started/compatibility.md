@@ -33,7 +33,7 @@ Vine 目前仍处于 1.0 之前。同一个 minor 版本线内的 patch 版本�
 
 | Vine 文档 | Go | 最低 skelc | 推荐使用的 skelc |
 | --- | --- | --- | --- |
-| 当前源码 / `next` | `1.26.5` 或更高 | `v0.9.0` | 与应用一起审查过的精确 revision |
+| 当前源码 / `next` | `1.26.6` 或更高 | `v0.9.0` | 与应用一起审查过的精确 revision |
 
 当前 Vine 源码通过 `core/skel.MinSkelcVersion()` 报告最低版本 `v0.9.0`。
 这是兼容下限，不是版本选择策略。生成的 Schema 会记录 skelc 版本；如果版本缺失
@@ -51,7 +51,7 @@ runtime 检查没有为未来的 skelc 版本定义兼容上限。请固定已�
 VINE_REVISION=main
 SKELC_REVISION=main
 
-go mod edit -go=1.26.5 -toolchain=go1.26.5
+go mod edit -go=1.26.6 -toolchain=go1.26.6
 go get go.yorun.ai/vine@"$VINE_REVISION"
 
 go install go.yorun.ai/vine/cmd/vine@"$VINE_REVISION"
