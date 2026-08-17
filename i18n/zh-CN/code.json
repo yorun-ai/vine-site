@@ -442,7 +442,7 @@
     "message": "运行时保证"
   },
   "homepage.sections.mechanisms.title": {
-    "message": "Vine 让边界保持显式"
+    "message": "Vine 让边界始终显式"
   },
   "homepage.sections.mechanisms.description": {
     "message": "装配、执行与拓扑共享同一套模型，让生成的能力进入运行时后依然可追溯、可审查。"

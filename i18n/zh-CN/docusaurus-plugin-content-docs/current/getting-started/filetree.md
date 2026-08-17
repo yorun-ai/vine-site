@@ -46,8 +46,8 @@ demo/
 - `src/server/core/` 放置与传输协议无关的业务模型、用例、规则和 repository 接口。
 - `src/server/impl/` 把生成的 Rpc、Web、Event、Task 契约适配到 `core/` 业务逻辑。
 - `src/server/repo/` 实现持久化接口，并负责数据库 record 与 core model 的映射。
-- `src/server/seed/` 存放项目配置；启动 runtime 时把
-  `src/server/seed/hub.yaml` 作为 Hub seed 文件传入，由 Hub 完成导入。
+- `src/server/seed/` 存放项目配置；启动 runtime 时传入
+  `src/server/seed/hub.yaml` 作为 Hub seed 文件。
 - `src/web/` 放置前端 package。
 
 测试与被测源码放在一起，例如 `service_test.go` 与 `service.go` 位于同一 package。
