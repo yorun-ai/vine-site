@@ -143,10 +143,10 @@ With embedded NATS, Vine provisions the `VINE_EVENTS` and `VINE_TASKS`
 JetStream streams using memory storage.
 
 With external NATS, Vine uses existing streams and never creates or
-configures them itself. Before starting Hub or Link, provision `VINE_EVENTS` with the
-`event.>` subject and interest retention, and `VINE_TASKS` with the `task.>`
-subject and work-queue retention. The external NATS deployment determines
-whether each stream uses memory or file storage.
+configures them itself. Before starting Hub or Link, provision `VINE_EVENTS`
+with the `event.>` subject and interest retention, and `VINE_TASKS` with the
+`task.>` subject and work-queue retention. The external NATS deployment
+determines whether each stream uses memory or file storage.
 
 For example, provision file-backed, single-replica streams with the NATS CLI:
 

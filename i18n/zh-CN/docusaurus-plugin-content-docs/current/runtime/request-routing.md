@@ -167,8 +167,8 @@ sequenceDiagram
 
 Standalone 会保留注册、快照、代理、轮询、元数据和值隔离边界，调用仍经过
 Link 的路由逻辑。在 Vine v0.13.1 或更高版本中，由 skelc v0.12.0 或更高版本
-生成的 method spec 会对进程内 Rpc 参数和结果做结构化克隆。skelc v0.11.x
-生成的 spec 不包含这些 hook，因此 Vine 会退回基于序列化的兼容方案。无论走
+生成的 method spec 会对进程内 Rpc 参数和结果进行结构化克隆。skelc v0.11.x
+生成的 spec 不包含这些 hook，因此 Vine 会回退到基于序列化的兼容方案。无论走
 哪条路径，调用方与 Handler 的改动都不会跨过 Rpc 边界。
 
 进程内 Rpc 只保证值隔离；JSON 或 CBOR 编解码、传输规范化、自定义

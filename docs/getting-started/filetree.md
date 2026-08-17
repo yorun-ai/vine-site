@@ -51,8 +51,8 @@ demo/
   business logic in `core/`.
 - `src/server/repo/` implements persistence interfaces and maps database records
   to core models.
-- `src/server/seed/` contains project configuration. Pass
-  `src/server/seed/hub.yaml` to runtime startup as the Hub seed file.
+- `src/server/seed/` contains project configuration. Provide
+  `src/server/seed/hub.yaml` to the runtime at startup as the Hub seed file.
 - `src/web/` contains the frontend package.
 
 Keep tests next to the source they cover, such as `service_test.go` alongside
