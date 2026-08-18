@@ -73,7 +73,7 @@ flowchart LR
 
 ```bash
 vine dev
-go run ./cmd/myapp
+go -C ./src/server run ./cmd/myapp
 ```
 
 `app.New` 默认连接 `http://127.0.0.1:7079` 的 Link API，因此不需要额外配置

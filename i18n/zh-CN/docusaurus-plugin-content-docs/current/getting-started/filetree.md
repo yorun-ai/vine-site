@@ -9,16 +9,17 @@ Vine 应用统一采用下面这套标准项目结构：
 
 ```text
 demo/
-├── go.mod
-├── go.sum
 ├── skel/                        # 手工维护的契约
 │   ├── domain.skel
 │   └── greeting_service.skel
 ├── skeled/                      # 契约生成代码
-│   ├── golang/
+│   ├── golang/                  # 生成的 Go module
+│   │   └── go.mod
 │   └── typescript/
 └── src/
     ├── server/
+    │   ├── go.mod               # 后端 module；本地 replace 生成 module
+    │   ├── go.sum
     │   ├── app/                 # Vine App 定义与依赖装配
     │   │   └── app.go
     │   ├── cmd/
@@ -39,7 +40,12 @@ demo/
 
 - `skel/` 是契约的事实来源，契约修改只发生在这里。
 - `skeled/` 保存从 `skel/` 生成的代码，禁止手工修改。Go 端使用
-  `skeled/golang/`，TypeScript 消费方使用 `skeled/typescript/`。
+  `skeled/golang/` 下的生成 module，TypeScript 消费方使用
+  `skeled/typescript/`。
+- `src/server/go.mod` 和 `src/server/go.sum` 定义后端 Go module。Go 依赖、
+  构建和测试命令都从 `src/server/` 目录执行。后端 module 依赖生成的 Go
+  module，并通过本地 `replace` directive 把它的 module path 映射到
+  `../../skeled/golang`。
 - `src/server/app/` 定义 Vine App，负责装配 Component、Module、handler、
   repository 和共享依赖。
 - `src/server/cmd/<name>/main.go` 选择运行模式并启动进程，不承载业务逻辑。
@@ -49,6 +55,17 @@ demo/
 - `src/server/seed/` 存放项目配置；启动 runtime 时传入
   `src/server/seed/hub.yaml` 作为 Hub seed 文件。
 - `src/web/` 放置前端 package。
+
+例如，`skeled/golang/go.mod` 声明
+`example.com/demo/skeled/golang` 时，后端 module 包含：
+
+```go title="src/server/go.mod"
+require example.com/demo/skeled/golang v0.0.0
+
+replace example.com/demo/skeled/golang => ../../skeled/golang
+```
+
+两行都应使用项目实际声明的生成 module path。
 
 测试与被测源码放在一起，例如 `service_test.go` 与 `service.go` 位于同一 package。
 依赖方向统一指向 `core/`：适配层和 repository 可以依赖 core 接口与模型，`core/`

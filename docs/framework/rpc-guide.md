@@ -7,6 +7,11 @@ sidebar_label: Rpc Services
 
 The usual Vine Rpc workflow is to declare a service in Skel, generate its interfaces with skelc, implement the server, and register the handler in an App. Business code normally doesn't need to construct a low-level `ServiceSpec` manually.
 
+This guide continues the flat workspace used by the first-application and
+first-contract tutorials. In the [standard project
+structure](../getting-started/filetree.md), run Skel commands from the project
+root and Go commands from `src/server/`.
+
 ## Define and generate
 
 ```skel title="greeting.skel"

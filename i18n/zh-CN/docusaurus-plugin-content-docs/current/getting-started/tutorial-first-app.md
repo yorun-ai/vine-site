@@ -10,6 +10,9 @@ slug: /tutorial-first-app
 同一进程启动。下面的应用暂时没有业务入口，只用来验证应用装配、module
 生命周期、Hub 状态持久化和优雅停机。
 
+为了聚焦首次运行，本教程使用扁平的单 module 目录。持续开发的应用应采用
+[标准项目结构](./filetree.md)，并把 Go module 放在 `src/server/` 下。
+
 ## 前提条件
 
 - Go 1.26.6 或更高版本。

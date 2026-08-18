@@ -287,7 +287,7 @@ Environment variables:
 
 ```bash
 vine dev
-go run ./cmd/myapp
+go -C ./src/server run ./cmd/myapp
 ```
 
 ### Start runtime services separately

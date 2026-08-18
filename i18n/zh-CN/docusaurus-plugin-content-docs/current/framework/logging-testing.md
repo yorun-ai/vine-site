@@ -164,11 +164,11 @@ Vine App 在同一测试进程中是单例。一个测试 package 只启动一�
 运行全部 Go 测试：
 
 ```bash
-go test ./...
+go -C ./src/server test ./...
 ```
 
 运行指定包：
 
 ```bash
-go test ./path/to/package -run TestName
+go -C ./src/server test ./path/to/package -run TestName
 ```

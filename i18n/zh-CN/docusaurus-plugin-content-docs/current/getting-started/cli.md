@@ -274,7 +274,7 @@ vine portal serve \
 
 ```bash
 vine dev
-go run ./cmd/myapp
+go -C ./src/server run ./cmd/myapp
 ```
 
 ### 单独启动运行时基础服务
