@@ -11,6 +11,10 @@ business application start together in one process. The small application below
 has no business endpoint yet -- it's just enough to exercise application
 assembly, module lifecycle, persistent Hub state, and graceful shutdown.
 
+To keep this first run focused, the tutorial uses a flat, single-module
+directory. For an application you will continue developing, use the [standard
+project structure](./filetree.md), with the Go module under `src/server/`.
+
 ## Prerequisites
 
 - Go 1.26.6 or later.

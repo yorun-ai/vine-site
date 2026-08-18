@@ -177,11 +177,11 @@ Tests should focus on observable behavior: return values, state changes, configu
 Run all Go tests:
 
 ```bash
-go test ./...
+go -C ./src/server test ./...
 ```
 
 Run a specific test in a package:
 
 ```bash
-go test ./path/to/package -run TestName
+go -C ./src/server test ./path/to/package -run TestName
 ```

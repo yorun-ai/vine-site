@@ -51,8 +51,8 @@ runtime 检查没有为未来的 skelc 版本定义兼容上限。请固定已�
 VINE_REVISION=main
 SKELC_REVISION=main
 
-go mod edit -go=1.26.6 -toolchain=go1.26.6
-go get go.yorun.ai/vine@"$VINE_REVISION"
+go -C ./src/server mod edit -go=1.26.6 -toolchain=go1.26.6
+go -C ./src/server get go.yorun.ai/vine@"$VINE_REVISION"
 
 go install go.yorun.ai/vine/cmd/vine@"$VINE_REVISION"
 go install go.yorun.ai/skelc/cmd/skelc@"$SKELC_REVISION"
@@ -60,9 +60,9 @@ go install go.yorun.ai/skelc/cmd/skelc@"$SKELC_REVISION"
 
 `go` directive 记录预期的语言版本，`toolchain` directive 请求使用指定
 compiler。同时还应固定 CI image 或 toolchain 安装，因为已经更新的默认
-toolchain 仍可能被选中。提交 `go.mod`、`go.sum`、Skel 源文件和生成代码的
-变更。生产构建流水线里，请保留 `main` 或 `@latest` 之外的手段；即使应用仓库没有变更，它们
-也可能解析到新的代码。
+toolchain 仍可能被选中。提交 `src/server/go.mod`、`src/server/go.sum`、Skel
+源文件和生成代码的变更。生产构建流水线中，切勿保留 `main` 或 `@latest`；
+即使应用仓库没有变更，它们也可能解析到新的代码。
 
 ### 核对 CI 实际使用的工具
 
@@ -123,8 +123,8 @@ schema 仍然是最终的 runtime 检查，因此修改 Vine 或 skelc 版本后
 
 ```bash
 skelc check --skel-in ./skel
-skelc gen go --skel-in ./skel --go-out ./skeled
-go test ./...
+skelc gen go --skel-in ./skel --go-out ./skeled/golang
+go -C ./src/server test ./...
 ```
 
 提升到生产环境之前，完成

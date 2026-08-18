@@ -53,8 +53,8 @@ release, replace both values below with reviewed commit hashes or tags:
 VINE_REVISION=main
 SKELC_REVISION=main
 
-go mod edit -go=1.26.6 -toolchain=go1.26.6
-go get go.yorun.ai/vine@"$VINE_REVISION"
+go -C ./src/server mod edit -go=1.26.6 -toolchain=go1.26.6
+go -C ./src/server get go.yorun.ai/vine@"$VINE_REVISION"
 
 go install go.yorun.ai/vine/cmd/vine@"$VINE_REVISION"
 go install go.yorun.ai/skelc/cmd/skelc@"$SKELC_REVISION"
@@ -63,9 +63,9 @@ go install go.yorun.ai/skelc/cmd/skelc@"$SKELC_REVISION"
 The `go` directive records the expected language version, and the `toolchain`
 directive requests the compiler. Pin the CI image or toolchain installation as
 well, since an already newer default toolchain can still end up selected. Commit
-`go.mod`, `go.sum`, the Skel sources, and the generated-code changes. Never
-leave `main` or `@latest` in a production build pipeline: either can resolve to
-new code without a change to the application repository.
+`src/server/go.mod`, `src/server/go.sum`, the Skel sources, and the generated-code
+changes. Never leave `main` or `@latest` in a production build pipeline: either
+can resolve to new code without a change to the application repository.
 
 ### Check the tools CI will use
 
@@ -129,8 +129,8 @@ For an upgrade:
 
 ```bash
 skelc check --skel-in ./skel
-skelc gen go --skel-in ./skel --go-out ./skeled
-go test ./...
+skelc gen go --skel-in ./skel --go-out ./skeled/golang
+go -C ./src/server test ./...
 ```
 
 Before promoting the result, complete the

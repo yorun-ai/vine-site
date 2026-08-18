@@ -84,7 +84,7 @@ Start the runtime and application in separate terminals:
 
 ```bash
 vine dev
-go run ./cmd/myapp
+go -C ./src/server run ./cmd/myapp
 ```
 
 An application created with `app.New` uses the default Link API at

@@ -7,6 +7,9 @@ sidebar_label: Rpc 服务
 
 Vine Rpc 的常规工作流是：在 Skel 中声明服务，由 skelc 生成接口，实现服务端，然后在 App 中注册 handler。业务代码一般不需要手工构造底层 `ServiceSpec`。
 
+本指南延续第一个应用和第一个契约教程的扁平目录。在[标准项目结构](../getting-started/filetree.md)中，
+Skel 命令从项目根目录执行，Go 命令从 `src/server/` 执行。
+
 ## 定义和生成
 
 ```skel title="greeting.skel"
