@@ -13,7 +13,7 @@ assembly, module lifecycle, persistent Hub state, and graceful shutdown.
 
 ## Prerequisites
 
-- Go 1.26.5 or later.
+- Go 1.26.6 or later.
 - Network access to download the `go.yorun.ai/vine` module, or an existing module
   cache.
 

@@ -212,7 +212,7 @@
     "message": "以 Markdown 格式复制页面"
   },
   "vine.copyPage.viewMarkdown": {
-    "message": "以 Markdown 查看 ↗"
+    "message": "以 Markdown 查看"
   },
   "vine.copyPage.viewDescription": {
     "message": "以纯文本形式查看此页面"
@@ -358,7 +358,7 @@
     "description": "The title of the tag list page"
   },
   "homepage.title": {
-    "message": "应用边界，在运行时依然清晰"
+    "message": "应用边界，运行时依然完整"
   },
   "homepage.kicker": {
     "message": "面向 Go 应用的 Vine"
@@ -391,7 +391,7 @@
     "message": "查看运行时架构"
   },
   "homepage.actions.skelPrompt": {
-    "message": "正在先定义契约？"
+    "message": "想先定义契约？"
   },
   "homepage.actions.skel": {
     "message": "阅读 Skel 概览"
@@ -406,7 +406,7 @@
     "message": "Hub"
   },
   "homepage.runtime.hub.description": {
-    "message": "配置与注册表"
+    "message": "配置与注册"
   },
   "homepage.runtime.portal.title": {
     "message": "Portal"
@@ -442,7 +442,7 @@
     "message": "运行时保证"
   },
   "homepage.sections.mechanisms.title": {
-    "message": "Vine 明确守住的边界"
+    "message": "Vine 让边界始终显式"
   },
   "homepage.sections.mechanisms.description": {
     "message": "装配、执行与拓扑共享同一套模型，让生成的能力进入运行时后依然可追溯、可审查。"
@@ -547,7 +547,7 @@
     "message": "运行行为保持可见"
   },
   "homepage.mechanisms.feedback.description": {
-    "message": "日志可以脱敏 Skel 标记的敏感值；调用链追踪与超时跨调用传播，健康检查、租约、配置监听与 TestKit 则补足 Diff 之外的运行信息。"
+    "message": "日志可以脱敏 Skel 标记的敏感值；调用链追踪与超时会跨调用传播，健康检查、租约、配置监听与 TestKit 则让代码 Diff 之外的行为也可见。"
   },
   "homepage.mechanisms.topology.label": {
     "message": "拓扑"

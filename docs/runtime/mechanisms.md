@@ -53,10 +53,10 @@ flowchart LR
 
 The sidecar boundary remains the expected topology even when processes are
 separated. Link may run in the application process or in another process or
-container on the same host, with the pair forming one deployment workload and
+container on the same host; the pair forms a single deployment workload and
 trust boundary. Vine still permits a non-loopback Link API for unusual
-deployments, but warns because the App-to-Link h2c path has no transport
-authentication; the deployment must protect and restrict that path itself.
+deployments, but warns that the App-to-Link h2c path has no transport
+authentication; the deployment must protect and restrict the path itself.
 
 ### What remains unchanged
 

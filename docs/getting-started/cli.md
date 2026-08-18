@@ -109,9 +109,35 @@ vine hub serve \
 
 Use an external NATS server:
 
+Before starting Hub or Link, use the NATS CLI to provision the required
+JetStream streams. This example uses file storage and one replica; adjust
+`--storage` and `--replicas` for the deployment topology:
+
+```bash
+export VINE_MQ_EXTERNAL_NATS_URL=nats://127.0.0.1:4222
+
+nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_EVENTS \
+  --subjects "event.>" \
+  --retention interest \
+  --storage file \
+  --replicas 1 \
+  --defaults
+
+nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_TASKS \
+  --subjects "task.>" \
+  --retention workqueue \
+  --storage file \
+  --replicas 1 \
+  --defaults
+```
+
+Verify both streams with `nats --server "$VINE_MQ_EXTERNAL_NATS_URL"
+stream info VINE_EVENTS` and the matching `VINE_TASKS` command, then start
+Hub:
+
 ```bash
 vine hub serve \
-  --mq-external-nats-url nats://127.0.0.1:4222 \
+  --mq-external-nats-url "$VINE_MQ_EXTERNAL_NATS_URL" \
   --db-sqlite-file ./hub.sqlite
 ```
 

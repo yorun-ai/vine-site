@@ -48,10 +48,10 @@ flowchart LR
   KPortal --> KLink
 ```
 
-即使拆分进程，sidecar 边界仍是预期拓扑。Link 可以位于应用进程内，也可以作为同一
-主机上的另一个进程或 container，两者通常属于同一个部署 workload 与信任边界。
-Vine 仍允许特殊部署使用非 loopback Link API，但会告警，因为 App 到 Link 的 h2c
-路径没有 transport 认证；必须由部署侧自行保护并限制访问。
+即使拆分进程，sidecar 边界仍是预期拓扑。Link 可以位于应用进程内，也可以位于同一
+主机上的另一个进程或 container 中，两者同属一个部署 workload 与信任边界。Vine
+仍允许特殊部署使用非 loopback Link API，但会发出告警，因为 App 到 Link 的 h2c
+路径没有传输层认证；部署方必须自行保护并限制这条路径。
 
 ### 保持不变的部分
 

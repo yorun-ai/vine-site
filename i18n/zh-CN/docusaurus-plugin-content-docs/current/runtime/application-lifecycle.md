@@ -150,10 +150,10 @@ sequenceDiagram
 - 只有 server 停止后，Vine 才取消应用根 context。
 - `AfterAppStop()` 执行时根 context 已取消。它适合本地资源释放，不适合远程工作。
 
-生命周期 hooks 没有自动 timeout。每个 hook 都必须为自己的网络调用和 goroutine
-等待设置边界。停止 hook 中的 panic 也不会转成可恢复的生命周期 error；它会立即
-中断剩余停止序列并传播给生命周期 owner。生命周期 panic 属于 fatal 错误，不支持
-recover 后继续使用该 runtime。
+生命周期 hook 不会获得自动 timeout；每个 hook 都必须自行限制网络调用和 goroutine
+汇合的时间。停止 hook 中的 panic 同样不会转成可恢复的生命周期 error，它会立即
+中断剩余的停止序列并传播给生命周期 owner。生命周期 panic 属于 fatal：恢复后继续
+使用该 runtime 不受支持。
 
 `RunFlag.Context` 是注入应用 context 的父级，但取消它本身不会调用 `StopGracefully()`。`StartAndWait()` 会等待 `SIGINT` 或 `SIGTERM`，然后执行优雅停止。直接持有应用的代码仍需自行安排调用 `StopGracefully()`。
 

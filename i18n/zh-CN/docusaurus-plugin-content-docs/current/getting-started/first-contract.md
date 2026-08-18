@@ -67,17 +67,29 @@ pub service GreetingService {
 skelc check --skel-in ./skel
 ```
 
-命令无错误退出即表示 domain、类型引用、命名和公开契约规则均有效。查看生成器识别出的 symbol：
+命令无错误退出即表示 domain、类型引用、命名和公开契约规则均有效。查看规范化后的 schema 声明：
 
 ```bash
-skelc symbol list --skel-in ./skel
+skelc schema list --skel-in ./skel
 ```
 
 预期包含：
 
-```text
-pub  data     demo.greeting.Greeting
-pub  service  demo.greeting.GreetingService
+```json
+[
+  {
+    "pub": true,
+    "name": "Greeting",
+    "type": "data",
+    "skelName": "demo.greeting.Greeting"
+  },
+  {
+    "pub": true,
+    "name": "GreetingService",
+    "type": "service",
+    "skelName": "demo.greeting.GreetingService"
+  }
+]
 ```
 
 ## 生成 Go 代码

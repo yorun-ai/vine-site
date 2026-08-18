@@ -245,11 +245,13 @@ app.WithRunnerNoRetry()
 not move the message to a dead-letter queue and does not create a failure
 record that the sender can query.
 
-The streams currently use memory storage. Successful publication protects
-against an individual handler failure, but it isn't a disk-durability
-guarantee across messaging-runtime restarts. When loss across runtime restart
-is unacceptable, use a database-backed outbox, a durable external workflow
-system, or another persisted record.
+Embedded NATS provisions the streams with memory storage. With external NATS,
+the pre-provisioned streams determine the storage policy. A successfully
+published message survives an individual handler failure, but durability across
+messaging-runtime restarts requires a file-backed external deployment that has
+been tested for recovery. If message loss across a restart is unacceptable,
+consider a database-backed outbox, a durable external workflow system, or
+another persisted record.
 
 ## At-least-once requires idempotency
 

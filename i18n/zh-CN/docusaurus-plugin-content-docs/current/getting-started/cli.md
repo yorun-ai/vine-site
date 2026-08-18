@@ -101,11 +101,36 @@ vine hub serve \
   --db-sqlite-file ./hub.sqlite
 ```
 
-指定外部 NATS：
+使用外部 NATS：
+
+启动 Hub 或 Link 前，先使用 NATS CLI 创建所需的 JetStream stream。下面的
+示例使用文件存储和单副本；请根据实际部署拓扑调整 `--storage` 和 `--replicas`：
+
+```bash
+export VINE_MQ_EXTERNAL_NATS_URL=nats://127.0.0.1:4222
+
+nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_EVENTS \
+  --subjects "event.>" \
+  --retention interest \
+  --storage file \
+  --replicas 1 \
+  --defaults
+
+nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_TASKS \
+  --subjects "task.>" \
+  --retention workqueue \
+  --storage file \
+  --replicas 1 \
+  --defaults
+```
+
+分别运行 `nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream info
+VINE_EVENTS` 和对应的 `VINE_TASKS` 命令，确认两个 stream 都已就绪，再启动
+Hub：
 
 ```bash
 vine hub serve \
-  --mq-external-nats-url nats://127.0.0.1:4222 \
+  --mq-external-nats-url "$VINE_MQ_EXTERNAL_NATS_URL" \
   --db-sqlite-file ./hub.sqlite
 ```
 
@@ -189,8 +214,8 @@ Hub、Link 与 Portal 的身份分别是
 组件身份授权。对应环境变量是 `VINE_MTLS_CA_FILE`、`VINE_MTLS_CERT_FILE` 和
 `VINE_MTLS_KEY_FILE`。
 
-使用 `app/linked` 的程序也接受相同参数和环境变量；还可以通过
-`linked.Option.MTLSCAFile`、`MTLSCertFile` 和 `MTLSKeyFile` 直接配置进程内 Link。
+使用 `app/linked` 的程序也支持相同的参数和环境变量；还可以通过
+`linked.Option.MTLSCAFile`、`MTLSCertFile` 和 `MTLSKeyFile` 直接配置内嵌 Link。
 
 Link 或 Portal 启用 mTLS 时，`--hub-endpoint` 必须使用 `https://`；后台服务注册
 也必须使用 HTTPS，组件不会静默接受旧的明文 endpoint。

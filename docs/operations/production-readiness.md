@@ -41,7 +41,7 @@ vine version --json
 skelc version
 ```
 
-Current Vine source requires Go `1.26.5` or later and reports a minimum skelc
+Current Vine source requires Go `1.26.6` or later and reports a minimum skelc
 version of `v0.9.0`. The `next` site is not a frozen release; [Version
 Compatibility](../getting-started/compatibility.md) explains how to record the
 exact revisions used by a deployment.
@@ -139,17 +139,39 @@ distribution layer; Redis is not a replacement for the database.
 
 :::warning Event and Task durability
 
-Vine currently creates Event and Task JetStream streams with memory storage. An
-external NATS service gives the runtime an independently operated endpoint, but
-the current stream configuration is not disk-backed. Do not promise message
-survival across NATS or cluster restarts without validating the exact failure
-scenario.
+With embedded NATS, Vine provisions the `VINE_EVENTS` and `VINE_TASKS`
+JetStream streams using memory storage.
+
+With external NATS, Vine uses existing streams and never creates or
+configures them itself. Before starting Hub or Link, provision `VINE_EVENTS`
+with the `event.>` subject and interest retention, and `VINE_TASKS` with the
+`task.>` subject and work-queue retention. The external NATS deployment
+determines whether each stream uses memory or file storage.
+
+For example, provision file-backed, single-replica streams with the NATS CLI:
+
+```bash
+nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_EVENTS \
+  --subjects "event.>" --retention interest \
+  --storage file --replicas 1 --defaults
+
+nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_TASKS \
+  --subjects "task.>" --retention workqueue \
+  --storage file --replicas 1 --defaults
+```
+
+Use `--storage memory` only when restart durability is not required. In a NATS
+cluster, set `--replicas` to the required redundancy level rather than copying
+the single-replica example unchanged.
+
+If production messages must survive NATS or cluster restarts, make file-backed
+storage and verified recovery behavior part of the deployment.
 
 :::
 
 - [ ] Size and monitor PostgreSQL or SQLite according to the chosen topology.
-- [ ] Verify the external NATS account has JetStream enabled before starting
-  Link.
+- [ ] Verify the external NATS account has JetStream enabled and both required
+  streams are provisioned before starting Hub or Link.
 - [ ] Test NATS disconnect and reconnect behavior with the same topology used in
   production.
 - [ ] Design Event listeners and Task runners for retry and duplicate delivery;

@@ -1,14 +1,5 @@
-import React, {
-  type KeyboardEvent,
-  type MouseEvent,
-  type ReactNode,
-  useEffect,
-  useRef,
-} from 'react'
-import OriginalDocBreadcrumbs from '@theme-original/DocBreadcrumbs'
-
-const activeBreadcrumbSelector =
-  '.breadcrumbs__item--active .breadcrumbs__link'
+import React, {type ReactNode, useEffect, useRef, useState} from 'react'
+import {useLocation} from '@docusaurus/router'
 
 function scrollToPageTop() {
   const pageScrollContainer =
@@ -29,53 +20,105 @@ function scrollToPageTop() {
 }
 
 export default function DocBreadcrumbs(): ReactNode {
-  const wrapperRef = useRef<HTMLDivElement>(null)
+  const {pathname} = useLocation()
+  const isOverviewPage = /\/docs\/?$/.test(pathname)
+  const titleBarRef = useRef<HTMLDivElement>(null)
+  const [pageTitle, setPageTitle] = useState('')
+  const [titleVisible, setTitleVisible] = useState(false)
 
   useEffect(() => {
-    const activeBreadcrumb =
-      wrapperRef.current?.querySelector<HTMLElement>(activeBreadcrumbSelector)
-
-    if (!activeBreadcrumb) {
+    if (isOverviewPage) {
+      setPageTitle('')
+      setTitleVisible(false)
       return undefined
     }
 
-    activeBreadcrumb.setAttribute('role', 'button')
-    activeBreadcrumb.setAttribute('tabindex', '0')
-    activeBreadcrumb.setAttribute('title', 'Back to page top')
+    const pageScrollContainer = document.querySelector<HTMLElement>(
+      '.docs-doc-page .main-wrapper',
+    )
+    const mainTitle = document.querySelector<HTMLElement>(
+      '.docs-doc-page .theme-doc-markdown h1',
+    )
+    const layoutContainer = mainTitle?.closest<HTMLElement>(
+      'main > .container',
+    )
+
+    setPageTitle('')
+    setTitleVisible(false)
+    if (!mainTitle) {
+      return undefined
+    }
+
+    setPageTitle(mainTitle.textContent?.trim() ?? '')
+    const updateTitleLayout = () => {
+      const titleBar = titleBarRef.current
+      if (!titleBar) {
+        return
+      }
+      if (window.innerWidth <= 996) {
+        titleBar.style.removeProperty('--docs-article-left')
+        return
+      }
+      titleBar.style.setProperty(
+        '--docs-article-left',
+        `${Math.round(mainTitle.getBoundingClientRect().left * 100) / 100}px`,
+      )
+    }
+    const updateTitleVisibility = () => {
+      const navbarBottom =
+        document
+          .querySelector<HTMLElement>('.navbar')
+          ?.getBoundingClientRect().bottom ?? 0
+      setTitleVisible(
+        mainTitle.getBoundingClientRect().bottom <= navbarBottom,
+      )
+    }
+
+    const titleResizeObserver = new ResizeObserver(() => {
+      updateTitleLayout()
+      updateTitleVisibility()
+    })
+    titleResizeObserver.observe(mainTitle)
+    if (layoutContainer) {
+      titleResizeObserver.observe(layoutContainer)
+    }
+    pageScrollContainer?.addEventListener(
+      'scroll',
+      updateTitleVisibility,
+      {passive: true},
+    )
+    window.addEventListener('scroll', updateTitleVisibility, {passive: true})
+    window.addEventListener('resize', updateTitleLayout)
+    window.addEventListener('resize', updateTitleVisibility)
+    updateTitleLayout()
+    updateTitleVisibility()
 
     return () => {
-      activeBreadcrumb.removeAttribute('role')
-      activeBreadcrumb.removeAttribute('tabindex')
-      activeBreadcrumb.removeAttribute('title')
+      titleResizeObserver.disconnect()
+      pageScrollContainer?.removeEventListener(
+        'scroll',
+        updateTitleVisibility,
+      )
+      window.removeEventListener('scroll', updateTitleVisibility)
+      window.removeEventListener('resize', updateTitleLayout)
+      window.removeEventListener('resize', updateTitleVisibility)
     }
-  })
-
-  const handleClick = (event: MouseEvent<HTMLDivElement>) => {
-    if (
-      (event.target as Element).closest(activeBreadcrumbSelector)
-    ) {
-      event.preventDefault()
-      scrollToPageTop()
-    }
-  }
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (
-      (event.key === 'Enter' || event.key === ' ') &&
-      (event.target as Element).closest(activeBreadcrumbSelector)
-    ) {
-      event.preventDefault()
-      scrollToPageTop()
-    }
-  }
+  }, [isOverviewPage, pathname])
 
   return (
     <div
       className="doc-breadcrumbs-bar"
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      ref={wrapperRef}>
-      <OriginalDocBreadcrumbs />
+      ref={titleBarRef}
+      data-title-visible={titleVisible ? 'true' : 'false'}>
+      <button
+        aria-hidden={!titleVisible}
+        className="doc-scroll-title"
+        onClick={scrollToPageTop}
+        tabIndex={titleVisible ? 0 : -1}
+        title="Back to page top"
+        type="button">
+        {pageTitle}
+      </button>
     </div>
   )
 }

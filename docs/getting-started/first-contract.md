@@ -70,17 +70,29 @@ skelc check --skel-in ./skel
 ```
 
 If the command exits without an error, the domain, type references, names, and
-public contract rules are valid. Inspect the symbols the generator recognizes:
+public contract rules are valid. Inspect the normalized schema declarations:
 
 ```bash
-skelc symbol list --skel-in ./skel
+skelc schema list --skel-in ./skel
 ```
 
 The output should include:
 
-```text
-pub  data     demo.greeting.Greeting
-pub  service  demo.greeting.GreetingService
+```json
+[
+  {
+    "pub": true,
+    "name": "Greeting",
+    "type": "data",
+    "skelName": "demo.greeting.Greeting"
+  },
+  {
+    "pub": true,
+    "name": "GreetingService",
+    "type": "service",
+    "skelName": "demo.greeting.GreetingService"
+  }
+]
 ```
 
 ## Generate Go Code

@@ -15,6 +15,7 @@ type DocusaurusWebpackConfig = Exclude<
 const config: Config = {
   title: 'Vine',
   tagline: 'A Go application framework built around explicit contracts',
+  favicon: 'favicon.ico',
   url: 'https://vine.yorun.ai',
   baseUrl: '/',
   organizationName: 'yorun-ai',
@@ -52,7 +53,7 @@ const config: Config = {
         baseUrl: '/',
       },
       'zh-CN': {
-        label: '简体中文',
+        label: '中文',
         htmlLang: 'zh-CN',
         baseUrl: '/zh-CN/',
       },
@@ -143,9 +144,9 @@ const config: Config = {
       title: 'Vine Framework',
       logo: {
         alt: 'Vine',
-        src: 'brand/logo-simple.png',
-        width: 36,
-        height: 36,
+        src: 'brand/vine-navbar.png',
+        width: 28,
+        height: 28,
       },
       items: [
         {
