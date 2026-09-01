@@ -36,7 +36,7 @@ func (*CheckoutApp) Name() string {
 | `EventerInitListeners` | Event 监听器 |
 | `TaskerInitRunners` | Task 执行器 |
 
-建议只声明应用真正需要的能力。Vine 会根据这些声明创建 endpoint，并通过 Link 注册到运行时。
+建议只声明应用需要的能力。Vine 会根据这些声明创建 endpoint，并通过 Link 注册到运行时。
 
 ## 选择启动方式
 

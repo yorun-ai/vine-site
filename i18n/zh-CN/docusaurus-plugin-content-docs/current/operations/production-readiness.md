@@ -6,7 +6,7 @@ slug: /production-readiness
 ---
 
 应用在 standalone 模式下能够工作，只说明业务装配已经跑通，并不能证明分布式部署
-可靠。进入 linked 或分离拓扑之前，应按实际准备部署的 Vine revision，逐项验证下面的
+可靠。进入 linked 或分离拓扑之前，应按你准备部署的 Vine revision，逐项验证下面的
 进程、网络、持久化、交付和停止边界。
 
 ## 选择部署拓扑
@@ -276,7 +276,7 @@ Portal 维护自己的 endpoint 订阅，并以轮询方式选择 RPC 和 Web
 
 Vine 不会在业务应用中挂载通用 `/healthz` route。如果部署平台要求 HTTP
 liveness 或 readiness endpoint，请添加由应用自己维护、并且语义与应用实际
-依赖一致的 route。同时保留端到端请求检查：仅检查进程不能验证 Hub、Link、
+依赖一致的 route。同时保留全链路请求检查：仅检查进程不能验证 Hub、Link、
 Portal、discovery 或 forwarding。
 
 timeout 与 trace 的验证方法见

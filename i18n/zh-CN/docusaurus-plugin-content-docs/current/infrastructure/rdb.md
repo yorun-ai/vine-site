@@ -101,7 +101,7 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 - 相同 `ConnURL` 会复用同一个连接
 - 连接池参数以第一次打开该 URL 时为准
-- 内部通过引用计数决定何时真正关闭
+- 内部通过引用计数决定何时关闭
 
 ### 连接池默认值
 

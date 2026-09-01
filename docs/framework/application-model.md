@@ -38,7 +38,7 @@ things, that makes them compete as one Event consumer group.
 | `EventerInitListeners` | Event listeners |
 | `TaskerInitRunners` | Task runners |
 
-Declare only the capabilities the application actually needs. Vine creates endpoints from these declarations and registers them with the runtime through Link.
+Declare only the capabilities the application needs. Vine creates endpoints from these declarations and registers them with the runtime through Link.
 
 ## Choose a startup mode
 

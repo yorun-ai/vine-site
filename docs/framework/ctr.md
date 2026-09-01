@@ -7,7 +7,7 @@ sidebar_label: Containers & Filters
 
 Vine invokes Rpc, Web, Event, and Task handlers through an execution container. For each call, the container creates an execution, prepares dependencies and context, runs filters in order, and finally invokes the target method.
 
-Business handlers use this mechanism automatically. You only need to reach for `core/ctr` directly when building a custom execution entry point or adding shared filters to a call chain.
+Business handlers use this mechanism automatically. You only need `core/ctr` directly when building a custom execution entry point or adding shared filters to a call chain.
 
 ## Core interfaces
 
@@ -206,7 +206,7 @@ Typical values include:
 
 ## When to use it
 
-`ctr` is particularly useful when you need to:
+`ctr` is useful when you need to:
 
 - Apply shared logic before and after handler or service methods.
 - Implement authorization, logging, instrumentation, or route rewriting in filters.

@@ -42,7 +42,7 @@ vine portal serve \
   --hub-endpoint http://127.0.0.1:7071
 ```
 
-You can also set `--hub-endpoint` through `VINE_HUB_ENDPOINT`. Portal's actual
+`--hub-endpoint` can also be set through `VINE_HUB_ENDPOINT`. Portal's actual
 HTTP and HTTPS listen addresses are not fixed command-line options; Portal entry
 and rule configuration stored in Hub determines them.
 

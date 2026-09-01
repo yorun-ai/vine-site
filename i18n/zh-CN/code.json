@@ -358,7 +358,7 @@
     "description": "The title of the tag list page"
   },
   "homepage.title": {
-    "message": "应用边界，运行时依然完整"
+    "message": "应用边界，在运行时依然清晰"
   },
   "homepage.kicker": {
     "message": "面向 Go 应用的 Vine"
@@ -445,7 +445,7 @@
     "message": "Vine 让边界始终显式"
   },
   "homepage.sections.mechanisms.description": {
-    "message": "装配、执行与拓扑共享同一套模型，让生成的能力进入运行时后依然可追溯、可审查。"
+    "message": "装配、执行与拓扑共享同一套模型，生成的能力进入运行时后仍可追溯、可审查。"
   },
   "homepage.sections.loop.eyebrow": {
     "message": "工作流"
@@ -454,7 +454,7 @@
     "message": "从声明到反馈的一条短路径"
   },
   "homepage.sections.loop.description": {
-    "message": "每一步都会产出下一步可检查的边界，使生成代码与运行行为始终连接到原始意图。"
+    "message": "每一步都产出下一步可检查的边界，生成代码与运行行为始终对应原始意图。"
   },
   "homepage.sections.guides.eyebrow": {
     "message": "文档路径"
@@ -463,7 +463,7 @@
     "message": "从手头的工作继续"
   },
   "homepage.sections.guides.description": {
-    "message": "根据你正在定义、构建或运维的边界选择阅读路径。"
+    "message": "根据你正在定义、构建或维护的边界选择阅读路径。"
   },
   "homepage.loop.declare.title": {
     "message": "声明"

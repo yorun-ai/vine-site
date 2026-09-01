@@ -136,7 +136,7 @@ Two constraints to keep in mind:
 - Each spec type can be created only once.
 - Different spec types with the same `Name()` cannot be created together.
 
-In other words, the framework enforces both spec-type uniqueness and application-name uniqueness.
+The framework enforces both spec-type uniqueness and application-name uniqueness.
 
 The `Option` accepted by the top-level `app.NewWithOption(...)` provides `LinkEndpoint`. You can also provide it through `--link-endpoint` or `VINE_LINK_ENDPOINT`.
 

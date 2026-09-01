@@ -46,7 +46,7 @@ sequenceDiagram
   App->>App: Run AfterAppStart
 ```
 
-These moments mean different things:
+Each moment has a different meaning:
 
 - **The process is listening**: the App server exists, but discovery may not
   contain the instance yet.

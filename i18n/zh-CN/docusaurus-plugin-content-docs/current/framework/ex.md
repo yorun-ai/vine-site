@@ -269,7 +269,7 @@ err := ex.New(ex.NotFound, "missing user")
 err.Type() // ApplicationError
 ```
 
-因此不需要单独判断“这是哪种 error 实现”，直接围绕 `Code` 和 `Type` 就行。
+因此不需要单独判断“这是哪种 error 实现”，直接使用 `Code` 和 `Type`。
 
 ### `Error()` 字符串格式
 
@@ -302,7 +302,7 @@ code, err := ex.ParseCode("NOT_FOUND")
 - 字符串合法时返回对应 `Code`
 - 非法时返回普通 `error`
 
-适合在配置、协议字段、日志回放等字符串场景中恢复 `Code`。
+用于在配置、协议字段、日志回放等字符串场景中恢复 `Code`。
 
 ### 常见判断方式
 

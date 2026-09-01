@@ -8,7 +8,7 @@ slug: /production-readiness
 An application that passes in standalone mode has proved its business assembly,
 not its distributed deployment. Before promoting a linked or separated topology,
 verify the process, network, persistence, delivery, and shutdown boundaries below
-against the Vine revision you will actually deploy.
+against the Vine revision you will deploy.
 
 ## Choose a deployment topology
 
@@ -315,7 +315,7 @@ boundaries as production:
 Vine doesn't mount a generic `/healthz` route on business applications. If the
 deployment platform requires an HTTP liveness or readiness endpoint, add an
 application-owned route whose semantics match the application's actual
-dependencies. Also keep an end-to-end request check: a process-level probe alone
+dependencies. Also keep a full-path request check: a process-level probe alone
 doesn't verify Hub, Link, Portal, discovery, or forwarding.
 
 For timeout and trace verification, see [Trace and

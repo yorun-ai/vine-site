@@ -12,9 +12,9 @@ Vine uses dependency injection at two different lifetimes:
 - An **execution lifetime** is created for every Rpc call, Web request, Event
   delivery, and Task run.
 
-The execution boundary is what lets a generated client, configuration value, DAO,
-cache, or locker automatically follow the current request context without turning
-every dependency into a global singleton.
+The execution boundary lets a generated client, configuration value, DAO, cache,
+or locker automatically follow the current request context without turning every
+dependency into a global singleton.
 
 ```mermaid
 flowchart TB
@@ -77,7 +77,7 @@ execution. Different executions never share execution-scoped instances.
 An execution should be treated as single-use. Once its filter chain returns, Vine
 completes it and rejects later resolution from the completed injector.
 
-## The important unscoped rule
+## The unscoped rule
 
 An unscoped binding doesn't have one fixed lifetime. Its effective fallback
 depends on which injector resolves it:

@@ -19,7 +19,7 @@ If you are trying Vine for the first time:
 3. Generate a service from the [first Skel contract](./first-contract.md).
 4. Implement and call it with the [Rpc guide](../framework/rpc-guide.md).
 
-You can do all four steps without starting a separate runtime service.
+Complete all four steps without starting a separate runtime service.
 
 :::info Before copying a command
 
