@@ -412,7 +412,7 @@ At that point:
 
 `IsBroken()` reports a snapshot. It doesn't reserve the lock or synchronize a
 following `Unlock()`: refresh can mark the lock broken between the two calls. The
-current public API has no atomic `TryUnlock`. Keep the critical section bounded,
+current public API has no atomic `TryUnlock`. Whether to check `IsBroken()` is your decision: it avoids the panic when releasing a possibly-broken lock, but it's optional—if the critical section stays within the lease or you already stop on `Lock.Context()`, you can rely on fail-fast. Keep the critical section bounded,
 stop work when `Lock.Context()` is canceled, and treat `Unlock()` as a fail-fast
 boundary. If lock loss must be handled as an ordinary error, wrap this API behind
 a narrow application recovery/error boundary or use a lock implementation with

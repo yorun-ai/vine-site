@@ -242,8 +242,8 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 :::caution
 
-示例中的 `IsBroken()` 检查只是 best effort，与 `Unlock()` 并不原子。如果锁在
-两次调用之间失效，`Unlock()` 仍会 panic。
+示例中的 `IsBroken()` 检查只是尽力而为，与 `Unlock()` 并不原子。如果锁在这两次
+调用之间失效，`Unlock()` 仍会 panic。
 
 :::
 
@@ -388,12 +388,11 @@ ctx := lock.Context()
 - 调用 `Unlock()` 会 panic
 - 这个 `Lock` 已经不可恢复
 
-`IsBroken()` 报告的只是一次状态快照；它不会保留锁，也不会与紧随其后的
-`Unlock()` 原子同步。refresh 可能在两次调用之间把锁标记为 broken，当前公共
-API 也没有原子的 `TryUnlock`。建议限制临界区时长，在 `Lock.Context()` 取消后
-立即停止工作，并把 `Unlock()` 视为 fail-fast 边界。如果业务必须把失锁当作
-普通 error 处理，应在应用自己的窄作用域 recovery/error 边界中封装此 API，
-或使用具备该契约的锁实现。
+`IsBroken()` 只是一次状态快照；它不会保留锁，也不会与随后的 `Unlock()` 原子
+同步。refresh 可能在两次调用之间把锁标成 broken，而当前公共 API 没有原子的
+`TryUnlock`。是否做 `IsBroken()` 判断由你决定：它只是在释放一个可能已 broken 的锁时避免 panic，但并非必需——如果临界区在租约内结束，或已响应 `Lock.Context()` 停止，可以直接依赖 fail-fast。建议限制临界区时长，在 `Lock.Context()` 取消后立即停止工作，并把
+`Unlock()` 当作 fail-fast 边界。如果业务必须把失锁当作普通 error 处理，应在
+应用自己的窄作用域 recovery/error 边界中封装此 API，或使用具备该契约的锁实现。
 
 ### 一次性语义
 
@@ -507,4 +506,4 @@ vine:cache:user:1
 - 需要缓存时，通过 `InitCaches(...)` 声明注入式 cache，或用 `NewCache(...)` 直接创建
 - 需要感知锁失效时，监听 `lock.Context()`
 - `Lock` 一旦 broken，就丢弃它并重新走一次新的 `Locker.Lock(...)`
-- `IsBroken()` 后紧接 `Unlock()` 不是原子的安全解锁操作，请勿依赖这种模式
+- `IsBroken()` 后紧接 `Unlock()` 无法原子地安全解锁，请勿依赖这种模式

@@ -88,7 +88,7 @@ Cache and Locker prefixes are derived from their full Go types by default. Overr
 Locks have a TTL and refresh while held by default. `Lock.Context()` is canceled
 when ownership becomes invalid, so long-running work must stop on that context.
 A broken lock is no longer owned and `Unlock` will panic; avoid an unconditional
-`defer lock.Unlock()` around work that can outlive the lease. `IsBroken` is a
+`defer lock.Unlock()` around work that can outlive the lease. Whether to add the `IsBroken()` check is up to you: it lets you release a possibly-broken lock without the panic, but it's optional—if the critical section ends within the lease or you already stop on `Lock.Context()`, fail-fast alone is fine. `IsBroken` is a
 state observation, not an atomic promise that a following `Unlock` cannot
 panic—the lock can break between those calls, and the current API has no
 `TryUnlock`. If that fail-fast contract is not acceptable, isolate it behind
