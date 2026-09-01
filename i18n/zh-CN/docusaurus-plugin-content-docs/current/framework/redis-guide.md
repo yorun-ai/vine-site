@@ -46,11 +46,10 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 业务对象能注入 `*MainRedis` 执行普通 Redis 命令，也能注入专用 Cache 或 Locker：
 
-:::caution fail-fast 解锁
+:::tip 原子安全解锁
 
-下面的预检查只是尽力而为，并不是原子的安全解锁操作。refresh 仍可能在
-`IsBroken()` 返回后把锁标记为 broken，导致 `Unlock()` panic。当前 API 未提供
-`TryUnlock` 方法。
+当失锁是正常情况时，使用 `TryUnlock()`。它把本地状态检查与带 token 校验的
+Redis 释放合并成一次操作；Redis 命令失败仍然 panic。
 
 :::
 
@@ -74,22 +73,23 @@ func (s *UserService) Rebuild(userID string) {
     if !s.rebuildWhileOwned(lock.Context(), userID) {
         return
     }
-    if lock.IsBroken() {
+    if !lock.TryUnlock() {
         return
     }
-    // 这里只是尽力而为的预检查，所有权仍可能在此刻变化。
-    lock.Unlock()
 }
 ```
 
 Cache 和 Locker 默认根据完整 Go 类型生成前缀。只有当两个类型确实需要共享
 同一个 Redis 命名空间时，才应覆盖 `KeyPrefix`。
 
-默认锁带 TTL 并在持有期间续期。锁所有权失效时，`Lock.Context()` 会被取消，
-长任务必须响应这个 context。失效的锁已不再属于当前持有者，调用 `Unlock`
-会 panic；对于可能超过租约的工作，不要无条件 `defer lock.Unlock()`。
-`IsBroken` 只是一次状态观测，并不能原子地保证紧随其后的 `Unlock` 不会
-panic——锁可能在两次调用之间失效，而且当前 API 没有 `TryUnlock`。如果无法
-接受这种 fail-fast 契约，应在应用自己的 recovery/error 边界中隔离它，或选择
-具备所需语义的锁 API。Redis 锁是协调租约，不提供 fencing token。Cache、
-KeyPrefix、锁状态和直接创建方式见 [Redis 参考](../infrastructure/redis.md)。
+锁默认带 TTL，持有期间会自动续期。所有权一旦失效，`Lock.Context()` 会被取消，
+长任务必须响应这个 context。后台 refresh 失败会把锁标记为 broken，原因可通过
+`context.Cause(lock.Context())` 取得；refresh goroutine 本身不会 panic。失效的锁
+不再属于当前持有者，调用 `Unlock` 会 panic；所以对可能超过租约的工作，不要
+无条件地 `defer lock.Unlock()`。`IsBroken()` 只是一次状态观测，不能原子地保证
+随后的 `Unlock()` 不 panic。需要原子地检查状态并做带 token 校验的释放时，用
+`TryUnlock()`；锁不可用或所有权丢失时返回 `false`。Redis 锁是协调租约，不提供
+fencing token。
+`Lock(...)` 或 `Unlock()` 同步调用中的 Redis 错误会 panic；如果 `Unlock()` 带
+token 校验的删除发现所有权已经丢失，也会 panic。Cache、KeyPrefix、
+锁状态和直接创建方式见 [Redis 参考](../infrastructure/redis.md)。

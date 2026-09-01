@@ -257,10 +257,11 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 Finally, inject and use the locker in business code:
 
-:::caution
+:::tip Atomic safe-unlock
 
-The `IsBroken()` check in this example is best effort. It is not atomic with
-`Unlock()`, which can still panic if the lock breaks between the two calls.
+Use `TryUnlock()` when losing the lock is a normal case. It combines the local
+lock-state check and the token-checked Redis release into one operation. Redis
+command failures still panic per the infrastructure fail-fast policy.
 
 :::
 
@@ -279,11 +280,9 @@ func (s *UserService) RebuildUser(userID string) {
     if !s.rebuildWhileOwned(lock.Context(), userID) {
         return
     }
-    if lock.IsBroken() {
+    if !lock.TryUnlock() {
         return
     }
-    // Fail-fast if ownership changes after the pre-check.
-    lock.Unlock()
 }
 
 ```
@@ -309,7 +308,9 @@ Return values:
 - `(*Lock, true)`: the lock was acquired.
 - `(*Lock, false)`: another holder already owns the lock.
 
-Redis infrastructure errors panic rather than being returned.
+Redis infrastructure errors in synchronous `Lock(...)` and `Unlock()` calls
+panic rather than being returned. Lock contention is not an infrastructure
+error, so it remains the `false` return case.
 
 Actual Redis keys follow this pattern:
 
@@ -374,7 +375,10 @@ This context is canceled when:
 - The application or the current execution's parent context is canceled.
 
 Listen to this context when business logic needs to detect that a lock is no
-longer valid.
+longer valid. When background refresh breaks the lock, `context.Cause(ctx)`
+contains the ownership, lease, or Redis refresh failure that caused the
+cancellation. A successful manual `Unlock()` cancels the context with the
+ordinary `context.Canceled` cause.
 
 ### Refresh Policy
 
@@ -395,6 +399,11 @@ When a normal refresh tick occurs:
 4. Vine breaks the lock when the retry cap or lease deadline is reached,
    whichever comes first.
 
+Refresh runs in a background goroutine. It never panics from that goroutine.
+After ownership loss or an exhausted refresh budget, it records the failure as
+the lock context's cancellation cause, marks the lock broken, and cancels the
+context.
+
 The local deadline reserves 10% of the Redis TTL, capped at one second. Each
 refresh command uses the earlier of its two-second timeout and that local
 deadline, so a command and its retry budget can never extend beyond the lease
@@ -407,16 +416,36 @@ If refresh ultimately fails, the `Lock` enters the `broken` state.
 At that point:
 
 - `IsBroken() == true`.
-- Calling `Unlock()` panics.
+- `context.Cause(lock.Context())` reports why the lock broke.
+- Calling `Unlock()` panics with that cause.
 - The `Lock` cannot recover.
 
+For a lock that is still locally valid, `Unlock()` performs a token-checked
+Redis delete. A Redis command failure or a result other than `1` marks the lock
+broken, cancels its context with the failure, and panics synchronously. A result
+of `0` means the token is no longer the owner; it is not treated as a successful
+or idempotent unlock.
+
 `IsBroken()` reports a snapshot. It doesn't reserve the lock or synchronize a
-following `Unlock()`: refresh can mark the lock broken between the two calls. The
-current public API has no atomic `TryUnlock`. Keep the critical section bounded,
-stop work when `Lock.Context()` is canceled, and treat `Unlock()` as a fail-fast
-boundary. If lock loss must be handled as an ordinary error, wrap this API behind
-a narrow application recovery/error boundary or use a lock implementation with
-that contract.
+following `Unlock()`: refresh can mark the lock broken between the two calls.
+`TryUnlock()` is the safe replacement for that two-call pattern—it returns `false`
+when the lock was not acquired, is already released or broken, or its token no
+longer owns the Redis key; Redis command errors still panic. Keep the critical
+section bounded, stop work when `Lock.Context()` is canceled, and use `Unlock()`
+when lock loss should stay a fail-fast boundary.
+
+### `Lock.TryUnlock()`
+
+`TryUnlock()` combines the local state check and release attempt under the
+lock's mutex. Its token comparison and delete also run atomically in Redis:
+
+- `true`: this token owned the Redis key and deleted it.
+- `false`: the lock was never acquired, was already released or broken, or the
+  Redis key is no longer owned by this token.
+- Panic: Redis could not execute the release command.
+
+An ownership-mismatch result marks the lock broken and cancels its context with
+the ownership-loss cause before returning `false`.
 
 ### One-Shot Semantics
 
@@ -535,5 +564,5 @@ The default `KeyPrefix()` rules match those for `Locker`:
 - Listen to `lock.Context()` when you need to detect lock invalidation.
 - Once a `Lock` is broken, discard it and acquire a new one through
   `Locker.Lock(...)`.
-- Do not treat `IsBroken()` followed by `Unlock()` as an atomic safe-unlock
-  operation.
+- Use `TryUnlock()` instead of `IsBroken()` followed by `Unlock()` when lock
+  loss should return `false` rather than panic.

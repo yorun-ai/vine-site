@@ -46,11 +46,11 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 Business objects can inject `*MainRedis` to execute ordinary Redis commands, or inject a dedicated Cache or Locker:
 
-:::caution Fail-fast unlock
+:::tip Atomic safe-unlock
 
-The pre-check below is best effort, not an atomic safe-unlock operation.
-`Unlock()` can still panic if refresh marks the lock broken after `IsBroken()`
-returns. The current API has no `TryUnlock`.
+Use `TryUnlock()` when losing the lock is a normal case. It combines the local
+state check and the token-checked Redis release into one operation. Redis command
+failures still panic.
 
 :::
 
@@ -74,11 +74,9 @@ func (s *UserService) Rebuild(userID string) {
     if !s.rebuildWhileOwned(lock.Context(), userID) {
         return
     }
-    if lock.IsBroken() {
+    if !lock.TryUnlock() {
         return
     }
-    // Best-effort pre-check only: ownership can still change here.
-    lock.Unlock()
 }
 ```
 
@@ -87,12 +85,15 @@ Cache and Locker prefixes are derived from their full Go types by default. Overr
 
 Locks have a TTL and refresh while held by default. `Lock.Context()` is canceled
 when ownership becomes invalid, so long-running work must stop on that context.
-A broken lock is no longer owned and `Unlock` will panic; avoid an unconditional
-`defer lock.Unlock()` around work that can outlive the lease. `IsBroken` is a
-state observation, not an atomic promise that a following `Unlock` cannot
-panic—the lock can break between those calls, and the current API has no
-`TryUnlock`. If that fail-fast contract is not acceptable, isolate it behind
-an application-owned recovery/error boundary or choose a lock API with the
-required semantics. Redis locks are coordination leases, not fencing tokens.
+A background refresh failure marks the lock broken; the cause is available
+through `context.Cause(lock.Context())`, and the refresh goroutine itself does
+not panic. A broken lock is no longer owned and `Unlock` panics, so don't use an
+unconditional `defer lock.Unlock()` around work that can outlive the lease.
+`IsBroken()` is a one-time state observation, not a guarantee that a following
+`Unlock()` won't panic. Use `TryUnlock()` for an atomic state check plus
+token-checked release; it returns `false` when the lock is unavailable or
+ownership is lost. Redis locks are coordination leases, not fencing tokens.
+Synchronous Redis failures from `Lock(...)` or `Unlock()` panic; `Unlock()` also
+panics when its token-checked delete finds ownership is already gone.
 See the [Redis Reference](../infrastructure/redis.md) for Cache, KeyPrefix, lock states, and
 direct construction.

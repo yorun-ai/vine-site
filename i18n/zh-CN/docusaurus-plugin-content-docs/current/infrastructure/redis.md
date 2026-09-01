@@ -240,10 +240,10 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 最后在业务里注入并使用：
 
-:::caution
+:::tip 原子安全解锁
 
-示例中的 `IsBroken()` 检查只是 best effort，与 `Unlock()` 并不原子。如果锁在
-两次调用之间失效，`Unlock()` 仍会 panic。
+当失锁是正常情况时，使用 `TryUnlock()`。它把本地状态检查与带 token 校验的
+Redis 释放合并成一次操作。Redis 命令失败仍遵循基础设施 fail-fast 原则 panic。
 
 :::
 
@@ -262,11 +262,9 @@ func (s *UserService) RebuildUser(userID string) {
     if !s.rebuildWhileOwned(lock.Context(), userID) {
         return
     }
-    if lock.IsBroken() {
+    if !lock.TryUnlock() {
         return
     }
-    // 如果所有权在预检查后变化，这里会 fail-fast。
-    lock.Unlock()
 }
 
 ```
@@ -292,7 +290,8 @@ lock, ok := locker.Lock(key)
 - `(*Lock, true)`：成功拿到锁
 - `(*Lock, false)`：锁已被别人持有
 
-Redis 基础设施错误会直接 panic，不走返回值。
+同步 `Lock(...)` 和 `Unlock()` 调用中的 Redis 基础设施错误会直接 panic，不走
+返回值。锁竞争不是基础设施错误，因此仍使用 `false` 返回值。
 
 实际 Redis key 规则是：
 
@@ -354,7 +353,10 @@ ctx := lock.Context()
 - refresh 命令或下一次 retry 无法在保守的本地租约截止点前完成
 - 应用或当前执行的父 context 被取消
 
-如果业务逻辑需要感知“锁已经失效”，应该监听这个 context。
+如果业务逻辑需要感知“锁已经失效”，应该监听这个 context。后台 refresh 把锁
+标记为 broken 时，`context.Cause(ctx)` 会给出导致取消的所有权、租约或 Redis
+refresh 失败原因。手动成功调用 `Unlock()` 时，cause 是普通的
+`context.Canceled`。
 
 ### refresh 策略
 
@@ -374,6 +376,10 @@ ctx := lock.Context()
    租约截止点内时才重试
 4. retry 次数达到上限或租约截止点到期时标记 broken，以先发生者为准
 
+refresh 在后台 goroutine 中运行，不会从这个 goroutine panic。确认所有权丢失或
+refresh 预算耗尽后，它会把失败原因记录为锁 context 的取消 cause，将锁标记为
+broken，并取消这个 context。
+
 本地截止点会预留 Redis TTL 的 10%（最多 1 秒）作为安全余量。每次 refresh 命令
 使用“两秒 timeout”和“本地截止点”中更早的时间，因此命令和它的 retry 预算都
 不可能超出 Vine 仍视为有效的租约。
@@ -385,15 +391,33 @@ ctx := lock.Context()
 此时：
 
 - `IsBroken() == true`
-- 调用 `Unlock()` 会 panic
+- `context.Cause(lock.Context())` 会报告锁失效的原因
+- 调用 `Unlock()` 会携带这个原因 panic
 - 这个 `Lock` 已经不可恢复
 
-`IsBroken()` 报告的只是一次状态快照；它不会保留锁，也不会与紧随其后的
-`Unlock()` 原子同步。refresh 可能在两次调用之间把锁标记为 broken，当前公共
-API 也没有原子的 `TryUnlock`。建议限制临界区时长，在 `Lock.Context()` 取消后
-立即停止工作，并把 `Unlock()` 视为 fail-fast 边界。如果业务必须把失锁当作
-普通 error 处理，应在应用自己的窄作用域 recovery/error 边界中封装此 API，
-或使用具备该契约的锁实现。
+对于本地仍有效的锁，`Unlock()` 会执行带 token 校验的 Redis 删除。Redis 命令
+失败或返回值不是 `1` 时，会把锁标记为 broken，以失败原因取消锁 context，并在
+同步调用路径 panic。返回 `0` 表示 token 已不再是锁的持有者，不会被当作成功或
+幂等解锁。
+
+`IsBroken()` 只是一次状态快照；它不会保留锁，也不会与随后的 `Unlock()` 原子
+同步。refresh 可能在两次调用之间把锁标成 broken。原子的 `TryUnlock()` 是这类
+两步调用的安全替代：锁未获取、已释放、已 broken 或 token 不再持有 Redis key
+时返回 `false`，Redis 命令错误仍然 panic。建议限制临界区时长，在
+`Lock.Context()` 取消后立即停止工作；需要 fail-fast 时用 `Unlock()`，把失锁当作
+预期情况时用 `TryUnlock()`。
+
+### `Lock.TryUnlock()`
+
+`TryUnlock()` 会在锁的 mutex 内完成本地状态检查和释放尝试；token 比较与删除也
+通过 Redis 脚本原子执行：
+
+- `true`：当前 token 持有 Redis key，并已将其删除
+- `false`：锁未获取、已释放、已 broken，或 Redis key 已不再属于当前 token
+- panic：Redis 无法执行释放命令
+
+所有权不匹配时，方法会先把锁标记为 broken，并用所有权丢失原因取消锁 context，
+再返回 `false`。
 
 ### 一次性语义
 
@@ -405,7 +429,7 @@ API 也没有原子的 `TryUnlock`。建议限制临界区时长，在 `Lock.Con
 也就是说：
 
 - 需要新的加锁动作时，重新调用 `Locker.Lock(...)`
-- 不存在对旧 `Lock` 做恢复或重新加锁的流程
+- 旧的 `Lock` 无法恢复，也不能重新加锁
 
 ## Cache
 
@@ -507,4 +531,5 @@ vine:cache:user:1
 - 需要缓存时，通过 `InitCaches(...)` 声明注入式 cache，或用 `NewCache(...)` 直接创建
 - 需要感知锁失效时，监听 `lock.Context()`
 - `Lock` 一旦 broken，就丢弃它并重新走一次新的 `Locker.Lock(...)`
-- `IsBroken()` 后紧接 `Unlock()` 不是原子的安全解锁操作，请勿依赖这种模式
+- 失锁应返回 `false` 而不是 panic 时，使用 `TryUnlock()`，不要组合
+  `IsBroken()` 与 `Unlock()`

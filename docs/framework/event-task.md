@@ -136,14 +136,15 @@ Vine forms an Event consumer identity from the Event's Skel name and the
 listener App name:
 
 - Two different App names each receive their own copy.
-- Two instances with the same App name compete for that App's copy.
+- Instances sharing an App name compete for the same copy; only one of them
+  receives each event.
 - A retry may run on a different instance with the same App name.
-- Concurrency and retries mean handlers must not depend on global ordering.
-- Events are not a replayable audit log. Do not assume a listener that appears
-  later receives facts published before matching consumer interest existed.
+- Concurrency and retries mean handlers cannot rely on global ordering.
+- Events are not a replayable audit log. A listener only receives facts
+  published after its consumer interest existed, not facts published before.
 
-Use distinct App names when two logical consumers must each observe the Event.
-Use the same App name for horizontally scaled instances of one logical
+Use distinct App names when two logical consumers must each receive the Event.
+Use one App name for the horizontally scaled instances of a single logical
 consumer.
 
 ## Launch a Task
@@ -203,13 +204,13 @@ flowchart LR
 
 ### How Task runners are selected
 
-Vine forms one consumer identity from the Task's Skel name. All Links and all
-App instances registered for that Task compete in the same logical work queue:
+Vine forms one consumer identity from the Task's Skel name. All App instances
+registered for that Task compete in one logical work queue:
 
 - One message is dispatched to one selected runner.
 - The launching App does not choose a target App or instance.
-- Within one Link, available local instances are used round-robin.
-- A retry can run on another App, Link, or instance.
+- Available instances are used round-robin.
+- A retry can run on another App or instance.
 - Task execution has no synchronous result channel back to the launcher.
 
 If two teams need independent work for the same business occurrence, define
@@ -270,7 +271,7 @@ effect idempotent. Common approaches are:
 - a database unique constraint on the business ID;
 - an atomic "record processed + apply state transition" transaction;
 - idempotent upserts;
-- calling an external API with its idempotency-key feature.
+- calling an external API with its idempotency key.
 
 Do not mark a non-idempotent operation `NoRetry` merely to avoid duplicates:
 that trades duplicate risk for silent loss after the first failure. Decide

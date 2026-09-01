@@ -126,17 +126,15 @@ flowchart LR
 
 ### Event 如何选择接收方
 
-Vine 使用 Event 的 Skel 名和监听 App 名组成 Event consumer identity：
+Vine 用 Event 的 Skel 名和监听 App 名组成消费方标识：
 
-- 两个不同 App 名各收到一份。
-- 同一个 App 名的两个实例竞争该 App 的一份。
-- 重试可能改由同名 App 的另一个实例执行。
+- 不同的 App 名各自收到一份。
+- App 名相同的多个实例竞争同一份，每条事件只会交给其中一个实例。
+- 重试可能落到同一个 App 名下的另一个实例。
 - 并发与重试意味着 Handler 不能依赖全局顺序。
-- Event 不是可回放审计日志。不要假设稍后出现的 Listener 会收到在匹配 consumer
-  interest 建立之前发布的事实。
+- Event 不是可回放的审计日志。Listener 只会收到在其 consumer interest 建立之后发布的事实，不会补收更早的。
 
-两个逻辑消费者都必须观察 Event 时，应使用不同 App 名；同一个逻辑消费者需要
-水平扩容时，应让多个实例使用相同 App 名。
+两个逻辑消费者都要收到事件时，应使用不同的 App 名；同一个逻辑消费者要水平扩容时，应让多个实例共用同一个 App 名。
 
 ## 启动 Task
 
@@ -195,13 +193,13 @@ flowchart LR
 
 ### Task 如何选择 Runner
 
-Vine 仅使用 Task 的 Skel 名组成 consumer identity。为该 Task 注册的所有 Link 和
-App 实例都在同一个逻辑 work queue 中竞争：
+Vine 仅使用 Task 的 Skel 名组成消费方标识。为该 Task 注册的所有 App 实例
+都在同一个逻辑 work queue 中竞争：
 
 - 一条消息只会分派给一个选中的 Runner。
 - 启动 Task 的 App 不选择目标 App 或实例。
-- 在同一个 Link 内，可用本地实例按轮询使用。
-- 重试可能改由另一个 App、Link 或实例执行。
+- 可用实例会按轮询被使用。
+- 重试可能改由另一个 App 或实例执行。
 - Task 执行没有向 launcher 同步返回结果的通道。
 
 如果两个团队需要针对同一业务事实分别执行工作，应定义两个 Task，或显式启动
@@ -255,7 +253,7 @@ Vine 不会向生成的 payload 添加公开 delivery ID。应在契约中放置
 - 对业务 ID 建数据库唯一约束；
 - 在一个事务内原子地“记录已处理 + 执行状态迁移”；
 - 使用幂等 upsert；
-- 调用外部 API 时使用其 idempotency-key 能力。
+- 调用外部 API 时使用其幂等键。
 
 不要仅为避免重复就给非幂等操作设置 `NoRetry`——这只是把重复风险换成了第一次失败
 后的静默丢失。应选择业务能对账和修复的结果，并在必要时保留可审计业务记录。
