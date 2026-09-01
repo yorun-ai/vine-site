@@ -264,7 +264,7 @@ err := ex.New(ex.NotFound, "missing user")
 err.Type() // ApplicationError
 ```
 
-You don't need to inspect the concrete error implementation; use `Code` and `Type` instead.
+Don't inspect the concrete error implementation; use `Code` and `Type` instead.
 
 ### `Error()` string format
 
@@ -293,7 +293,7 @@ code, err := ex.ParseCode("NOT_FOUND")
 - A valid string returns the corresponding `Code`.
 - An invalid string returns a standard `error`.
 
-This is useful when restoring a `Code` from configuration, protocol fields, or log replay.
+Use it to restore a `Code` from configuration, protocol fields, or log replay.
 
 ### Common checks
 
@@ -341,7 +341,7 @@ defer func() {
 }()
 ```
 
-Here's what it does:
+Behavior:
 
 - A `nil` recovered value returns `nil`.
 - An `ex.Error` is returned directly, whether it is an `ApplicationError` or `SystemError`.

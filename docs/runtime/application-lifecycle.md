@@ -77,7 +77,7 @@ single-use: they cannot be started twice or restarted after shutdown.
 dependencies, started its endpoints and capabilities, registered with Link when
 registration is needed, and completed all `AfterAppStart()` hooks.
 
-It has four useful conceptual phases.
+It has four conceptual phases.
 
 ### 1. Connect and assemble
 

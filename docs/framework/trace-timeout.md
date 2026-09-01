@@ -5,7 +5,7 @@ sidebar_label: Tracing & Timeouts
 
 # Tracing & Timeouts
 
-When a request enters Vine, trace context follows it through Portal, auth/check, Rpc/Web handlers, and downstream calls. Timeout starts at the entry point and is converted to the remaining time before each forward. Application code rarely needs to parse these headers manually; just keep using the injected context for downstream calls.
+When a request enters Vine, trace context follows it through Portal, auth/check, Rpc/Web handlers, and downstream calls. Timeout starts at the entry point and is converted to the remaining time before each forward. Application code rarely needs to parse these headers manually. Keep using the injected context for downstream calls.
 
 ## Headers You Will See
 
@@ -200,7 +200,7 @@ incoming trace
       -> auth/check/forward trace
 ```
 
-`ParentSpan()` only exists on the local trace object. You can use it for logs or future OTel mapping, but it isn't written into headers.
+`ParentSpan()` only exists on the local trace object. Use it for logs or future OTel mapping, but it isn't written into headers.
 
 ## Relationship With OTel
 

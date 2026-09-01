@@ -55,8 +55,8 @@ use inproc endpoints, so no runtime service needs to be started ahead of time.
 
 - You only need one business binary, which makes this the best mode for the
   [first application tutorial](./tutorial-first-app.md).
-- `standalone.Option` lets you configure SQLite/PostgreSQL, a seed YAML file, and
-  the Dashboard URL.
+- `standalone.Option` configures SQLite/PostgreSQL, a seed YAML file, and the
+  Dashboard URL.
 - Hub and Link skip heartbeat, TTL lease renewal, and the registry sweeper.
   Registrations are removed explicitly when the application stops.
 - Hub and Link do not expose separate management ports. Portal can still listen
@@ -185,7 +185,7 @@ app.NewWithOption[*HelloApp](app.Option{
 }).StartAndWait()
 ```
 
-You can omit the endpoint from the code and set an environment variable instead:
+Omit the endpoint from the code and set an environment variable instead:
 
 ```bash
 VINE_LINK_ENDPOINT=http://127.0.0.1:7079 ./hello-app

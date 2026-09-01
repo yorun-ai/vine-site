@@ -106,7 +106,7 @@ The underlying rules:
 
 - Components with the same `ConnURL` reuse one connection.
 - The first component to open that URL determines its pool settings.
-- An internal reference count determines when the connection is actually closed.
+- An internal reference count determines when the connection is closed.
 
 ### Connection-Pool Defaults
 

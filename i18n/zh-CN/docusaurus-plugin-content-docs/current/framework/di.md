@@ -242,7 +242,7 @@ b.BindInstance(existingClient)
 
 ### 抽象工厂
 
-如果目标是 interface，也可以使用 `ToAbstractFactory(...)` 绑定抽象工厂。它适合做“同一个接口，根据运行时再决定给哪个实现”的场景。
+目标是 interface 时，使用 `ToAbstractFactory(...)` 在运行时选择具体实现。
 
 ## 字段注入
 

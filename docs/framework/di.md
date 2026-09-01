@@ -241,7 +241,7 @@ This binding:
 
 ### Abstract factories
 
-For an interface target, you can also use `ToAbstractFactory(...)`. This helps when the concrete implementation of an interface must be selected at runtime.
+For an interface target, use `ToAbstractFactory(...)` when the concrete implementation must be selected at runtime.
 
 ## Field injection
 

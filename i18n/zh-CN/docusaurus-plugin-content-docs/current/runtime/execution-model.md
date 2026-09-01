@@ -62,7 +62,7 @@ Handler、Listener、Runner 与 filter 实例都在该 execution 中创建。不
 
 请把 execution 视为一次性的。Filter chain 返回后，Vine 会完成该 execution，并拒绝继续从已完成的 injector 解析依赖。
 
-## 关键的 unscoped 规则
+## unscoped 规则
 
 没有显式 scope 的 binding 并不具有一个固定生命周期。它的有效 fallback 取决于由哪一种 injector 解析：
 

@@ -206,7 +206,7 @@ execution.Execute([]any{"alice"}, func(s *di.Seeder) {
 
 ## 适用场景
 
-`ctr` 特别适合这几类场景：
+`ctr` 适合这些场景：
 
 - Handler / service 方法前后挂统一逻辑
 - 通过 filter 做鉴权、日志、埋点、路由改写

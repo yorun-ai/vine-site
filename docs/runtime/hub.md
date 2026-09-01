@@ -140,9 +140,9 @@ with a TTL and renews their leases through heartbeats. When Hub's registry
 sweeper finds an expired lease, it actively unregisters the instance and
 publishes a deletion event.
 
-This means that if Link or a business application exits unexpectedly, Portal and
-other Link instances remove the corresponding endpoint after its registration
-expires instead of continuing to forward requests to a dead instance.
+If Link or a business application exits unexpectedly, Portal and other Link
+instances remove the corresponding endpoint after its registration expires
+instead of continuing to forward requests to a dead instance.
 
 ## Inproc Mode
 

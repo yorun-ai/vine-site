@@ -133,7 +133,7 @@ instance := app.New[*DemoApp]()
 - 同一个 spec 类型只能创建一次
 - 不同 spec 类型如果 `Name()` 相同，也不能同时创建
 
-说白了，框架同时约束了“spec 类型唯一”和“应用名唯一”。
+框架同时约束了“spec 类型唯一”和“应用名唯一”。
 
 顶层 `app.NewWithOption(...)` 的 `Option` 提供 `LinkEndpoint`，也可以通过 `--link-endpoint` 或 `VINE_LINK_ENDPOINT` 提供。
 

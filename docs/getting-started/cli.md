@@ -188,7 +188,7 @@ can supply a host, port, and path, such as
 temporary self-signed Web certificate until a matching public certificate is
 configured, so browsers will report it as untrusted during bootstrap.
 
-You can also pass these settings through environment variables:
+These settings are also available as environment variables:
 
 - `VINE_CONTROL_LISTEN`
 - `VINE_ADMIN_LISTEN`
