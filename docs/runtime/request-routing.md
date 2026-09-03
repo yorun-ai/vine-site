@@ -189,17 +189,18 @@ supervisor.
 
 Standalone keeps the registration, snapshot, proxy, round-robin, metadata, and
 value-isolation boundaries. Calls still pass through Link's routing logic.
-Method specs structurally clone in-process Rpc arguments and results through
-generated clone hooks. Methods with arguments or results must provide the
-corresponding hook. Caller and handler mutations cannot cross the Rpc boundary.
+Method specs structurally clone in-process Rpc arguments and results via the
+generated clone hooks, and every method with arguments or results carries the
+matching hook. Mutations made by the caller or handler cannot cross the Rpc
+boundary.
 
 In-process Rpc guarantees value isolation only. JSON or CBOR encoding,
 transport normalization, custom marshal/unmarshal methods, and codec failures
 are outside its contract and may vary with the generated spec. Vine's guarantee
 covers skelc-managed generated packages, not handwritten files added to them. See
 [Skel Go generation](https://skel.yorun.ai/docs/generation/go) for the package
-ownership rules. Use `vine dev` or a separated deployment when a test must
-exercise the application Rpc wire boundary.
+ownership rules. When a test must exercise the application Rpc wire boundary,
+use `vine dev` or a separated deployment.
 
 What it intentionally does not reproduce:
 
