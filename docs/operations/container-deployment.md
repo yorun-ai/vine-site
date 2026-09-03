@@ -17,21 +17,25 @@ directory of the Vine repository.
 
 ## Choose an image version
 
+Official images are published to GitHub Container Registry (GHCR) for every
+Vine release. They support Linux on AMD64 and ARM64.
+
 | Component | Image | Command |
 | --- | --- | --- |
-| Hub | `docker.io/yorunai/vine-hub:vX.Y.Z` | `vine hub serve` |
-| Link | `docker.io/yorunai/vine-link:vX.Y.Z` | `vine link serve` |
-| Portal | `docker.io/yorunai/vine-portal:vX.Y.Z` | `vine portal serve` |
+| Hub | `ghcr.io/yorun-ai/vine-hub:vX.Y.Z` | `vine hub serve` |
+| Link | `ghcr.io/yorun-ai/vine-link:vX.Y.Z` | `vine link serve` |
+| Portal | `ghcr.io/yorun-ai/vine-portal:vX.Y.Z` | `vine portal serve` |
 
 Use the same immutable Vine release tag for all three components:
 
 ```bash
-docker pull docker.io/yorunai/vine-hub:vX.Y.Z
-docker pull docker.io/yorunai/vine-link:vX.Y.Z
-docker pull docker.io/yorunai/vine-portal:vX.Y.Z
+docker pull ghcr.io/yorun-ai/vine-hub:vX.Y.Z
+docker pull ghcr.io/yorun-ai/vine-link:vX.Y.Z
+docker pull ghcr.io/yorun-ai/vine-portal:vX.Y.Z
 ```
 
-`latest` is useful for evaluation, but do not use it for a stable deployment.
+`latest` tracks the latest non-prerelease release. It is useful for evaluation,
+but do not use it for a stable deployment.
 
 The images run as an unprivileged `vine` user. The Kubernetes base drops all
 capabilities from Hub and Link and grants `NET_BIND_SERVICE` only to Portal for
