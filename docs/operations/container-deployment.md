@@ -10,21 +10,20 @@ Vine provides separate container images for Hub, Link, and Portal. The images
 run the corresponding `vine ... serve` command and accept the same `VINE_*`
 environment variables as the CLI.
 
-Use this guide after choosing a [deployment topology](../getting-started/deployment-modes.md).
-The Kubernetes manifests described here are maintained in the
+Choose a [deployment topology](../getting-started/deployment-modes.md) before
+using this guide. The Kubernetes files live in the
 [`examples/k8s`](https://github.com/yorun-ai/vine/tree/main/examples/k8s)
 directory of the Vine repository.
 
-## Images
+## Choose an image version
 
 | Component | Image | Command |
 | --- | --- | --- |
-| Hub | `docker.io/yorunai/vine-hub` | `vine hub serve` |
-| Link | `docker.io/yorunai/vine-link` | `vine link serve` |
-| Portal | `docker.io/yorunai/vine-portal` | `vine portal serve` |
+| Hub | `docker.io/yorunai/vine-hub:vX.Y.Z` | `vine hub serve` |
+| Link | `docker.io/yorunai/vine-link:vX.Y.Z` | `vine link serve` |
+| Portal | `docker.io/yorunai/vine-portal:vX.Y.Z` | `vine portal serve` |
 
-The container workflow builds Linux images for `amd64` and `arm64`. Pull
-immutable release tags for deployments:
+Use the same immutable Vine release tag for all three components:
 
 ```bash
 docker pull docker.io/yorunai/vine-hub:vX.Y.Z
@@ -32,25 +31,16 @@ docker pull docker.io/yorunai/vine-link:vX.Y.Z
 docker pull docker.io/yorunai/vine-portal:vX.Y.Z
 ```
 
-The `latest` tag tracks the current default branch and is useful for evaluation,
-but it is not an immutable deployment input.
+`latest` is useful for evaluation, but do not use it for a stable deployment.
 
-To build locally from the Vine repository:
-
-```bash
-docker build --target hub -t vine-hub:local .
-docker build --target link -t vine-link:local .
-docker build --target portal -t vine-portal:local .
-```
-
-The images use an unprivileged `vine` user and a read-only-compatible runtime.
-Only Portal receives the `NET_BIND_SERVICE` capability needed for ports 80 and
-443. Certificate material and deployment configuration are not baked into the
-images.
+The images run as an unprivileged `vine` user. The Kubernetes base drops all
+capabilities from Hub and Link and grants `NET_BIND_SERVICE` only to Portal for
+ports 80 and 443. Certificates and deployment configuration are not embedded
+into the images.
 
 ## Runtime configuration
 
-Hub intentionally does not select a database or NATS mode. Every Hub container
+Hub does not pick a database or NATS mode by default. Every Hub container
 must configure exactly one option in each group:
 
 | Concern | Option 1 | Option 2 |
@@ -58,11 +48,11 @@ must configure exactly one option in each group:
 | Database | `VINE_DB_SQLITE_FILE=/data/hub.sqlite` | `VINE_DB_POSTGRES_URL=postgres://...` |
 | Messaging | `VINE_MQ_EMBEDDED_NATS=true` | `VINE_MQ_EXTERNAL_NATS_URL=nats://...` |
 
-Do not set both options in a group. When SQLite is selected, mount persistent
+Do not set both options in a group. When using SQLite, mount persistent
 storage at `/data`. When a seed file is configured with
 `VINE_SEED_YAML_FILE`, mount that file into the container as well.
 
-The complete image configuration is:
+The Dockerfile defaults and accepted environment variables are:
 
 | Image | Variable | Image default | Purpose |
 | --- | --- | --- | --- |
@@ -83,14 +73,14 @@ The complete image configuration is:
 | All | `VINE_MTLS_CERT_FILE` | empty | Component certificate file |
 | All | `VINE_MTLS_KEY_FILE` | empty | Component private-key file |
 
-The three mTLS variables must either all be omitted or all be configured. See
+The three mTLS variables must be set together or left unset. See
 the [CLI reference](../getting-started/cli.md) for flag equivalents and detailed
 service semantics.
 
 ## Kubernetes quick start
 
-The base uses a dedicated `vine` namespace and explicitly selects SQLite plus
-embedded NATS for a small, single-replica deployment:
+The Kustomize base uses a dedicated `vine` namespace and explicitly selects
+SQLite plus embedded NATS for a small, single-replica deployment:
 
 ```bash
 kubectl apply -k https://github.com/yorun-ai/vine//examples/k8s?ref=main
@@ -98,9 +88,10 @@ kubectl -n vine get pods,svc,pvc
 kubectl -n vine logs statefulset/hub
 ```
 
-For a stable deployment, check out an exact Vine release and apply its local
-`examples/k8s` directory after replacing every image tag with the same immutable
-release tag.
+The remote command follows `main` and is for evaluation only. For a stable
+deployment, check out the Vine release you intend to run, replace each image
+tag with that release's immutable tag, and apply its local `examples/k8s`
+directory.
 
 The base creates:
 
@@ -117,17 +108,19 @@ The base creates:
 Link and Portal use init containers to wait for Hub's Control API at `hub:7071`.
 The Hub Service is headless because embedded NATS selects a dynamic port and
 reports it through `InfoService`; direct Pod resolution keeps that port
-reachable. Keep this SQLite configuration at one Hub replica.
+reachable. With SQLite, keep Hub at a single replica.
 
 Portal uses a `LoadBalancer` Service by default. On a cluster without a cloud
-load balancer, change it to `ClusterIP` and expose the required Portal listeners
-through an ingress controller or use `kubectl port-forward` for development.
+load balancer, change the Service to `ClusterIP` and expose the required Portal
+listeners through an ingress controller, or use `kubectl port-forward` for
+development.
 
 ## Backend mTLS overlay
 
 The base uses HTTP between components so it can start without certificates.
-The `overlays/mtls` Kustomize overlay enables backend mTLS. Prepare a separate
-identity for every component with these SPIFFE paths:
+The `overlays/mtls` Kustomize overlay enables backend mTLS. Work from a local
+Vine checkout and prepare a separate identity for every component with these
+SPIFFE paths:
 
 ```text
 spiffe://<trust-domain>/vine/daemon/vine.hub
@@ -165,23 +158,19 @@ kubectl apply -k examples/k8s/overlays/mtls
 The overlay mounts each Secret read-only at `/run/vine/mtls`, sets all three
 `VINE_MTLS_*` variables, and changes Link and Portal to
 `VINE_HUB_ENDPOINT=https://hub:7071`. The public certificates used by Portal's
-external HTTPS listeners remain a separate configuration boundary managed by
+external HTTPS listeners are a separate configuration boundary managed by
 Hub.
 
-## Private registries and local clusters
+## Private registries
 
-For another registry, tag and push each image, then replace the image fields in
-the Hub, Link, and Portal manifests. Update the Link and Portal init-container
-images at the same time.
-
-Private registries require an image-pull Secret and `imagePullSecrets` in each
-Pod specification. For kind or minikube, load the locally built images into the
-cluster and use a non-pulling image policy instead.
+For private registries, create an image-pull Secret and add `imagePullSecrets`
+to every Pod specification. When changing image locations, update the Hub,
+Link, and Portal containers along with the Link and Portal init containers.
 
 ## Production changes
 
-The base is an executable example, not a universal production configuration.
-Before production:
+The base is a runnable example, not a universal production configuration.
+Before going to production:
 
 - pin all three images to one immutable Vine release;
 - use managed PostgreSQL and external NATS when persistence, independent
@@ -195,4 +184,4 @@ Before production:
   monitoring for the target cluster.
 
 Continue with the [production-readiness checklist](./production-readiness.md)
-before promoting the deployment.
+before promoting the deployment to production.
