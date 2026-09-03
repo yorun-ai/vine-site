@@ -15,21 +15,24 @@ Vine 为 Hub、Link 和 Portal 提供独立容器镜像。每个镜像运行对�
 
 ## 选择镜像版本
 
+官方镜像随每次 Vine release 发布到 GitHub Container Registry（GHCR）。镜像支持
+Linux AMD64 与 ARM64。
+
 | 组件 | 镜像 | 命令 |
 | --- | --- | --- |
-| Hub | `docker.io/yorunai/vine-hub:vX.Y.Z` | `vine hub serve` |
-| Link | `docker.io/yorunai/vine-link:vX.Y.Z` | `vine link serve` |
-| Portal | `docker.io/yorunai/vine-portal:vX.Y.Z` | `vine portal serve` |
+| Hub | `ghcr.io/yorun-ai/vine-hub:vX.Y.Z` | `vine hub serve` |
+| Link | `ghcr.io/yorun-ai/vine-link:vX.Y.Z` | `vine link serve` |
+| Portal | `ghcr.io/yorun-ai/vine-portal:vX.Y.Z` | `vine portal serve` |
 
 三个组件应使用同一个不可变的 Vine release tag：
 
 ```bash
-docker pull docker.io/yorunai/vine-hub:vX.Y.Z
-docker pull docker.io/yorunai/vine-link:vX.Y.Z
-docker pull docker.io/yorunai/vine-portal:vX.Y.Z
+docker pull ghcr.io/yorun-ai/vine-hub:vX.Y.Z
+docker pull ghcr.io/yorun-ai/vine-link:vX.Y.Z
+docker pull ghcr.io/yorun-ai/vine-portal:vX.Y.Z
 ```
 
-`latest` 可用于验证，但不要用于稳定部署。
+`latest` 跟随最新的非预发布版本。它可用于验证，但不要用于稳定部署。
 
 镜像以无特权 `vine` 用户运行。Kubernetes base 会丢弃 Hub 和 Link 的全部
 capability，只给 Portal 授予绑定 80 和 443 所需的 `NET_BIND_SERVICE`。证书和部署
