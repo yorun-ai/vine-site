@@ -46,6 +46,7 @@ const sidebars: SidebarsConfig = {
       label: 'Deploy and Operate',
       items: [
         'getting-started/deployment-modes',
+        'operations/container-deployment',
         'operations/production-readiness',
         'runtime/hub',
         'runtime/link',
