@@ -9,7 +9,7 @@ description: 配置并部署 Vine Hub、Link 与 Portal 容器镜像。
 Vine 为 Hub、Link 和 Portal 提供独立容器镜像。每个镜像运行对应的
 `vine ... serve` 命令，并接受与 CLI 相同的 `VINE_*` 环境变量。
 
-先选择[部署拓扑](../getting-started/deployment-modes.md)，再使用本指南。Kubernetes 文件
+先选择[部署拓扑](../getting-started/deployment-modes.md)，再使用本指南。Kubernetes 清单
 位于 Vine 仓库的 [`deploy/k8s`](https://github.com/yorun-ai/vine/tree/main/deploy/k8s)
 目录。
 
@@ -35,7 +35,7 @@ docker pull ghcr.io/yorun-ai/vine-portal:vX.Y.Z
 `latest` 跟随最新的非预发布版本。它可用于验证，但不要用于稳定部署。
 
 镜像以无特权 `vine` 用户运行。Kubernetes base 会丢弃 Hub 和 Link 的全部
-capability，只给 Portal 授予绑定 80 和 443 所需的 `NET_BIND_SERVICE`。证书和部署
+capability，只为 Portal 授予绑定 80 和 443 所需的 `NET_BIND_SERVICE`。证书和部署
 配置不会写入镜像。
 
 ## 运行配置
@@ -93,7 +93,7 @@ kubectl -n vine get pods,svc,pvc
 kubectl -n vine logs statefulset/hub
 ```
 
-将部署 checkout 固定到已审核、且包含这些清单的 Git commit 或 release。升级镜像时，
+将部署 checkout 固定到已审核且包含这些清单的具体 Git commit 或 release。升级镜像时，
 统一修改三个 `newTag` 并重新应用；Kustomize 也会同步更新 init container 的镜像。
 不要直接部署 `base`：它仅包含共用资源，未选择镜像版本。
 
@@ -109,18 +109,18 @@ kubectl -n vine logs statefulset/hub
   runtime-default seccomp profile，并将根文件系统设为只读。
 
 Link 和 Portal 使用 init container 等待 `hub:7071` 上的 Hub Control API。Hub Service
-使用 headless 模式，是因为内嵌 NATS 会选择动态端口并通过 `InfoService` 上报；直接解析
-到 Pod 才能让该端口保持可达。使用 SQLite 时，Hub 应保持单副本。
+采用 headless 模式，因为内嵌 NATS 会选用动态端口并经 `InfoService` 上报；只有直接解析
+到 Pod 才能保持该端口可达。使用 SQLite 时，Hub 应保持单副本。
 
 Portal 默认使用 `LoadBalancer` Service。集群没有云负载均衡器时，改为
-`ClusterIP`，通过 ingress controller 暴露所需的 Portal listener，或在开发时使用
+`ClusterIP`，通过 ingress controller 暴露 Portal 的 listener，或在开发时使用
 `kubectl port-forward`。
 
 ## 后台 mTLS overlay
 
-基础清单在组件之间使用 HTTP，因此没有证书也能启动。`overlays/stable-mtls` 入口将 stable
-镜像与可复用的 `components/mtls` Kustomize component 组合。在本地 Vine checkout
-中操作，并为每个组件准备独立身份，使用以下 SPIFFE path：
+基础清单在组件之间使用 HTTP，因此没有证书也能启动。`overlays/stable-mtls` 入口把 stable
+镜像与可复用的 `components/mtls` Kustomize component 组合在一起。在本地 Vine
+checkout 中，为每个组件准备独立身份，使用以下 SPIFFE path：
 
 ```text
 spiffe://<trust-domain>/vine/daemon/vine.hub
