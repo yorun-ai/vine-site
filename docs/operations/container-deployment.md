@@ -1,7 +1,7 @@
 ---
 slug: /container-deployment
 sidebar_label: Containers and Kubernetes
-description: Build, configure, and deploy the Vine Hub, Link, and Portal container images.
+description: Configure and deploy the Vine Hub, Link, and Portal container images.
 ---
 
 # Containers and Kubernetes
@@ -12,7 +12,7 @@ environment variables as the CLI.
 
 Choose a [deployment topology](../getting-started/deployment-modes.md) before
 using this guide. The Kubernetes files live in the
-[`examples/k8s`](https://github.com/yorun-ai/vine/tree/main/examples/k8s)
+[`deploy/k8s`](https://github.com/yorun-ai/vine/tree/main/deploy/k8s)
 directory of the Vine repository.
 
 ## Choose an image version
@@ -83,19 +83,28 @@ service semantics.
 
 ## Kubernetes quick start
 
-The Kustomize base uses a dedicated `vine` namespace and explicitly selects
-SQLite plus embedded NATS for a small, single-replica deployment:
+The manifests use a dedicated `vine` namespace and explicitly select SQLite
+plus embedded NATS for a small, single-replica deployment. Choose an overlay:
+
+| Entry | Image selection | Use |
+| --- | --- | --- |
+| `deploy/k8s` or `deploy/k8s/overlays/stable` | One pinned release version | Default deployment |
+| `deploy/k8s/overlays/stable-mtls` | Same version as stable | Backend mTLS with supplied certificates |
+
+From a local Vine checkout, inspect the three `newTag` values in
+`deploy/k8s/overlays/stable/kustomization.yaml`, then apply:
 
 ```bash
-kubectl apply -k https://github.com/yorun-ai/vine//examples/k8s?ref=main
+kubectl apply -k deploy/k8s/overlays/stable
 kubectl -n vine get pods,svc,pvc
 kubectl -n vine logs statefulset/hub
 ```
 
-The remote command follows `main` and is for evaluation only. For a stable
-deployment, check out the Vine release you intend to run, replace each image
-tag with that release's immutable tag, and apply its local `examples/k8s`
-directory.
+Keep the deployment checkout pinned to a reviewed Git commit or release that
+contains these manifests. To upgrade the images, change the three `newTag`
+values together and apply again; Kustomize also updates the init containers.
+Do not deploy `base` directly: it contains shared resources without a selected
+image version.
 
 The base creates:
 
@@ -122,9 +131,9 @@ development.
 ## Backend mTLS overlay
 
 The base uses HTTP between components so it can start without certificates.
-The `overlays/mtls` Kustomize overlay enables backend mTLS. Work from a local
-Vine checkout and prepare a separate identity for every component with these
-SPIFFE paths:
+The `overlays/stable-mtls` entry combines stable images with the reusable
+`components/mtls` Kustomize component. Work from a local Vine checkout and
+prepare a separate identity for every component with these SPIFFE paths:
 
 ```text
 spiffe://<trust-domain>/vine/daemon/vine.hub
@@ -136,7 +145,7 @@ Create the namespace and component-specific Secrets from certificate files kept
 outside the repository:
 
 ```bash
-kubectl apply -f examples/k8s/base/namespace.yaml
+kubectl apply -f deploy/k8s/base/namespace.yaml
 
 kubectl -n vine create secret generic vine-hub-mtls \
   --from-file=ca.pem=mtls/ca.pem \
@@ -156,7 +165,7 @@ kubectl -n vine create secret generic vine-portal-mtls \
   --from-file=key.pem=mtls/portal-key.pem \
   --dry-run=client -o yaml | kubectl apply -f -
 
-kubectl apply -k examples/k8s/overlays/mtls
+kubectl apply -k deploy/k8s/overlays/stable-mtls
 ```
 
 The overlay mounts each Secret read-only at `/run/vine/mtls`, sets all three
@@ -173,7 +182,8 @@ Link, and Portal containers along with the Link and Portal init containers.
 
 ## Production changes
 
-The base is a runnable example, not a universal production configuration.
+The manifests are a customizable deployment baseline, not a universal
+production configuration.
 Before going to production:
 
 - pin all three images to one immutable Vine release;
