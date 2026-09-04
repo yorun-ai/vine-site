@@ -6,12 +6,12 @@ description: Configure and deploy the Vine Hub, Link, and Portal container image
 
 # Containers and Kubernetes
 
-Vine provides separate container images for Hub, Link, and Portal. The images
-run the corresponding `vine ... serve` command and accept the same `VINE_*`
+Vine provides separate container images for Hub, Link, and Portal. Each image
+runs the corresponding `vine ... serve` command and accepts the same `VINE_*`
 environment variables as the CLI.
 
 Choose a [deployment topology](../getting-started/deployment-modes.md) before
-using this guide. The Kubernetes files live in the
+using this guide. The Kubernetes manifests live in the
 [`deploy/k8s`](https://github.com/yorun-ai/vine/tree/main/deploy/k8s)
 directory of the Vine repository.
 
@@ -100,11 +100,11 @@ kubectl -n vine get pods,svc,pvc
 kubectl -n vine logs statefulset/hub
 ```
 
-Keep the deployment checkout pinned to a reviewed Git commit or release that
-contains these manifests. To upgrade the images, change the three `newTag`
-values together and apply again; Kustomize also updates the init containers.
-Do not deploy `base` directly: it contains shared resources without a selected
-image version.
+Keep the deployment checkout pinned to a specific, reviewed Git commit or
+release that contains these manifests. To upgrade the images, change the three
+`newTag` values together and apply again; Kustomize also updates the init
+containers. Do not deploy `base` directly: it contains shared resources
+without a selected image version.
 
 The base creates:
 
@@ -124,16 +124,16 @@ reports it through `InfoService`; direct Pod resolution keeps that port
 reachable. With SQLite, keep Hub at a single replica.
 
 Portal uses a `LoadBalancer` Service by default. On a cluster without a cloud
-load balancer, change the Service to `ClusterIP` and expose the required Portal
+load balancer, change the Service to `ClusterIP` and expose the Portal
 listeners through an ingress controller, or use `kubectl port-forward` for
 development.
 
 ## Backend mTLS overlay
 
 The base uses HTTP between components so it can start without certificates.
-The `overlays/stable-mtls` entry combines stable images with the reusable
-`components/mtls` Kustomize component. Work from a local Vine checkout and
-prepare a separate identity for every component with these SPIFFE paths:
+The `overlays/stable-mtls` entry combines the stable images with the reusable
+`components/mtls` Kustomize component. From a local Vine checkout, prepare a
+separate identity for every component using these SPIFFE paths:
 
 ```text
 spiffe://<trust-domain>/vine/daemon/vine.hub
