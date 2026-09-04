@@ -1,7 +1,7 @@
 ---
 slug: /container-deployment
 sidebar_label: 容器与 Kubernetes
-description: 构建、配置并部署 Vine Hub、Link 与 Portal 容器镜像。
+description: 配置并部署 Vine Hub、Link 与 Portal 容器镜像。
 ---
 
 # 容器与 Kubernetes
@@ -10,7 +10,7 @@ Vine 为 Hub、Link 和 Portal 提供独立容器镜像。每个镜像运行对�
 `vine ... serve` 命令，并接受与 CLI 相同的 `VINE_*` 环境变量。
 
 先选择[部署拓扑](../getting-started/deployment-modes.md)，再使用本指南。Kubernetes 文件
-位于 Vine 仓库的 [`examples/k8s`](https://github.com/yorun-ai/vine/tree/main/examples/k8s)
+位于 Vine 仓库的 [`deploy/k8s`](https://github.com/yorun-ai/vine/tree/main/deploy/k8s)
 目录。
 
 ## 选择镜像版本
@@ -76,17 +76,26 @@ Dockerfile 默认值和可接受的环境变量如下：
 
 ## Kubernetes 快速部署
 
-Kustomize base 使用独立的 `vine` namespace，显式选择 SQLite 和内嵌 NATS，适合
-小规模的单副本部署：
+清单使用独立的 `vine` namespace，显式选择 SQLite 和内嵌 NATS，适合小规模的
+单副本部署。按用途选择 overlay：
+
+| 入口 | 镜像选择 | 用途 |
+| --- | --- | --- |
+| `deploy/k8s` 或 `deploy/k8s/overlays/stable` | 固定到同一个 release 版本 | 默认部署 |
+| `deploy/k8s/overlays/stable-mtls` | 与 stable 相同的版本 | 提供证书后启用后台 mTLS |
+
+在本地 Vine checkout 中，先检查 `deploy/k8s/overlays/stable/kustomization.yaml`
+里的三个 `newTag`，再应用：
 
 ```bash
-kubectl apply -k https://github.com/yorun-ai/vine//examples/k8s?ref=main
+kubectl apply -k deploy/k8s/overlays/stable
 kubectl -n vine get pods,svc,pvc
 kubectl -n vine logs statefulset/hub
 ```
 
-该远程命令跟随 `main`，仅供验证。稳定部署时，检出你要运行的 Vine release，将每个
-镜像 tag 替换为该 release 的不可变 tag，再应用本地 `examples/k8s` 目录。
+将部署 checkout 固定到已审核、且包含这些清单的 Git commit 或 release。升级镜像时，
+统一修改三个 `newTag` 并重新应用；Kustomize 也会同步更新 init container 的镜像。
+不要直接部署 `base`：它仅包含共用资源，未选择镜像版本。
 
 基础清单创建：
 
@@ -109,9 +118,9 @@ Portal 默认使用 `LoadBalancer` Service。集群没有云负载均衡器时�
 
 ## 后台 mTLS overlay
 
-基础清单在组件之间使用 HTTP，因此没有证书也能启动。`overlays/mtls` Kustomize
-overlay 用于启用后台 mTLS。在本地 Vine checkout 中操作，并为每个组件准备独立
-身份，使用以下 SPIFFE path：
+基础清单在组件之间使用 HTTP，因此没有证书也能启动。`overlays/stable-mtls` 入口将 stable
+镜像与可复用的 `components/mtls` Kustomize component 组合。在本地 Vine checkout
+中操作，并为每个组件准备独立身份，使用以下 SPIFFE path：
 
 ```text
 spiffe://<trust-domain>/vine/daemon/vine.hub
@@ -122,7 +131,7 @@ spiffe://<trust-domain>/vine/daemon/vine.portal
 使用存放在仓库之外的证书文件创建 namespace 和组件 Secret：
 
 ```bash
-kubectl apply -f examples/k8s/base/namespace.yaml
+kubectl apply -f deploy/k8s/base/namespace.yaml
 
 kubectl -n vine create secret generic vine-hub-mtls \
   --from-file=ca.pem=mtls/ca.pem \
@@ -142,7 +151,7 @@ kubectl -n vine create secret generic vine-portal-mtls \
   --from-file=key.pem=mtls/portal-key.pem \
   --dry-run=client -o yaml | kubectl apply -f -
 
-kubectl apply -k examples/k8s/overlays/mtls
+kubectl apply -k deploy/k8s/overlays/stable-mtls
 ```
 
 overlay 将每个 Secret 以只读方式挂载到 `/run/vine/mtls`，设置全部三个
@@ -158,7 +167,7 @@ Link 和 Portal 的 init container。
 
 ## 生产调整
 
-基础清单是可运行示例，并非通用生产配置。进入生产环境前：
+这些清单是可定制的部署基线，并非通用生产配置。进入生产环境前：
 
 - 将三个镜像固定到同一个不可变 Vine release；
 - 需要持久性、独立扩缩容或固定消息 endpoint 时，使用托管 PostgreSQL 和外部 NATS；
