@@ -101,7 +101,6 @@ Before submitting a pull request, run:
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm audit:security
 pnpm typecheck
 pnpm build
 git diff --check
