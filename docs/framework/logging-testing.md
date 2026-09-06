@@ -106,6 +106,13 @@ Output from the standard library `log` package is bridged through a logger named
 
 ## Sensitive fields and binary values
 
+Current unreleased Vine reads `sensitive` as an independent comma-separated
+`skel` attribute. Config fields may use `skel:"sensitive,noTrim"`, and Rpc argument
+fields may use `skel:"index(0),sensitive"`. Both combinations retain redaction,
+including when the value or an enclosing value has a custom JSON marshaler.
+Upgrade Vine before adopting combined tags: earlier readers recognize only the
+exact `skel:"sensitive"` value. Generator support is a separate change.
+
 Skel fields can be marked with `@sensitive`. skelc adds `skel:"sensitive"`
 to the corresponding Go field, and Rpc, Event, and Task payload logging uses
 `core/redact` to replace it with `<redacted>`. Field names alone never trigger
