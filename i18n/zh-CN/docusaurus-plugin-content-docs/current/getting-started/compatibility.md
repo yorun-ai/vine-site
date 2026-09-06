@@ -130,3 +130,18 @@ go -C ./src/server test ./...
 提升到生产环境之前，完成
 [生产就绪清单](../operations/production-readiness.md)。Skel 语言和 generator 的详细
 说明由 [Skel 文档](https://skel.yorun.ai/docs/)维护。
+
+## 未发布 Vine 的 Skel struct tag
+
+当前未发布 Vine 支持逗号分隔的 `skel` 字段属性。配置读取层处理 `noTrim`，
+RPC 参数注册处理 `index(n)`，脱敏层独立识别 `sensitive`。
+`core/skel.HasTagFlag` 和 `core/skel.TagIndex` 为自定义 Go 集成提供同样的 tag 解析；
+索引辅助函数本身不读取旧 `arg` tag。
+
+参数索引仍从零开始，必须唯一且连续。旧 `arg:"n"` 继续受支持；两种写法同时出现时
+必须一致。索引缺失、格式错误、重复、冲突或越界都会导致注册失败。这些 Go tag
+不会改变 JSON、CBOR 字段名或传输格式。
+
+本次运行时支持不要求提高 skelc 最低版本，已有生成代码继续兼容。生成器对新 tag 的
+支持属于后续改动：先升级 Vine，再生成 `index(n)` 或组合属性。旧 Vine 无法解析仅有
+新索引 tag 的参数，会忽略 `noTrim`，也无法识别和其他属性组合的 `sensitive`。

@@ -105,6 +105,12 @@ auditLog := logger.New("app:demo.user:audit", logger.WithOption{
 
 ## 敏感字段与二进制
 
+当前未发布 Vine 将 `sensitive` 作为 `skel` 中逗号分隔的独立属性识别。
+config 字段可用 `skel:"sensitive,noTrim"`，RPC 参数字段可用
+`skel:"index(0),sensitive"`。两种组合都继续脱敏，字段所在值或外层值实现自定义
+JSON marshaler 时也一样。采用组合 tag 前先升级 Vine：旧读取层只识别完整的
+`skel:"sensitive"`。生成器支持属于后续改动。
+
 Skel 字段使用 `@sensitive` 标记。skelc 会在对应的 Go 字段上生成 `skel:"sensitive"`，RPC、Event 和 Task payload 日志会通过 `core/redact` 将其替换为 `<redacted>`。字段名称本身不会触发隐式遮蔽；动态 map 或 JSON 中的敏感内容需要由调用方使用 `RootSensitive` 或 `Sanitizer` 显式处理。
 
 ```skel
