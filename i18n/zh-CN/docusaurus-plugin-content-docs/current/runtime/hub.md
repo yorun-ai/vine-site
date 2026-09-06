@@ -110,7 +110,11 @@ vine hub serve \
 
 数据库参数 `--db-sqlite-file` 和 `--db-postgres-url` 必须二选一；消息队列参数 `--mq-embedded-nats` 和 `--mq-external-nats-url` 也必须二选一。
 
-可用 `--seed-yaml-file ./seed.yaml` 在启动时导入初始配置、Portal 规则和证书。导入后仍由数据库作为配置真源。
+可用 `--seed-yaml-file ./seed.yaml` 在启动时导入初始配置、Portal 站点、规则和证书。导入后仍由数据库作为配置真源。
+
+导入文件中的所有项目都必须满足配置要求，包括 Dashboard 中未选中的项目。
+如果导入过程中发生数据库错误，部分数据可能已保存；重试前请检查当前配置。
+规则的填写要求见 [Portal](./portal.md#规则校验)。
 
 ## 注册与租约
 

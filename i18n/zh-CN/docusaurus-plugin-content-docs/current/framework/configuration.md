@@ -49,6 +49,15 @@ type CheckoutService struct {
 
 生成的配置类型无需手工注册。
 
+## 字符串空白处理
+
+Vine 会去除配置字符串字段的首尾 Unicode 空白，包括可空字符串、列表元素和 Map
+中的字符串 Value。例如，`"  hello  world\n"` 会变成 `"hello  world"`，字符串内部
+空白保留。空值、Map Key、枚举和 `json` 内容保持原样。
+
+该行为同时适用于 `eternal` 和 `instant` 配置，只影响应用收到的值，不会修改 Hub
+保存或 Dashboard 显示的值。`@sensitive` 控制日志脱敏，不会关闭 trim。
+
 ## 选择生命周期
 
 | 生命周期 | Link 保留什么 | 应用代码看到什么 | 适用场景 |

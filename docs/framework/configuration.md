@@ -52,6 +52,17 @@ type CheckoutService struct {
 
 Do not register generated configuration types by hand.
 
+## String whitespace
+
+Vine removes leading and trailing Unicode whitespace from configuration string
+fields, including nullable strings, list elements, and string values in maps.
+For example, `"  hello  world\n"` becomes `"hello  world"`; whitespace inside the
+string is preserved. Null values, map keys, enums, and `json` content are unchanged.
+
+This applies to both `eternal` and `instant` configuration. It affects the value
+received by your application, not the value saved in Hub or shown in the Dashboard.
+Marking a field `@sensitive` controls log redaction; it does not disable trimming.
+
 ## Choose the lifecycle
 
 | Lifecycle | What Link retains | What application code observes | Good fit |
