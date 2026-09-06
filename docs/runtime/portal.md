@@ -99,3 +99,99 @@ conditions.
 - [Hub](./hub.md): manages Portal entries, rules, sites, and certificates.
 - [Link](./link.md): hosts target application ingress and endpoint registrations.
 - [Rpc](../infrastructure/rpc.md): the Rpc abstraction used inside applications.
+
+## Entry path mapping
+
+SITE rules accept `routePathPrefix`, a path prefix within the target site. Portal
+matches the original request using `matchPathPrefix`, replaces that prefix with
+`routePathPrefix`, and then dispatches to the site's WebGW or RpcGW. This changes the
+forwarded request, not the browser URL. It does not rewrite response bodies,
+asset URLs, or redirect locations.
+
+| `matchPathPrefix` | `routePathPrefix` | Request | Site receives |
+| --- | --- | --- | --- |
+| `/api` | empty | `/api/users` | `/users` |
+| `/api` | `/internal` | `/api/users?x=1` | `/internal/users?x=1` |
+| `/api` | `/api` | `/api/users` | `/api/users` |
+| `/` | `/internal` | `/users` | `/internal/users` |
+| `/api` | `/internal` | `/api` | `/internal` |
+| `/api` | `/internal` | `/api/` | `/internal/` |
+
+Empty or `/` retains prefix stripping. Other values must start with `/` and
+must not contain a scheme, host, query, fragment, backslash, control characters,
+or `.` / `..` segments. Trailing slashes on the configured target prefix are
+removed. Encoded request suffixes, query parameters, method, body, and request
+context are preserved during entry rewriting. Matching still uses path-segment
+boundaries (`/api` does not match `/api2`) and existing rule precedence.
+For RpcGW, the resulting path must be a gateway path such as
+`/invoke/demo.Service/Method`; `routePathPrefix` does not bypass gateway admission.
+Redirect rules use `routeRedirectionPattern` and cannot specify `routePathPrefix`.
+
+Configure **Target path prefix** in the Dashboard rule editor or include it in
+Hub seed YAML:
+
+```yaml
+portalRules:
+  - name: internal-api
+    matchScheme: http
+    matchHost: api.example.com
+    matchPort: 8080
+    matchPathPrefix: /api
+    routeType: SITE
+    routeSiteName: application-web
+    routePathPrefix: /internal
+```
+
+Configure the target site before sending traffic to the rule. Rule updates
+take effect without restarting Portal. Omitting `routePathPrefix`
+from an API update leaves it unchanged; sending an empty string clears it.
+Seed YAML is a complete rule value: omitting the field means empty.
+
+When upgrading from `v0.14.1`, Hub automatically migrates saved rules. You do not
+need to recreate them. Use the following field names when editing seed files
+or calling the Admin API.
+
+Legacy YAML remains supported at both startup and Dashboard import. Each old
+field produces a warning identifying the rule, old field, and replacement:
+
+| Legacy YAML | Current YAML |
+| --- | --- |
+| `scheme` | `matchScheme` |
+| `host` | `matchHost` |
+| `port` | `matchPort` |
+| `pathPrefix` | `matchPathPrefix` |
+| `targetType` | `routeType` |
+| `siteName` | `routeSiteName` |
+| `targetPath` | `routePathPrefix` |
+| `redirectionPattern` | `routeRedirectionPattern` |
+
+A single rule cannot mix legacy and current fields, even when their values
+are identical, empty, or zero. Such imports fail before applying any data.
+The Admin API requires the current field names. Update custom Admin clients
+that manage entry rules. Upgrade Hub and all Portal instances together;
+mixing old and new versions can make entry routes unavailable.
+
+## Rule validation
+
+The following requirements apply to the Admin API, startup seed YAML, and
+Dashboard imports. User configuration cannot replace built-in Dashboard rules.
+
+Rules require a name, `matchScheme` of `http` or `https`, and `matchPort` of
+`0` (the protocol default) or `1–65535`. `matchHost` may be empty or a hostname/IP,
+without a URL, port, or wildcard. A nonempty `matchPathPrefix` must start with `/`
+and cannot contain query/fragment delimiters, backslashes, whitespace, control
+characters, or dot segments.
+
+`SITE` requires `routeSiteName` and rejects `routeRedirectionPattern`.
+`PERMANENT_REDIRECT` and `TEMPORARY_REDIRECT` require `routeRedirectionPattern`
+and reject site names and nonempty route path prefixes. Redirect placeholders
+are `{scheme}`, `{host}`, `{uri}`, `{path}`, `{query}`, `{method}`, and `{remote}`;
+unrecognized placeholders or unmatched braces are rejected.
+Saving a rule does not check whether its target site exists. Configure the
+target site before it needs to handle requests.
+
+## Certificate information
+
+Issuer, domains, and validity dates are read automatically from the certificate;
+you do not need to fill them in. Certificate content takes precedence over any
+metadata supplied in YAML.

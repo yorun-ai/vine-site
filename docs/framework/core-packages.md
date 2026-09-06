@@ -112,11 +112,6 @@ The `util/*` packages are public, framework-independent helpers:
 | [`util/vslice`](https://pkg.go.dev/go.yorun.ai/vine/util/vslice) | Slice collection, set, search, stream, and concurrency helpers |
 | [`util/vstring`](https://pkg.go.dev/go.yorun.ai/vine/util/vstring) | String and delimited-value helpers |
 
-`vstring.TrimSpacePtr(*string)` trims leading and trailing Unicode whitespace
-and returns `""` for `nil`. `vstring.FirstNonBlank(values ...string)` returns
-the first non-blank value with leading and trailing Unicode whitespace removed,
-or `""` if no values are provided or all values are blank.
-
 Use a standard-library function when it is equally clear. These packages are
 most useful when the same helper is already part of a Vine-facing code path.
 

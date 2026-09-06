@@ -103,10 +103,6 @@ Listener 或 Runner，而不是手工构造 `ServiceSpec`、`WebSpec`、`EventSp
 | [`util/vslice`](https://pkg.go.dev/go.yorun.ai/vine/util/vslice) | Slice collection、set、查找、stream 与并发辅助 |
 | [`util/vstring`](https://pkg.go.dev/go.yorun.ai/vine/util/vstring) | 字符串与分隔值辅助 |
 
-`vstring.TrimSpacePtr(*string)` 去除首尾 Unicode 空白，传入 `nil` 时返回 `""`。
-`vstring.FirstNonBlank(values ...string)` 返回第一个非空白字符串，并去除其首尾
-Unicode 空白；未传入参数或所有字符串均为空白时返回 `""`。
-
 标准库函数同样清晰时，优先用标准库。这些 package 最适合已经处于 Vine 相关调用
 路径中的通用操作。
 
