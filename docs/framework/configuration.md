@@ -52,6 +52,25 @@ type CheckoutService struct {
 
 Do not register generated configuration types by hand.
 
+## String whitespace
+
+After decoding a configuration, Vine removes leading and trailing Unicode
+whitespace with Go's `strings.TrimSpace` from `string` fields, nullable strings,
+`list<string>` elements, and string values in maps. Nullable collections and
+nullable elements follow the same rule; `null` stays `null`. Whitespace inside
+a string is preserved: `"  hello  world\n"` becomes `"hello  world"`.
+
+This applies to both `eternal` and `instant` reads, regardless of the configuration
+source. It changes the resolved Go value, not the JSON stored by Hub or the Link
+snapshot. Map keys, enums, and `json` content are preserved; other scalar types
+continue to use their normal decoding rules.
+
+This is a breaking change in current unreleased Vine source. Earlier versions
+preserved string whitespace. Review passwords, prefixes, and other values that
+intentionally contain boundary whitespace before upgrading. There is currently
+no field-level opt-out. This runtime change requires no new skelc version or
+regeneration of existing configuration types.
+
 ## Choose the lifecycle
 
 | Lifecycle | What Link retains | What application code observes | Good fit |

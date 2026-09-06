@@ -49,6 +49,21 @@ type CheckoutService struct {
 
 生成的配置类型无需手工注册。
 
+## 字符串空白处理
+
+Vine 解码配置后，会使用 Go 的 `strings.TrimSpace` 去掉 `string` 字段、可空字符串、
+`list<string>` 元素和 Map 中字符串 Value 的首尾 Unicode 空白。可空集合和可空元素
+遵循同样规则，`null` 仍为 `null`。字符串内部空白保留，例如 `"  hello  world\n"`
+会变成 `"hello  world"`。
+
+该行为适用于所有配置来源的 `eternal` 和 `instant` 读取。处理只影响解析出的 Go 值，
+不会修改 Hub 存储的 JSON 或 Link 快照。Map Key、枚举和 `json` 内容保持原样；其他
+标量类型继续遵循各自的解码规则。
+
+这是当前未发布 Vine 源码中的兼容性变更，之前的版本会保留字符串首尾空白。升级前请
+检查密码、前缀等有意包含首尾空白的配置。目前没有按字段关闭 trim 的标记。本次运行时
+改动不要求新版本 skelc，也不需要重新生成已有配置类型。
+
 ## 选择生命周期
 
 | 生命周期 | Link 保留什么 | 应用代码看到什么 | 适用场景 |
