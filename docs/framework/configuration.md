@@ -67,23 +67,9 @@ continue to use their normal decoding rules.
 
 This is a breaking change in current unreleased Vine source. Earlier versions
 preserved string whitespace. Review passwords, prefixes, and other values that
-intentionally contain boundary whitespace before upgrading. A config field tagged
-`skel:"noTrim"` preserves its string value, including nullable strings and all
-string elements/values in a collection. It can be combined with `sensitive`:
-
-```go
-type CredentialsConfig struct {
-    conf.ConfigModel
-    Endpoint string `json:"endpoint"`
-    Password string `json:"password" skel:"sensitive,noTrim"`
-}
-```
-
-`Endpoint` is trimmed; `Password` retains whitespace and is masked by
-`core/redact`. `sensitive` alone does not disable trimming. This is runtime
-support in unreleased Vine source; Skel attribute syntax and skelc generation
-are a separate change. Existing generated types continue to work unchanged;
-do not hand-edit generated files to add tags.
+intentionally contain boundary whitespace before upgrading. Skel configuration
+declarations do not yet offer a field-level opt-out. This runtime change requires no new skelc version or
+regeneration of existing configuration types.
 
 ## Choose the lifecycle
 
