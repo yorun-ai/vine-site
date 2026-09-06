@@ -137,22 +137,3 @@ Before promoting the result, complete the
 [Production Readiness Checklist](../operations/production-readiness.md). Skel language
 and generator details remain in the
 [Skel documentation](https://skel.yorun.ai/docs/).
-
-## Skel struct tags in unreleased Vine
-
-Current unreleased Vine accepts comma-separated `skel` field attributes. Config
-readers interpret `noTrim`; Rpc argument registration interprets `index(n)`;
-redaction recognizes `sensitive` independently of the other attributes.
-`core/skel.HasTagFlag` and `core/skel.TagIndex` expose the same tag parsing for
-custom Go integrations; the index helper does not read legacy `arg` tags.
-
-Argument indexes remain zero-based, unique, and contiguous. Legacy `arg:"n"`
-tags remain supported; if both forms are present, they must agree. Missing,
-malformed, duplicate, conflicting, or out-of-range indexes fail registration.
-These Go tags do not change JSON or CBOR field names or wire formats.
-
-This runtime support does not require raising the minimum skelc version.
-Existing generated code remains supported. Generator changes for the new tags
-are separate: upgrade Vine before generating `index(n)` or combined attributes.
-Older Vine cannot resolve index-only arguments, ignores `noTrim`, and does not
-recognize `sensitive` when combined with other attributes.

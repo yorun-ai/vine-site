@@ -76,3 +76,87 @@ Portal 可随 standalone runtime 在同一进程内启动。它的模块划分�
 - [Hub](./hub.md)：管理 Portal entry、rule、site 与证书配置。
 - [Link](./link.md)：承载目标应用的 ingress 与 endpoint 注册。
 - [RPC](../infrastructure/rpc.md)：应用内部的 RPC 抽象。
+
+## 入口路径映射
+
+SITE 规则支持 `routePathPrefix`，表示目标站点内的路径前缀。Portal 使用
+`matchPathPrefix` 匹配原始请求，将该前缀替换为 `routePathPrefix`，再交给站点的 WebGW
+或 RpcGW。这只改变转发请求，不改变浏览器地址，也不会改写响应正文、静态资源
+URL 或重定向地址。
+
+| `matchPathPrefix` | `routePathPrefix` | 请求 | 站点收到的路径 |
+| --- | --- | --- | --- |
+| `/api` | 留空 | `/api/users` | `/users` |
+| `/api` | `/internal` | `/api/users?x=1` | `/internal/users?x=1` |
+| `/api` | `/api` | `/api/users` | `/api/users` |
+| `/` | `/internal` | `/users` | `/internal/users` |
+| `/api` | `/internal` | `/api` | `/internal` |
+| `/api` | `/internal` | `/api/` | `/internal/` |
+
+留空或 `/` 保持剥离前缀的行为。其他值必须以 `/` 开头，不得包含协议、Host、
+查询参数、片段、反斜杠、控制字符或 `.` / `..` 路径段。配置的目标前缀末尾的
+斜杠会被去掉。入口改写保留请求后缀的编码、查询参数、方法、正文和请求上下文。
+匹配仍遵循路径段边界（`/api` 不匹配 `/api2`）及现有规则优先级。
+对于 RpcGW，改写后必须是 `/invoke/demo.Service/Method` 等网关路径；
+`routePathPrefix` 不会绕过网关鉴权。重定向规则继续使用 `routeRedirectionPattern`，
+不能设置 `routePathPrefix`。
+
+可以在 Dashboard 规则编辑器中配置“目标路径前缀”，或通过 Hub seed YAML 设置：
+
+```yaml
+portalRules:
+  - name: internal-api
+    matchScheme: http
+    matchHost: api.example.com
+    matchPort: 8080
+    matchPathPrefix: /api
+    routeType: SITE
+    routeSiteName: application-web
+    routePathPrefix: /internal
+```
+
+请先配置目标站点，再向规则发送请求。规则更新无需重启 Portal 即可生效。
+API 更新时不传 `routePathPrefix` 表示不修改，传空字符串表示清除。Seed YAML 表示完整
+规则值，省略该字段表示空值。
+
+从 `v0.14.1` 升级时，Hub 会自动迁移已保存的规则，无需重新创建。编辑 seed 文件
+或调用 Admin API 时，请使用下面的新字段名。
+
+启动和 Dashboard 导入仍接受旧 YAML 字段，并提示对应的新字段名：
+
+| 旧 YAML 字段 | 新 YAML 字段 |
+| --- | --- |
+| `scheme` | `matchScheme` |
+| `host` | `matchHost` |
+| `port` | `matchPort` |
+| `pathPrefix` | `matchPathPrefix` |
+| `targetType` | `routeType` |
+| `siteName` | `routeSiteName` |
+| `targetPath` | `routePathPrefix` |
+| `redirectionPattern` | `routeRedirectionPattern` |
+
+同一条规则不能混用新旧字段，即使值相同、为空或为 `0`，也会在应用任何数据之前报错。
+Admin API 只接受新字段名，请更新管理入口规则的自定义 Admin 客户端。
+升级时应一起升级 Hub 和全部 Portal 实例；
+新旧 Hub、Portal 混用可能导致入口路由不可用。
+
+## 规则校验
+
+以下要求适用于 Admin API、启动 seed YAML 和 Dashboard 导入。
+内置 Dashboard 规则不能被用户配置覆盖。
+
+规则必须填写名称，`matchScheme` 只能为 `http` 或 `https`；`matchPort` 允许
+`0`（协议默认端口）或 `1–65535`。`matchHost` 可以为空或主机名/IP，不能带完整
+URL、端口或通配符。非空 `matchPathPrefix` 必须以 `/` 开头，不包含查询参数或片段
+分隔符、反斜杠、空白、控制字符及 `.` / `..` 路径段。
+
+`SITE` 必须填写 `routeSiteName`，不能设置 `routeRedirectionPattern`。
+`PERMANENT_REDIRECT` 和 `TEMPORARY_REDIRECT` 必须填写 `routeRedirectionPattern`，
+不能设置站点名称或非空路由路径前缀。重定向模板支持 `{scheme}`、`{host}`、`{uri}`、
+`{path}`、`{query}`、`{method}`、`{remote}`；未知占位符或未配对的大括号会报错。
+保存规则时不会检查目标站点是否存在，请确保目标站点在接收请求前已配置。
+
+## 证书信息
+
+证书签发者、域名和有效期自动从证书内容解析，无需手填。YAML 中即使填写了
+这些元数据，也以证书内容为准。

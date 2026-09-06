@@ -54,36 +54,14 @@ Do not register generated configuration types by hand.
 
 ## String whitespace
 
-After decoding a configuration, Vine removes leading and trailing Unicode
-whitespace with Go's `strings.TrimSpace` from `string` fields, nullable strings,
-`list<string>` elements, and string values in maps. Nullable collections and
-nullable elements follow the same rule; `null` stays `null`. Whitespace inside
-a string is preserved: `"  hello  world\n"` becomes `"hello  world"`.
+Vine removes leading and trailing Unicode whitespace from configuration string
+fields, including nullable strings, list elements, and string values in maps.
+For example, `"  hello  world\n"` becomes `"hello  world"`; whitespace inside the
+string is preserved. Null values, map keys, enums, and `json` content are unchanged.
 
-This applies to both `eternal` and `instant` reads, regardless of the configuration
-source. It changes the resolved Go value, not the JSON stored by Hub or the Link
-snapshot. Map keys, enums, and `json` content are preserved; other scalar types
-continue to use their normal decoding rules.
-
-This is a breaking change in current unreleased Vine source. Earlier versions
-preserved string whitespace. Review passwords, prefixes, and other values that
-intentionally contain boundary whitespace before upgrading. A config field tagged
-`skel:"noTrim"` preserves its string value, including nullable strings and all
-string elements/values in a collection. It can be combined with `sensitive`:
-
-```go
-type CredentialsConfig struct {
-    conf.ConfigModel
-    Endpoint string `json:"endpoint"`
-    Password string `json:"password" skel:"sensitive,noTrim"`
-}
-```
-
-`Endpoint` is trimmed; `Password` retains whitespace and is masked by
-`core/redact`. `sensitive` alone does not disable trimming. This is runtime
-support in unreleased Vine source; Skel attribute syntax and skelc generation
-are a separate change. Existing generated types continue to work unchanged;
-do not hand-edit generated files to add tags.
+This applies to both `eternal` and `instant` configuration. It affects the value
+received by your application, not the value saved in Hub or shown in the Dashboard.
+Marking a field `@sensitive` controls log redaction; it does not disable trimming.
 
 ## Choose the lifecycle
 

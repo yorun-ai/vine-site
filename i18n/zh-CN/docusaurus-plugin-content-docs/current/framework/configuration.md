@@ -51,31 +51,12 @@ type CheckoutService struct {
 
 ## 字符串空白处理
 
-Vine 解码配置后，会使用 Go 的 `strings.TrimSpace` 去掉 `string` 字段、可空字符串、
-`list<string>` 元素和 Map 中字符串 Value 的首尾 Unicode 空白。可空集合和可空元素
-遵循同样规则，`null` 仍为 `null`。字符串内部空白保留，例如 `"  hello  world\n"`
-会变成 `"hello  world"`。
+Vine 会去除配置字符串字段的首尾 Unicode 空白，包括可空字符串、列表元素和 Map
+中的字符串 Value。例如，`"  hello  world\n"` 会变成 `"hello  world"`，字符串内部
+空白保留。空值、Map Key、枚举和 `json` 内容保持原样。
 
-该行为适用于所有配置来源的 `eternal` 和 `instant` 读取。处理只影响解析出的 Go 值，
-不会修改 Hub 存储的 JSON 或 Link 快照。Map Key、枚举和 `json` 内容保持原样；其他
-标量类型继续遵循各自的解码规则。
-
-这是当前未发布 Vine 源码中的兼容性变更，之前的版本会保留字符串首尾空白。升级前请
-检查密码、前缀等有意包含首尾空白的配置。config 字段使用 `skel:"noTrim"` 可保留
-字符串原值，包括可空字符串以及集合中的全部字符串元素或 Value。它可以和 `sensitive`
-组合：
-
-```go
-type CredentialsConfig struct {
-    conf.ConfigModel
-    Endpoint string `json:"endpoint"`
-    Password string `json:"password" skel:"sensitive,noTrim"`
-}
-```
-
-`Endpoint` 会 trim；`Password` 保留空白，同时由 `core/redact` 脱敏。
-单独使用 `sensitive` 不会关闭 trim。这是未发布 Vine 源码的运行时支持；Skel 属性语法
-及 skelc 生成支持属于后续改动。已有生成类型可继续使用，不要手改生成文件添加 tag。
+该行为同时适用于 `eternal` 和 `instant` 配置，只影响应用收到的值，不会修改 Hub
+保存或 Dashboard 显示的值。`@sensitive` 控制日志脱敏，不会关闭 trim。
 
 ## 选择生命周期
 

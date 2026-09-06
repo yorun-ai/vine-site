@@ -129,9 +129,14 @@ Exactly one of `--db-sqlite-file` and `--db-postgres-url` must be provided.
 Exactly one of `--mq-embedded-nats` and `--mq-external-nats-url` must also be
 provided.
 
-Use `--seed-yaml-file ./seed.yaml` to import initial configuration, Portal rules,
-and certificates at startup. The database remains the source of truth after the
-import.
+Use `--seed-yaml-file ./seed.yaml` to import initial configuration, Portal sites,
+rules, and certificates at startup. The database remains the source of truth
+after the import.
+
+All items in an import file must meet the configuration requirements, including
+items not selected in the Dashboard. A database error during import may leave
+some items saved; check the current configuration before retrying. See
+[Portal](./portal.md#rule-validation) for rule requirements.
 
 ## Registration and Leases
 
