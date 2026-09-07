@@ -100,6 +100,8 @@ type Actor interface {
     Type() ActorType
     IsAnonymous() bool
     IsAuthenticated() bool
+    Realm() string
+    Identifier() string
     RawInfo() string
 }
 ```
@@ -112,6 +114,21 @@ authenticated := meta.NewAuthenticatedActor(&skeled.UserActorInfo{
 ```
 
 认证 Actor 的 info 类型由生成代码注册。使用 `meta.GetActorInfo[T](actor)` 读取类型安全的身份信息。
+
+`Realm()` 返回完整的 actor SkelName，例如 `base.UserActor`。
+`Identifier()` 将 `auth.info` 中标记了 `@identifier` 的字段值以字符串形式返回，
+支持字符串、UUID 和整数标识符。定位主体时应同时比较这两个值；认证状态使用
+`IsAuthenticated()` 判断。
+
+```go
+actor := ctx.Actor()
+realm := actor.Realm()
+identifier := actor.Identifier()
+```
+
+这两个方法从 Vine v0.15.1 起可用。声明标识符需要使用支持 `@identifier` 的 skelc，
+并重新生成契约。未声明标记的 Actor 返回空标识符；absent、anonymous、authenticating
+状态的 realm 和 identifier 均为空字符串。重命名 actor 或其 domain 会改变 realm。
 
 ### `Context`
 

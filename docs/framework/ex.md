@@ -218,8 +218,6 @@ err := ex.New(
 
 Use `reason` for a distinguishable subcase in any format agreed upon by producer and consumer. `Code` identifies the broad failure and `Reason` identifies a specific case that a frontend may present or handle differently.
 
-For Rpc requests, Portal preserves the backend error’s `reason` when authentication, actor permission service calls, or resource permission checks fail. Clients can distinguish application-specific admission failures without treating every permission-denied response as the same condition.
-
 ### Detail
 
 ```go

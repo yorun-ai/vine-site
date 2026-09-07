@@ -100,6 +100,8 @@ type Actor interface {
     Type() ActorType
     IsAnonymous() bool
     IsAuthenticated() bool
+    Realm() string
+    Identifier() string
     RawInfo() string
 }
 ```
@@ -112,6 +114,23 @@ authenticated := meta.NewAuthenticatedActor(&skeled.UserActorInfo{
 ```
 
 Generated code registers the info type of an authenticated Actor. Use `meta.GetActorInfo[T](actor)` to read its type-safe identity information.
+
+`Realm()` returns the full actor Skel name, such as `base.UserActor`.
+`Identifier()` returns the string representation of the `auth.info` field marked
+with `@identifier`, supporting string, UUID, and integer identifiers. Compare both
+values to identify a subject; use `IsAuthenticated()` to check authentication status.
+
+```go
+actor := ctx.Actor()
+realm := actor.Realm()
+identifier := actor.Identifier()
+```
+
+These methods are available from Vine v0.15.1. Declaring an identifier requires
+skelc support for `@identifier` and regenerated contracts. An actor without the
+marker returns an empty identifier. Absent, anonymous, and authenticating actors
+return empty realm and identifier values. Renaming the actor or its domain changes
+its realm.
 
 ### `Context`
 
