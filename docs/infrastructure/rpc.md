@@ -94,6 +94,7 @@ The supported options are:
 
 - `rpc.WithContext(ctx)`
 - `rpc.WithTimeout(duration)`
+- `rpc.WithDestination(appName)`
 
 - `WithTimeout(...)` must be greater than zero.
 - `WithContext(...)` only replaces the parent `context.Context` used for the
@@ -102,6 +103,10 @@ The supported options are:
   still come from the client's own `meta.Context`.
 - `WithContext(...)` and `WithTimeout(...)` cannot be used together.
 - When `WithContext(...)` is omitted, the default request timeout is `30s`.
+
+`WithDestination(appName)` restricts routing to instances of that application. The name must not be empty; omit the option to keep unrestricted routing. If the application does not provide the service, the call returns `ServiceUnavailable` without falling back to another application. Upgrade Link before using it; older Link versions do not support the option.
+
+`WithDestination` applies only to App-to-Link calls. Portal drops the `destination` field in `vrpc-options`, so the option has no effect on requests routed through Portal.
 
 ### `ReturnIfSystemError`
 

@@ -91,6 +91,7 @@ result, err := client.InvokeAs[string](methodInfo, arguments, options...)
 
 - `rpc.WithContext(ctx)`
 - `rpc.WithTimeout(duration)`
+- `rpc.WithDestination(appName)`
 
 规则：
 
@@ -99,6 +100,10 @@ result, err := client.InvokeAs[string](methodInfo, arguments, options...)
 - `WithContext(...)` 不会覆盖 Rpc 元数据，trace / initiator / actor 仍来自 client 自己的 `meta.Context`
 - `WithContext(...)` 与 `WithTimeout(...)` 不可同时使用
 - 不传 `WithContext(...)` 时，默认请求超时是 `30s`
+
+`WithDestination(appName)` 只在指定应用的实例中选择服务提供者，名称必须非空；不传该选项时保持原有路由。目标应用不提供该服务时返回 `ServiceUnavailable`，不会回退到其他应用。使用前需先升级 Link；旧版 Link 不支持该选项。
+
+`WithDestination` 只作用于 App 到 Link 的调用。Portal 会丢弃 `vrpc-options` 中的 `destination` 字段，因此该选项对经 Portal 路由的请求无效。
 
 ### `ReturnIfSystemError`
 
