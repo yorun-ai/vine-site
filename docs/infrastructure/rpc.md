@@ -78,6 +78,16 @@ The return values are:
 - The business result.
 - An `ex.Error`.
 
+To receive the result as a concrete type, use `InvokeAs[T]`:
+
+```go
+result, err := client.InvokeAs[string](methodInfo, arguments, options...)
+```
+
+The non-nil result must be assignable to `T`. A returned error or absent result
+produces the zero value of `T`. Invocation options and system-error handling
+are the same as for `Invoke`.
+
 ### Invoke Options
 
 The supported options are:

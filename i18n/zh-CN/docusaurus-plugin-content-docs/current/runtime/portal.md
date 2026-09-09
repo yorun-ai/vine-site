@@ -65,6 +65,20 @@ Portal 不需要重启来加载大多数网关变更。它监听 Hub Redis 中�
 
 Hub 发布变更后，Portal 会更新相应 listener、网关或缓存状态；业务实例注册或失效时，endpoint 发现也会随之变化。
 
+## 可选凭据字段
+
+RPC 和 Web 认证允许在 `Authorization` 中省略可选凭据字段。
+例如，`token` 必填、`tenant` 可选时，没有 tenant 就发送
+`Authorization: token abc`；需要提供时发送
+`Authorization: token abc, tenant team-a`。省略的字段在认证服务中为 nil，
+不要传入空值。
+
+必填字段必须存在，所有已提供的值都必须非空。未知字段名和格式错误会被拒绝。
+Skel 要求至少声明一个必填凭据字段，因此合法请求总会包含至少一个非空值。
+
+发送省略可选凭据的请求前，先将 Portal 升级到 Vine v0.15.2 或更高版本。
+使用 skelc v0.17.1 或更高版本重新生成 actor schema，以使用 `string?` credential 字段。
+
 ## Inproc 模式
 
 Portal 可随 standalone runtime 在同一进程内启动。它的模块划分和 Redis 订阅语义不变，只是 Hub Redis 与目标 Link endpoint 均可能是进程内连接。
@@ -160,3 +174,9 @@ URL、端口或通配符。非空 `matchPathPrefix` 必须以 `/` 开头，不�
 
 证书签发者、域名和有效期自动从证书内容解析，无需手填。YAML 中即使填写了
 这些元数据，也以证书内容为准。
+
+## API 服务边界
+
+`api service` 是客户端经 Portal 访问的入口。只有 API 服务会暴露给客户端，普通后端服务不会。后端认证、权限和资源检查等服务仍在 Portal 背后运行，不作为客户端入口。
+
+部署带显式 API 服务的契约要求 Vine v0.15.4 或更高版本，以及 skelc v0.18.0 或更高版本。请先升级 Hub、Link、Portal 和应用的 Vine 依赖。已有生成契约仍受支持。

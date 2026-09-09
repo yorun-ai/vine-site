@@ -76,6 +76,15 @@ result, err := client.Invoke(methodInfo, arguments, options...)
 - 第一个返回值是业务结果
 - 第二个返回值是 `ex.Error`
 
+需要具体类型的结果时，使用 `InvokeAs[T]`：
+
+```go
+result, err := client.InvokeAs[string](methodInfo, arguments, options...)
+```
+
+非 nil 的结果必须可赋值给 `T`。返回错误或没有结果时，第一个返回值为 `T` 的零值。
+调用选项和 system error 的处理方式与 `Invoke` 一致。
+
 ### Invoke 选项
 
 调用选项包括：

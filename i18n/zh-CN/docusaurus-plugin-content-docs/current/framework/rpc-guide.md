@@ -14,7 +14,6 @@ Skel 命令从项目根目录执行，Go 命令从 `src/server/` 执行。
 
 ```skel title="greeting.skel"
 pub service GreetingService {
-    noauth
     method hello {
         input { name: string }
         output Greeting

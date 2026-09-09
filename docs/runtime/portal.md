@@ -83,6 +83,23 @@ After Hub publishes a change, Portal updates the corresponding listener, gateway
 or cache. Endpoint discovery also updates as business instances register or
 expire.
 
+## Optional credentials
+
+For RPC and Web authentication, optional credential fields can be omitted from
+`Authorization`. For example, when `token` is required and `tenant` is optional,
+send `Authorization: token abc` if no tenant value is available, or
+`Authorization: token abc, tenant team-a` to include it. An omitted field reaches
+the authentication service as nil; do not send an empty value.
+
+Every required field must be present, and every supplied value must be non-empty.
+Unknown field names and malformed entries are rejected. Skel requires at least
+one non-nullable credential field, so a valid request always supplies at least
+one non-empty value.
+
+Upgrade Portal to Vine v0.15.2 or later before sending requests that omit
+optional credentials. Regenerate actor schemas with skelc v0.17.1 or later
+to use `string?` credential fields.
+
 ## Inproc Mode
 
 Portal can run in the same process as a standalone runtime. Its module boundaries
@@ -195,3 +212,14 @@ target site before it needs to handle requests.
 Issuer, domains, and validity dates are read automatically from the certificate;
 you do not need to fill them in. Certificate content takes precedence over any
 metadata supplied in YAML.
+
+## API Service Boundaries
+
+An `api service` is a client entry point reached through Portal. Only API services
+are exposed to clients; plain backend services are not. Backend authentication,
+permission, and resource-check services keep running behind Portal and are not
+client entry points.
+
+Deploying contracts with explicit API services requires Vine v0.15.4 or later and
+skelc v0.18.0 or later. Upgrade Hub, Link, Portal, and your application's Vine
+dependencies first. Existing generated contracts remain supported.
