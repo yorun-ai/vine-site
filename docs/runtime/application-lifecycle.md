@@ -99,12 +99,51 @@ hooks begin.
 declarations, not lifecycle callbacks. Vine may apply them to more than one
 container. They should be deterministic and free of operational side effects.
 
+#### Application callbacks
+
+Define `InitHooks` on the application spec to handle lightweight lifecycle
+tasks without adding a component or module. `app.Application` provides an empty
+default implementation.
+
+```go
+func (*DemoApp) InitHooks(add *app.HookAdder) {
+    add.BeforeAppStart(func(log *logger.Logger) error {
+        log.Info("preparing app")
+        return nil
+    })
+    add.AfterAppStart(func(log *logger.Logger) {
+        log.Info("app started")
+    })
+    add.BeforeAppStop(func(log *logger.Logger) {
+        log.Info("stopping app")
+    })
+    add.AfterAppStop(func(log *logger.Logger) {
+        log.Info("app stopped")
+    })
+}
+```
+
+Callback parameters are resolved through DI after module initialization and
+retained for later invocation, including shutdown callbacks. They can receive
+components, modules, clients, and common dependencies. Startup callbacks run in
+registration order; shutdown callbacks run in reverse registration order. All
+callbacks run synchronously and must be non-variadic. Only `BeforeAppStart` may
+return an `error`; it may also have no return value.
+
+Application before-callbacks run before the corresponding component and module
+callbacks; application after-callbacks run after them. `AfterAppStart` runs after
+local Link registration and component/module post-start callbacks. Because
+registration has already made the application discoverable, the application does
+not wait for this callback before accepting requests. The context passed to
+`AfterAppStop` is already canceled, and injected resources may already be closed.
+
 ### 2. Run pre-start hooks
 
 Vine calls `BeforeAppStart()` in this order:
 
-1. Components in declaration order.
-2. Modules in declaration order.
+1. Application callbacks in registration order.
+2. Components in declaration order.
+3. Modules in declaration order.
 
 No application endpoint has been published by Vine yet. Use this phase for
 bounded readiness checks, warm-up that must finish before serving, and validation
@@ -138,6 +177,7 @@ Finally, Vine calls `AfterAppStart()`:
 
 1. Components in declaration order.
 2. Modules in declaration order.
+3. Application callbacks in registration order.
 
 At this point the endpoint has started and registration with the local Link has
 completed. `AfterAppStart()` is the right place to launch background loops that
@@ -148,10 +188,10 @@ and join mechanism for every loop so it can be stopped during `BeforeAppStop()`.
 
 | Hook | Order | Runtime state | Good responsibilities | Avoid |
 | --- | --- | --- | --- | --- |
-| `BeforeAppStart()` | Components, then modules; declaration order | Graph assembled, endpoint not published | Validate dependencies, bounded warm-up, readiness checks | Irreversible work that assumes automatic rollback |
-| `AfterAppStart()` | Components, then modules; declaration order | Endpoint started and local registration complete | Start background loops, announce local readiness | Blocking forever inside the hook |
-| `BeforeAppStop()` | Modules, then components; reverse declaration order | Still registered, server and root context still active | Stop producers, cancel and join workers, flush bounded work | Waiting without a deadline |
-| `AfterAppStop()` | Modules, then components; reverse declaration order | Unregistered, server stopped, root context cancelled | Release application-owned resources, final local cleanup | New Rpc, Event, Task, or context-dependent work |
+| `BeforeAppStart()` | Application, components, modules; forward order | Graph assembled, endpoint not published | Validate dependencies, bounded warm-up, readiness checks | Irreversible work that assumes automatic rollback |
+| `AfterAppStart()` | Components, modules, application; forward order | Endpoint started and local registration complete | Start background loops, announce local readiness | Blocking forever inside the hook |
+| `BeforeAppStop()` | Application, modules, components; reverse order within each group | Still registered, server and root context still active | Stop producers, cancel and join workers, flush bounded work | Waiting without a deadline |
+| `AfterAppStop()` | Modules, components, application; reverse order within each group | Unregistered, server stopped, root context cancelled | Release application-owned resources, final local cleanup | New Rpc, Event, Task, or context-dependent work |
 
 Components start before modules so business modules can rely on initialized
 infrastructure. Shutdown reverses that relationship so modules can finish while
@@ -173,7 +213,8 @@ sequenceDiagram
   participant RuntimeLink as Link
   participant Server as HTTP or in-process server
 
-  App->>Hooks: BeforeAppStop (reverse order)
+  App->>App: Application BeforeAppStop callbacks
+  App->>Hooks: Component and module BeforeAppStop (reverse order)
   App->>RuntimeLink: Unregister capabilities
   RuntimeLink->>RuntimeLink: Allow discovery propagation
   RuntimeLink->>RuntimeLink: Drain tracked in-flight work
@@ -181,6 +222,7 @@ sequenceDiagram
   App->>Server: Graceful stop
   App->>App: Cancel root context
   App->>Hooks: AfterAppStop (reverse order)
+  App->>App: Application AfterAppStop callbacks
 ```
 
 The details are intentional:
