@@ -190,10 +190,10 @@ Portal 在 vRPC transport 之外还负责外部 HTTP 语义：
 
 ## 完整 JSON 调用示例
 
-下面展示一个面向 Portal rpcgw 的请求。实际 host 和站点基路径取决于 Portal 配置。
+下面展示一个面向 Portal rpcgw 的请求，因此调用的是 API 服务。实际 host 和站点基路径取决于 Portal 配置。
 
 ```bash title="invoke.sh"
-curl 'https://api.example.com/invoke/demo.greeting.GreetingService/hello' \
+curl 'https://api.example.com/invoke/demo.greeting.GreetingApiService/hello' \
   --request POST \
   --header 'accept: application/vrpc+json' \
   --header 'content-type: application/vrpc+json' \

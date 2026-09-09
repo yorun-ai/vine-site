@@ -225,11 +225,11 @@ and `portal-trace-id` together.
 
 ## Complete JSON Invocation
 
-This example targets Portal rpcgw. The actual host and site base path depend on
-Portal configuration.
+This example targets Portal rpcgw, so it calls an API service. The actual host
+and site base path depend on Portal configuration.
 
 ```bash title="invoke.sh"
-curl 'https://api.example.com/invoke/demo.greeting.GreetingService/hello' \
+curl 'https://api.example.com/invoke/demo.greeting.GreetingApiService/hello' \
   --request POST \
   --header 'accept: application/vrpc+json' \
   --header 'content-type: application/vrpc+json' \
