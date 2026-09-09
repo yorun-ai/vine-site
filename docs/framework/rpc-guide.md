@@ -16,7 +16,6 @@ root and Go commands from `src/server/`.
 
 ```skel title="greeting.skel"
 pub service GreetingService {
-    noauth
     method hello {
         input { name: string }
         output Greeting

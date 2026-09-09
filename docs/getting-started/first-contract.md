@@ -52,7 +52,6 @@ pub data Greeting {
 }
 
 pub service GreetingService {
-    noauth
 
     method hello {
         input {
