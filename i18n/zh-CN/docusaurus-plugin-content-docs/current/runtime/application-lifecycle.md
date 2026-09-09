@@ -76,12 +76,39 @@ Vine 首先连接 Link，取得应用所需的运行信息，然后创建：
 
 `BindCommon(...)`、Component `Bind(...)` 和 Module `Bind(...)` 是依赖声明，不是生命周期回调。Vine 可能把它们应用到多个容器，因此它们应当是确定性的，且不包含运行时副作用。
 
+#### 应用级回调
+
+可以在应用 spec 中定义 `InitHooks`，用回调处理轻量的生命周期逻辑，而无需新增 Component 或 Module。`app.Application` 已提供空实现。
+
+```go
+func (*DemoApp) InitHooks(add *app.HookAdder) {
+    add.BeforeAppStart(func(log *logger.Logger) error {
+        log.Info("preparing app")
+        return nil
+    })
+    add.AfterAppStart(func(log *logger.Logger) {
+        log.Info("app started")
+    })
+    add.BeforeAppStop(func(log *logger.Logger) {
+        log.Info("stopping app")
+    })
+    add.AfterAppStop(func(log *logger.Logger) {
+        log.Info("app stopped")
+    })
+}
+```
+
+回调参数会在 Module 初始化完成后通过 DI 解析并保留，供后续调用（包括停止回调）复用。参数可以是 Component、Module、client 或 common 依赖。启动回调按注册顺序执行，停止回调按注册逆序执行。所有回调都同步执行，且必须是非可变参数函数。只有 `BeforeAppStart` 可以返回 `error`，也可以不返回值。
+
+应用回调围绕 Component 和 Module 的生命周期执行：Before 回调先于对应的 Component、Module 回调，After 回调则晚于它们。`AfterAppStart` 在本地 Link 注册以及 Component、Module 的启动后回调全部完成后运行。此时应用已经可通过 Link 被发现，无需等待该回调完成即可接收请求。传给 `AfterAppStop` 的 context 已被取消，注入的资源也可能已经关闭。
+
 ### 2. 执行启动前 hooks
 
 Vine 按以下顺序调用 `BeforeAppStart()`：
 
-1. Components，按声明顺序。
-2. Modules，按声明顺序。
+1. 应用回调，按注册顺序。
+2. Components，按声明顺序。
+3. Modules，按声明顺序。
 
 此时 Vine 尚未发布应用 endpoint。这个阶段适合执行有界的就绪检查、必须在开始服务前完成的预热，以及依赖完整依赖图的校验。
 
@@ -105,6 +132,7 @@ Vine 按以下顺序调用 `BeforeAppStart()`：
 
 1. Components，按声明顺序。
 2. Modules，按声明顺序。
+3. 应用回调，按注册顺序。
 
 此时 endpoint 已启动，并且向本地 Link 的注册已经完成。只应在应用可用期间运行的后台循环，适合在 `AfterAppStart()` 中启动。每个循环都应保留显式的取消与等待机制，以便在 `BeforeAppStop()` 中停止。
 
@@ -112,10 +140,10 @@ Vine 按以下顺序调用 `BeforeAppStart()`：
 
 | Hook | 顺序 | 运行状态 | 适合的职责 | 避免 |
 | --- | --- | --- | --- | --- |
-| `BeforeAppStart()` | Component 后 Module；按声明顺序 | 依赖图已装配，endpoint 尚未发布 | 校验依赖、有界预热、就绪检查 | 假定会自动回滚的不可逆工作 |
-| `AfterAppStart()` | Component 后 Module；按声明顺序 | Endpoint 已启动，本地注册已完成 | 启动后台循环、声明本地就绪 | 在 hook 中永久阻塞 |
-| `BeforeAppStop()` | Module 后 Component；按声明逆序 | 仍处于注册状态，server 与根 context 仍可用 | 停止生产者、取消并等待 worker、执行有界 flush | 无截止时间地等待 |
-| `AfterAppStop()` | Module 后 Component；按声明逆序 | 已注销，server 已停止，根 context 已取消 | 释放应用拥有的资源、完成本地收尾 | 发起新的 RPC、Event、Task 或依赖上下文的工作 |
+| `BeforeAppStart()` | 应用回调 → Component → Module；各组内正序 | 依赖图已装配，endpoint 尚未发布 | 校验依赖、有界预热、就绪检查 | 假定会自动回滚的不可逆工作 |
+| `AfterAppStart()` | Component → Module → 应用回调；各组内正序 | Endpoint 已启动，本地注册已完成 | 启动后台循环、声明本地就绪 | 在 hook 中永久阻塞 |
+| `BeforeAppStop()` | 应用回调 → Module → Component；各组内逆序 | 仍处于注册状态，server 与根 context 仍可用 | 停止生产者、取消并等待 worker、执行有界 flush | 无截止时间地等待 |
+| `AfterAppStop()` | Module → Component → 应用回调；各组内逆序 | 已注销，server 已停止，根 context 已取消 | 释放应用拥有的资源、完成本地收尾 | 发起新的 RPC、Event、Task 或依赖上下文的工作 |
 
 Component 先于 Module 启动，因此业务模块能依赖已经初始化的基础设施。停止时反转这个关系，使 Module 能在 Component 资源仍存在时完成收尾。
 
@@ -132,7 +160,8 @@ sequenceDiagram
   participant RuntimeLink as Link
   participant Server as HTTP 或进程内 server
 
-  App->>Hooks: BeforeAppStop（逆序）
+  App->>App: 执行应用 BeforeAppStop 回调
+  App->>Hooks: 执行 Component 与 Module 的 BeforeAppStop（逆序）
   App->>RuntimeLink: 注销能力
   RuntimeLink->>RuntimeLink: 等待发现变更传播
   RuntimeLink->>RuntimeLink: 排空追踪中的在途工作
@@ -140,6 +169,7 @@ sequenceDiagram
   App->>Server: 优雅停止
   App->>App: 取消根 context
   App->>Hooks: AfterAppStop（逆序）
+  App->>App: 执行应用 AfterAppStop 回调
 ```
 
 这些细节是有意设计的：
