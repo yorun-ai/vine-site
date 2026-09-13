@@ -118,8 +118,9 @@ vine hub serve \
   --mq-external-nats-url "$VINE_MQ_EXTERNAL_NATS_URL"
 ```
 
-Hub 数据库是导入配置、Portal rule 和证书的事实来源。Hub 通过 Redis
-分发层发布 runtime 快照和变更；Redis 不能替代数据库。
+Hub 数据库是导入配置、Portal rule 和证书的事实来源。不指定数据库参数会进入只读的
+`--no-db` 模式，不适合生产环境。Hub 通过 Redis 分发层发布 runtime 快照和变更；
+Redis 不能替代数据库。
 
 :::warning Event 与 Task 的持久性
 
@@ -232,7 +233,7 @@ standalone/inproc 模式下，注册信息会保留到显式 unregister。此时
 - [ ] 将 Hub 数据库、seed 文件、Hub Redis 和备份限制在同一个可信运维
   边界内。
 - [ ] 备份 Hub 数据库，并在隔离环境中测试恢复。
-- [ ] seed YAML 只用于导入初始状态，不应充当持续备份；此后数据库仍是
+- [ ] seed YAML 只用于导入初始状态，不应充当持续备份；使用数据库时，此后数据库仍是
   事实来源。
 - [ ] 恢复后，检查应用配置、Portal rule、site、证书和 endpoint 订阅。
 - [ ] 依赖 HTTPS entry 前，演练证书替换和 SNI 匹配。

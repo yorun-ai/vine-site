@@ -98,14 +98,17 @@ sequenceDiagram
 
 ## 提供配置值
 
-Hub seed 文件使用配置的完整 Skel 名；`value` 字段是在 YAML 字符串中编码的 JSON：
+Hub seed 文件使用配置的完整 Skel 名；`value` 字段可以直接写 YAML 对象（Hub 会转换为 JSON），也支持在 YAML 字符串中编码 JSON 的旧写法：
 
 ```yaml title="seed.yaml"
 appConfigs:
   - name: demo.checkout.CheckoutConfig
-    value: '{"timeoutMs":3000,"currency":"CNY"}'
+    value:
+      timeoutMs: 3000
+      currency: CNY
   - name: demo.checkout.FeatureFlagsConfig
-    value: '{"newCheckout":true}'
+    value:
+      newCheckout: true
 ```
 
 standalone 模式：
@@ -129,7 +132,8 @@ vine hub serve \
   --seed-yaml-file ./seed.yaml
 ```
 
-seed 会被导入 Hub 数据库；导入后数据库仍然是 source of truth。
+seed 会被导入 Hub 数据库，导入后数据库仍然是 source of truth；不指定数据库时，
+Hub 把 seed 保留在内存中并只读提供。
 
 ## 配置值如何到达 execution
 

@@ -108,9 +108,30 @@ vine hub serve \
   --mq-external-nats-url nats://nats.example.com:4222
 ```
 
-数据库参数 `--db-sqlite-file` 和 `--db-postgres-url` 必须二选一；消息队列参数 `--mq-embedded-nats` 和 `--mq-external-nats-url` 也必须二选一。
+数据库参数 `--db-sqlite-file` 和 `--db-postgres-url` 至多提供一个；消息队列参数 `--mq-embedded-nats` 和 `--mq-external-nats-url` 必须二选一。两者都不提供时，Hub 默认使用 `--no-db`：seed 配置加载到内存，配置保持只读。
 
-可用 `--seed-yaml-file ./seed.yaml` 在启动时导入初始配置、Portal 站点、规则和证书。导入后仍由数据库作为配置真源。
+可用 `--seed-yaml-file ./seed.yaml` 在启动时导入初始配置、Portal 站点、规则和证书。使用数据库时，导入后仍由数据库作为配置真源。
+
+`appConfigs[].value` 可以直接使用 YAML 对象，内部支持嵌套 map 和列表。
+字段名与 JSON 保持一致，枚举 key 和 value 使用枚举名称。
+启动 seed 和 Dashboard 导入都支持这种格式。
+
+```yaml
+appConfigs:
+  - name: demo.AppConfig
+    value:
+      enabled: true
+      statuses:
+        EAST: ACTIVE
+        WEST: LOCKED
+```
+
+Hub 会把结构化值转换成 JSON。旧的 JSON 字符串写法，例如
+`value: '{"enabled":true}'`，仍按原样处理。字符串值仍表示旧格式的 JSON 文本；
+如果配置值本身是 JSON 字符串，请使用 `value: '"text"'`。
+日期和时间戳保留原始文本，包括 UTC 偏移和小数秒；引号内的字符串和 map key 也保留原始拼写。
+
+seed 文件和 Dashboard YAML 输入禁止锚点 `&`、别名 `*`、`<<` 合并语法、复杂或 null key、非有限数字和自定义 YAML tag，请直接展开填写。数字仅支持普通十进制写法：拒绝前导零（如 `012`）、数字分隔符、非十进制和科学计数法。
 
 导入文件中的所有项目都必须满足配置要求，包括 Dashboard 中未选中的项目。
 如果导入过程中发生数据库错误，部分数据可能已保存；重试前请检查当前配置。
