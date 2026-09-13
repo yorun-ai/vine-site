@@ -144,8 +144,10 @@ which process must remain alive during startup and graceful shutdown.
 ### Control plane: Hub
 
 Hub uses its database as the source of truth for managed configuration such as
-application config, Portal sites, rules, and certificates. It exposes runtime
-snapshots and change notifications through its Redis distribution layer.
+application config, Portal sites, rules, and certificates. Without a database it
+runs in `--no-db` mode instead, serving that configuration read-only from its
+seed source. Either way, Hub exposes runtime snapshots and change notifications
+through its Redis distribution layer.
 
 Link publishes application registration and lease state to Hub. Link and Portal
 then read or subscribe to the parts they need. Hub is a control-plane dependency,

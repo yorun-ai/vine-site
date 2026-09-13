@@ -110,14 +110,18 @@ Do not assume field injection is a live reference.
 ## Provide values
 
 Hub seed files identify a configuration by its fully qualified Skel name. The
-`value` field contains JSON encoded as a YAML string:
+`value` field accepts a YAML mapping, which Hub converts to JSON; JSON encoded
+as a YAML string remains supported:
 
 ```yaml title="seed.yaml"
 appConfigs:
   - name: demo.checkout.CheckoutConfig
-    value: '{"timeoutMs":3000,"currency":"CNY"}'
+    value:
+      timeoutMs: 3000
+      currency: CNY
   - name: demo.checkout.FeatureFlagsConfig
-    value: '{"newCheckout":true}'
+    value:
+      newCheckout: true
 ```
 
 For standalone mode:
@@ -142,8 +146,9 @@ vine hub serve \
   --seed-yaml-file ./seed.yaml
 ```
 
-The seed is imported into Hub's database. The database remains the source of
-truth after import.
+The seed is imported into Hub's database, which remains the source of truth
+after import. Without a database, Hub keeps the seed in memory and serves it
+read-only.
 
 ## How a value reaches an execution
 

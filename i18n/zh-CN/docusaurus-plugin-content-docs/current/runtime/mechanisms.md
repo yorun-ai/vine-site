@@ -131,7 +131,8 @@ flowchart LR
 ### 控制面：Hub
 
 Hub 以自己的数据库作为 application config、Portal site、rule、certificate 等托管
-配置的 source of truth，并通过 Redis 分发层公开运行时快照与变更通知。
+配置的 source of truth；不指定数据库时改用 `--no-db` 模式，直接以 seed 提供只读配置。
+两种模式都通过 Redis 分发层公开运行时快照与变更通知。
 
 Link 将应用注册与租约状态发布到 Hub；Link 与 Portal 再读取或订阅各自需要的部分。
 因此 Hub 是控制面依赖，而不是普通 RPC 或 Web 调用中的额外 proxy。

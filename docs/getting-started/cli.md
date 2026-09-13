@@ -50,7 +50,7 @@ before upgrading.
 development:
 
 ```bash
-vine dev
+vine dev --seed-yaml-file ./seed.yaml
 ```
 
 Hub RPC, Redis, NATS, Portal-to-Hub, Link-to-Hub, and Portal-to-Link traffic use
@@ -66,10 +66,10 @@ The default Link endpoint used by `app.New` is already
 `VINE_LINK_ENDPOINT` or `app.Option.LinkEndpoint` when another address is
 required.
 
-When no database option is supplied, `dev` creates a temporary SQLite database
-and removes it after a graceful shutdown. Supply a database file to preserve
-Hub state between runs, and a seed file to initialize application configuration
-or Portal routes:
+Without a database option, `dev` uses the default `--no-db` mode: it loads the
+seed file into memory and configuration stays read-only. Supply a database file
+to keep Hub state between runs and keep it writable, and a seed file to
+initialize application configuration or Portal routes:
 
 ```bash
 vine dev \
@@ -82,12 +82,15 @@ Available options:
 
 - `--link-api-listen`: Link API address for external applications; defaults to
   `127.0.0.1:7079`.
+- `--no-db`: use no persistent database, which is the default when neither
+  database option is set; it requires `--seed-yaml-file` and keeps
+  configuration read-only.
 - `--db-sqlite-file` / `--db-postgres-url`: optional persistent Hub storage.
-- `--seed-yaml-file`: optional Hub seed data.
+- `--seed-yaml-file`: Hub seed data; required in the default `--no-db` mode.
 - `--dashboard-url`: Hub Dashboard Portal entry; defaults to `http://:7099/`, or
   `https://:7099/` when backend mTLS is enabled.
 
-The corresponding environment variables are `VINE_API_LISTEN`,
+The corresponding environment variables are `VINE_API_LISTEN`, `VINE_NO_DB`,
 `VINE_DB_SQLITE_FILE`, `VINE_DB_POSTGRES_URL`, `VINE_SEED_YAML_FILE`, and
 `VINE_DASHBOARD_URL`. Press `Ctrl+C` to stop Link, Portal, and Hub gracefully.
 
@@ -286,7 +289,7 @@ Environment variables:
 ### Debug an external application locally
 
 ```bash
-vine dev
+vine dev --seed-yaml-file ./seed.yaml
 go -C ./src/server run ./cmd/myapp
 ```
 

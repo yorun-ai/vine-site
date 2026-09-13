@@ -51,12 +51,28 @@ The startup order is Hub, then Portal, then Link, then the business application.
 Shutdown reverses that order. Hub uses in-process Redis, while Link and Portal
 use inproc endpoints, so no runtime service needs to be started ahead of time.
 
+To embed seed configuration in the application, pass YAML text through
+`standalone.Option.SeedYAML`, for example a string populated by `go:embed`:
+
+```go
+standalone.NewWithOption[*HelloApp](standalone.Option{
+    SeedYAML: "{}",
+}).StartAndWait()
+```
+
+`SeedYAML` and `SeedYAMLFile` are mutually exclusive, including a seed file
+supplied through the CLI or environment. Without a database option, one of the
+two seed sources is required and configuration is read-only; use `{}` for empty
+configuration. Inline YAML is validated and imported exactly like a seed file,
+with or without a persistent database. It is available only from code, with no
+CLI flag or environment variable.
+
 ### Characteristics and limitations
 
 - You only need one business binary, which makes this the best mode for the
   [first application tutorial](./tutorial-first-app.md).
-- `standalone.Option` configures SQLite/PostgreSQL, a seed YAML file, and the
-  Dashboard URL.
+- `standalone.Option` configures SQLite/PostgreSQL or no-db mode, an inline or
+  file seed source, and the Dashboard URL.
 - Hub and Link skip heartbeat, TTL lease renewal, and the registry sweeper.
   Registrations are removed explicitly when the application stops.
 - Hub and Link do not expose separate management ports. Portal can still listen
@@ -83,7 +99,7 @@ flowchart LR
 Start the runtime and application in separate terminals:
 
 ```bash
-vine dev
+vine dev --seed-yaml-file ./seed.yaml
 go -C ./src/server run ./cmd/myapp
 ```
 

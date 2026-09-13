@@ -134,8 +134,10 @@ vine hub serve \
 ```
 
 The Hub database is the source of truth for imported configuration, Portal rules,
-and certificates. Hub publishes runtime snapshots and changes through its Redis
-distribution layer; Redis is not a replacement for the database.
+and certificates. Omitting the database options selects the read-only `--no-db`
+mode, which is not suitable for production. Hub publishes runtime snapshots and
+changes through its Redis distribution layer; Redis is not a replacement for the
+database.
 
 :::warning Event and Task durability
 
@@ -261,7 +263,7 @@ The detailed application lifecycle is documented in [App API](../framework/app.m
 - [ ] Back up the Hub database and test restoring it into an isolated
   environment.
 - [ ] Do not treat a seed YAML file as the ongoing backup. It imports initial
-  state; the database remains the source of truth afterward.
+  state; with a database, the database remains the source of truth afterward.
 - [ ] After restoring, verify application configuration, Portal rules, sites,
   certificates, and endpoint subscriptions.
 - [ ] Exercise certificate replacement and SNI matching before relying on HTTPS
