@@ -125,13 +125,41 @@ vine hub serve \
   --mq-external-nats-url nats://nats.example.com:4222
 ```
 
-Exactly one of `--db-sqlite-file` and `--db-postgres-url` must be provided.
-Exactly one of `--mq-embedded-nats` and `--mq-external-nats-url` must also be
-provided.
+Provide at most one of `--db-sqlite-file` and `--db-postgres-url`, and exactly
+one of `--mq-embedded-nats` and `--mq-external-nats-url`. When neither database
+option is set, Hub defaults to `--no-db`: it loads the seed source into memory
+and configuration stays read-only.
 
 Use `--seed-yaml-file ./seed.yaml` to import initial configuration, Portal sites,
-rules, and certificates at startup. The database remains the source of truth
-after the import.
+rules, and certificates at startup. With a database, the database remains the
+source of truth after the import.
+
+`appConfigs[].value` accepts a YAML mapping, including nested maps and lists.
+Use the same field names as JSON, and write enum keys and values as their enum
+names. This format works for both startup seeding and Dashboard imports.
+
+```yaml
+appConfigs:
+  - name: demo.AppConfig
+    value:
+      enabled: true
+      statuses:
+        EAST: ACTIVE
+        WEST: LOCKED
+```
+
+Hub converts structured values to JSON. Existing JSON strings, such as
+`value: '{"enabled":true}'`, remain supported as written. A string value still
+means legacy JSON text; write `value: '"text"'` when the value is itself a JSON
+string. Date and timestamp text is preserved verbatim, including its UTC offset
+and fractional seconds, and quoted strings and mapping keys keep their original
+spelling.
+
+Seed files and Dashboard YAML input reject YAML anchors (`&`), aliases (`*`),
+merge keys (`<<`), complex or null mapping keys, non-finite numbers, and custom
+YAML tags; expand these values explicitly instead. Numbers must use ordinary
+decimal notation: leading zeros such as `012`, digit separators, non-decimal
+bases, and scientific notation are rejected.
 
 All items in an import file must meet the configuration requirements, including
 items not selected in the Dashboard. A database error during import may leave

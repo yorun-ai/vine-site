@@ -46,10 +46,20 @@ standalone.NewWithOption[*HelloApp](standalone.Option{
 
 启动顺序为 Hub → Portal → Link → 业务应用；停止时按相反顺序执行。Hub 使用进程内 Redis，Link 与 Portal 使用 inproc endpoint，因此不需要提前启动任何 runtime 服务。
 
+要将 seed 配置嵌入应用，可以通过 `standalone.Option.SeedYAML` 传入 YAML 文本，例如由 `go:embed` 填充的字符串：
+
+```go
+standalone.NewWithOption[*HelloApp](standalone.Option{
+    SeedYAML: "{}",
+}).StartAndWait()
+```
+
+`SeedYAML` 与 `SeedYAMLFile` 互斥，也不能同时通过 CLI 或环境变量指定 seed 文件。不指定数据库时，必须提供其中一种 seed 来源，配置只读；空配置使用 `{}`。内联 YAML 与 seed 文件使用完全相同的校验与导入流程，使用持久化数据库时也一样。该入口只能通过代码设置，不提供 CLI 参数或环境变量。
+
 ### 特点与限制
 
 - 只需启动一个业务 binary，最适合 [第一个应用教程](./tutorial-first-app.md)。
-- 使用 `standalone.Option` 配置 SQLite / PostgreSQL、seed YAML 和 Dashboard URL。
+- 使用 `standalone.Option` 配置 SQLite / PostgreSQL 或 no-db 模式、内联或文件 seed 来源，以及 Dashboard URL。
 - Hub 与 Link 不启动 heartbeat、TTL 续租和 registry sweeper；应用停止时靠显式注销清理注册。
 - Hub 和 Link 不开放独立管理端口；Portal 仍可按入口规则监听业务 HTTP/HTTPS 端口。
 - 跨进程网络、服务单独重启等场景不在覆盖范围内。
@@ -72,7 +82,7 @@ flowchart LR
 在两个终端中分别启动运行时和应用：
 
 ```bash
-vine dev
+vine dev --seed-yaml-file ./seed.yaml
 go -C ./src/server run ./cmd/myapp
 ```
 

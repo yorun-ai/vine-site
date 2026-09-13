@@ -48,7 +48,7 @@ vine version
 `dev` 在一个 CLI 进程中启动 Hub、Portal 和 Link，供本地业务应用调试：
 
 ```bash
-vine dev
+vine dev --seed-yaml-file ./seed.yaml
 ```
 
 Hub Rpc、Redis、NATS、Portal 到 Hub、Link 到 Hub，以及 Portal 到 Link 的流量
@@ -63,8 +63,8 @@ app.New[*HelloApp]().StartAndWait()
 时，将 `--link-api-listen` 与 `VINE_LINK_ENDPOINT` 或
 `app.Option.LinkEndpoint` 配套设置。
 
-未指定数据库时，`dev` 会创建临时 SQLite，并在优雅退出后删除。需要跨运行保留
-Hub 状态时可指定数据库文件；需要初始化应用配置或 Portal 路由时可指定 seed：
+未指定数据库时，`dev` 使用默认的 `--no-db` 模式：seed 文件加载到内存，配置保持只读。
+需要跨运行保留 Hub 状态并可写时，指定数据库文件；需要初始化应用配置或 Portal 路由时，指定 seed：
 
 ```bash
 vine dev \
@@ -77,12 +77,14 @@ vine dev \
 
 - `--link-api-listen`：供外部应用连接的 Link API 地址，默认
   `127.0.0.1:7079`
+- `--no-db`：不使用持久化数据库，两个数据库参数都未指定时的默认值；此时必须提供
+  `--seed-yaml-file`，配置只读
 - `--db-sqlite-file` / `--db-postgres-url`：可选的 Hub 持久化存储
-- `--seed-yaml-file`：可选的 Hub seed 数据
+- `--seed-yaml-file`：Hub seed 数据；默认的 `--no-db` 模式下必需
 - `--dashboard-url`：Hub Dashboard 的 Portal 入口；默认 `http://:7099/`，启用
   后台 mTLS 时默认 `https://:7099/`
 
-对应的环境变量为 `VINE_API_LISTEN`、`VINE_DB_SQLITE_FILE`、
+对应的环境变量为 `VINE_API_LISTEN`、`VINE_NO_DB`、`VINE_DB_SQLITE_FILE`、
 `VINE_DB_POSTGRES_URL`、`VINE_SEED_YAML_FILE` 和 `VINE_DASHBOARD_URL`。
 按 `Ctrl+C` 会依次优雅停止 Link、Portal 和 Hub。
 
@@ -273,7 +275,7 @@ vine portal serve \
 ### 本地调试外部应用
 
 ```bash
-vine dev
+vine dev --seed-yaml-file ./seed.yaml
 go -C ./src/server run ./cmd/myapp
 ```
 
