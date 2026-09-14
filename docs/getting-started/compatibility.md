@@ -34,9 +34,9 @@ CLI behavior, configuration, Skel integration, or protocols.
 
 | Vine documentation | Go | Minimum skelc | skelc to use |
 | --- | --- | --- | --- |
-| Current source / `next` | `1.26.6` or later | `v0.9.0` | The exact revision reviewed with the application |
+| Current source / `next` | `1.27.0` or later | `v0.17.1` | The exact revision reviewed with the application |
 
-Current Vine source reports `v0.9.0` from
+Current Vine source reports `v0.17.1` from
 `core/skel.MinSkelcVersion()`. This is a lower bound, not a version-selection
 policy. Generated schemas record their compiler version, and Vine rejects a
 schema whose compiler version is missing or below the runtime minimum.
@@ -53,7 +53,7 @@ release, replace both values below with reviewed commit hashes or tags:
 VINE_REVISION=main
 SKELC_REVISION=main
 
-go -C ./src/server mod edit -go=1.26.6 -toolchain=go1.26.6
+go -C ./src/server mod edit -go=1.27.0 -toolchain=go1.27.0
 go -C ./src/server get go.yorun.ai/vine@"$VINE_REVISION"
 
 go install go.yorun.ai/vine/cmd/vine@"$VINE_REVISION"
@@ -106,7 +106,7 @@ func main() {
 For current Vine source, this prints:
 
 ```text
-v0.9.0
+v0.17.1
 ```
 
 Use this value when a build system needs to compare the selected generator
@@ -132,6 +132,10 @@ skelc check --skel-in ./skel
 skelc gen go --skel-in ./skel --go-out ./skeled/golang
 go -C ./src/server test ./...
 ```
+
+A Hub backed by SQLite or PostgreSQL must already be on Vine v0.15.7 or later.
+Vine no longer migrates older databases at startup, so start an older database
+with Vine v0.15.7 to complete its migration before upgrading.
 
 Before promoting the result, complete the
 [Production Readiness Checklist](../operations/production-readiness.md). Skel language

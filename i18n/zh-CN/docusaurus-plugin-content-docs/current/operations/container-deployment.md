@@ -48,7 +48,9 @@ Hub 默认不选择数据库或 NATS 模式。每个 Hub 容器必须在以下�
 | 消息系统 | `VINE_MQ_EMBEDDED_NATS=true` | `VINE_MQ_EXTERNAL_NATS_URL=nats://...` |
 
 同一组不能同时设置两项。使用 SQLite 时，将持久化存储挂载到 `/data`。通过
-`VINE_SEED_YAML_FILE` 配置 seed 文件时，也需要将对应文件挂载进容器。
+`VINE_SEED_HUB_DATA_FILE` 配置 seed 文件时，也需要将对应文件挂载进容器。
+`VINE_SEED_HUB_SOURCE_FILE` 和 `VINE_SEED_HUB_VARS_FILE` 引用的来源、变量文件
+也需要挂载；这些变量均应填写容器内的文件路径。
 
 Dockerfile 默认值和可接受的环境变量如下：
 
@@ -61,7 +63,9 @@ Dockerfile 默认值和可接受的环境变量如下：
 | Hub | `VINE_DB_POSTGRES_URL` | 空 | PostgreSQL 连接 URL |
 | Hub | `VINE_MQ_EMBEDDED_NATS` | `false` | 启动内嵌 NATS |
 | Hub | `VINE_MQ_EXTERNAL_NATS_URL` | 空 | 外部 NATS URL |
-| Hub | `VINE_SEED_YAML_FILE` | 空 | 启动 seed 文件 |
+| Hub | `VINE_SEED_HUB_DATA_FILE` | 空 | 启动 seed 文件 |
+| Hub | `VINE_SEED_HUB_SOURCE_FILE` | 空 | 可选的字段来源文件 |
+| Hub | `VINE_SEED_HUB_VARS_FILE` | 空 | 部署变量 YAML 字典 |
 | Hub | `VINE_DASHBOARD_URL` | 空 | 显式指定的 Dashboard 地址 |
 | Link | `VINE_HUB_ENDPOINT` | `http://hub:7071` | Hub Control API endpoint |
 | Link | `VINE_API_LISTEN` | `0.0.0.0:7079` | 面向应用的 Link API |

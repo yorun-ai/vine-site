@@ -235,9 +235,7 @@ type MethodSpec struct {
     SkelName string
 
     ArgumentsType               reflect.Type
-    ValidateArguments           func(any) error
     ResultType                  reflect.Type
-    ValidateResult              func(any) error
     ArgumentsContainsBinaryType bool
     ResultContainsBinaryType    bool
     MuteSuccessLog              bool
@@ -272,9 +270,7 @@ type MethodInfo interface {
     Name() string
     SkelName() string
     ArgumentsType() reflect.Type
-    ValidateArguments(any) error
     ResultType() reflect.Type
-    ValidateResult(any) error
     ArgumentsContainsBinaryType() bool
     ResultContainsBinaryType() bool
     MuteSuccessLog() bool
@@ -292,8 +288,6 @@ type MethodInfo interface {
 
 - `FullURLPath()` 格式是 `/{serviceSkelName}/{methodSkelName}`
 - `PositionArguments(...)` 把 arguments struct 展成位置参数
-- `ValidateArguments(...)` 检查参数是否满足生成的 Skeleton 约束
-- `ValidateResult(...)` 检查返回值是否满足生成的 Skeleton 约束
 
 ## 服务注册
 

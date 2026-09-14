@@ -17,7 +17,7 @@ project structure](./filetree.md), with the Go module under `src/server/`.
 
 ## Prerequisites
 
-- Go 1.26.6 or later.
+- Go 1.27.0 or later.
 - Network access to download the `go.yorun.ai/vine` module, or an existing module
   cache.
 

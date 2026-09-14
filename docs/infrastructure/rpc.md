@@ -240,9 +240,7 @@ type MethodSpec struct {
     SkelName string
 
     ArgumentsType               reflect.Type
-    ValidateArguments           func(any) error
     ResultType                  reflect.Type
-    ValidateResult              func(any) error
     ArgumentsContainsBinaryType bool
     ResultContainsBinaryType    bool
     MuteSuccessLog              bool
@@ -277,9 +275,7 @@ type MethodInfo interface {
     Name() string
     SkelName() string
     ArgumentsType() reflect.Type
-    ValidateArguments(any) error
     ResultType() reflect.Type
-    ValidateResult(any) error
     ArgumentsContainsBinaryType() bool
     ResultContainsBinaryType() bool
     MuteSuccessLog() bool
@@ -297,10 +293,6 @@ In particular:
 
 - `FullURLPath()` has the form `/{serviceSkelName}/{methodSkelName}`.
 - `PositionArguments(...)` expands an arguments struct into positional arguments.
-- `ValidateArguments(...)` verifies that arguments satisfy the generated Skeleton
-  constraints.
-- `ValidateResult(...)` verifies that a result satisfies the generated Skeleton
-  constraints.
 
 ## Service Registration
 

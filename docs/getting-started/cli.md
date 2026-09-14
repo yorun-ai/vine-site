@@ -50,7 +50,7 @@ before upgrading.
 development:
 
 ```bash
-vine dev --seed-yaml-file ./seed.yaml
+vine dev --seed-hub-data-file ./seed.yaml
 ```
 
 Hub RPC, Redis, NATS, Portal-to-Hub, Link-to-Hub, and Portal-to-Link traffic use
@@ -74,7 +74,7 @@ initialize application configuration or Portal routes:
 ```bash
 vine dev \
   --db-sqlite-file ./hub-dev.sqlite \
-  --seed-yaml-file ./seed.yaml \
+  --seed-hub-data-file ./seed.yaml \
   --dashboard-url http://:7099/
 ```
 
@@ -83,15 +83,18 @@ Available options:
 - `--link-api-listen`: Link API address for external applications; defaults to
   `127.0.0.1:7079`.
 - `--no-db`: use no persistent database, which is the default when neither
-  database option is set; it requires `--seed-yaml-file` and keeps
+  database option is set; it requires `--seed-hub-data-file` and keeps
   configuration read-only.
 - `--db-sqlite-file` / `--db-postgres-url`: optional persistent Hub storage.
-- `--seed-yaml-file`: Hub seed data; required in the default `--no-db` mode.
+- `--seed-hub-data-file`: Hub seed data; required in the default `--no-db` mode.
+- `--seed-hub-source-file`: optional seed field source map.
+- `--seed-hub-vars-file`: deployment variable YAML dictionary.
 - `--dashboard-url`: Hub Dashboard Portal entry; defaults to `http://:7099/`, or
   `https://:7099/` when backend mTLS is enabled.
 
 The corresponding environment variables are `VINE_API_LISTEN`, `VINE_NO_DB`,
-`VINE_DB_SQLITE_FILE`, `VINE_DB_POSTGRES_URL`, `VINE_SEED_YAML_FILE`, and
+`VINE_DB_SQLITE_FILE`, `VINE_DB_POSTGRES_URL`, `VINE_SEED_HUB_DATA_FILE`,
+`VINE_SEED_HUB_SOURCE_FILE`, `VINE_SEED_HUB_VARS_FILE`, and
 `VINE_DASHBOARD_URL`. Press `Ctrl+C` to stop Link, Portal, and Hub gracefully.
 
 `dev` preserves the App-to-Link and Link-to-App network boundary but does not
@@ -172,8 +175,13 @@ Initialize data from a seed YAML file:
 vine hub serve \
   --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite \
-  --seed-yaml-file ./seed.yaml
+  --seed-hub-data-file ./seed.yaml
 ```
+
+Use `--seed-hub-source-file` for field origins and `--seed-hub-vars-file`
+for a deployment variable dictionary. SQLite and PostgreSQL read these files only
+during initial seeding; no-db mode reads them on every start. See
+[deployment variables](../framework/configuration.md#deployment-variables).
 
 Specify the Hub Dashboard URL:
 
@@ -198,7 +206,9 @@ These settings are also available as environment variables:
 - `VINE_REDIS_LISTEN`
 - `VINE_MQ_EXTERNAL_NATS_URL`
 - `VINE_MQ_EMBEDDED_NATS`
-- `VINE_SEED_YAML_FILE`
+- `VINE_SEED_HUB_DATA_FILE`
+- `VINE_SEED_HUB_SOURCE_FILE`
+- `VINE_SEED_HUB_VARS_FILE`
 - `VINE_DASHBOARD_URL`
 - `VINE_DB_SQLITE_FILE`
 - `VINE_DB_POSTGRES_URL`
@@ -289,7 +299,7 @@ Environment variables:
 ### Debug an external application locally
 
 ```bash
-vine dev --seed-yaml-file ./seed.yaml
+vine dev --seed-hub-data-file ./seed.yaml
 go -C ./src/server run ./cmd/myapp
 ```
 

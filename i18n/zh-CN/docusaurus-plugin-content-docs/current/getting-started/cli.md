@@ -48,7 +48,7 @@ vine version
 `dev` 在一个 CLI 进程中启动 Hub、Portal 和 Link，供本地业务应用调试：
 
 ```bash
-vine dev --seed-yaml-file ./seed.yaml
+vine dev --seed-hub-data-file ./seed.yaml
 ```
 
 Hub Rpc、Redis、NATS、Portal 到 Hub、Link 到 Hub，以及 Portal 到 Link 的流量
@@ -69,7 +69,7 @@ app.New[*HelloApp]().StartAndWait()
 ```bash
 vine dev \
   --db-sqlite-file ./hub-dev.sqlite \
-  --seed-yaml-file ./seed.yaml \
+  --seed-hub-data-file ./seed.yaml \
   --dashboard-url http://:7099/
 ```
 
@@ -78,14 +78,17 @@ vine dev \
 - `--link-api-listen`：供外部应用连接的 Link API 地址，默认
   `127.0.0.1:7079`
 - `--no-db`：不使用持久化数据库，两个数据库参数都未指定时的默认值；此时必须提供
-  `--seed-yaml-file`，配置只读
+  `--seed-hub-data-file`，配置只读
 - `--db-sqlite-file` / `--db-postgres-url`：可选的 Hub 持久化存储
-- `--seed-yaml-file`：Hub seed 数据；默认的 `--no-db` 模式下必需
+- `--seed-hub-data-file`：Hub seed 数据；默认的 `--no-db` 模式下必需
+- `--seed-hub-source-file`：可选的 seed 字段来源文件
+- `--seed-hub-vars-file`：部署变量 YAML 字典
 - `--dashboard-url`：Hub Dashboard 的 Portal 入口；默认 `http://:7099/`，启用
   后台 mTLS 时默认 `https://:7099/`
 
 对应的环境变量为 `VINE_API_LISTEN`、`VINE_NO_DB`、`VINE_DB_SQLITE_FILE`、
-`VINE_DB_POSTGRES_URL`、`VINE_SEED_YAML_FILE` 和 `VINE_DASHBOARD_URL`。
+`VINE_DB_POSTGRES_URL`、`VINE_SEED_HUB_DATA_FILE`、
+`VINE_SEED_HUB_SOURCE_FILE`、`VINE_SEED_HUB_VARS_FILE` 和 `VINE_DASHBOARD_URL`。
 按 `Ctrl+C` 会依次优雅停止 Link、Portal 和 Hub。
 
 `dev` 保留 App 到 Link 以及 Link 到 App 的网络边界，但不模拟本地 Vine 运行时
@@ -164,8 +167,12 @@ Hub Control API、内嵌 Redis、Admin API 与 Web listener 默认分别监听
 vine hub serve \
   --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite \
-  --seed-yaml-file ./seed.yaml
+  --seed-hub-data-file ./seed.yaml
 ```
+
+可通过 `--seed-hub-source-file` 提供字段来源，通过 `--seed-hub-vars-file`
+提供部署变量字典。SQLite 或 PostgreSQL 仅在首次初始化时读取这些文件；
+no-db 模式每次启动都重新读取。用法见[部署变量](../framework/configuration.md#deployment-variables)。
 
 指定 Hub Dashboard 访问地址：
 
@@ -189,7 +196,9 @@ vine hub serve \
 - `VINE_REDIS_LISTEN`
 - `VINE_MQ_EXTERNAL_NATS_URL`
 - `VINE_MQ_EMBEDDED_NATS`
-- `VINE_SEED_YAML_FILE`
+- `VINE_SEED_HUB_DATA_FILE`
+- `VINE_SEED_HUB_SOURCE_FILE`
+- `VINE_SEED_HUB_VARS_FILE`
 - `VINE_DASHBOARD_URL`
 - `VINE_DB_SQLITE_FILE`
 - `VINE_DB_POSTGRES_URL`
@@ -275,7 +284,7 @@ vine portal serve \
 ### 本地调试外部应用
 
 ```bash
-vine dev --seed-yaml-file ./seed.yaml
+vine dev --seed-hub-data-file ./seed.yaml
 go -C ./src/server run ./cmd/myapp
 ```
 

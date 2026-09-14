@@ -33,9 +33,9 @@ Vine 目前仍处于 1.0 之前。同一个 minor 版本线内的 patch 版本�
 
 | Vine 文档 | Go | 最低 skelc | 推荐使用的 skelc |
 | --- | --- | --- | --- |
-| 当前源码 / `next` | `1.26.6` 或更高 | `v0.9.0` | 与应用一起审查过的精确 revision |
+| 当前源码 / `next` | `1.27.0` 或更高 | `v0.17.1` | 与应用一起审查过的精确 revision |
 
-当前 Vine 源码通过 `core/skel.MinSkelcVersion()` 报告最低版本 `v0.9.0`。
+当前 Vine 源码通过 `core/skel.MinSkelcVersion()` 报告最低版本 `v0.17.1`。
 这是兼容下限，不是版本选择策略。生成的 Schema 会记录 skelc 版本；如果版本缺失
 或低于 runtime 要求，Vine 会拒绝注册该 schema。
 
@@ -51,7 +51,7 @@ runtime 检查没有为未来的 skelc 版本定义兼容上限。请固定已�
 VINE_REVISION=main
 SKELC_REVISION=main
 
-go -C ./src/server mod edit -go=1.26.6 -toolchain=go1.26.6
+go -C ./src/server mod edit -go=1.27.0 -toolchain=go1.27.0
 go -C ./src/server get go.yorun.ai/vine@"$VINE_REVISION"
 
 go install go.yorun.ai/vine/cmd/vine@"$VINE_REVISION"
@@ -102,7 +102,7 @@ func main() {
 当前 Vine 源码的输出是：
 
 ```text
-v0.9.0
+v0.17.1
 ```
 
 构建系统需要比较所选 generator 与 Vine runtime 时，可读取这个值。生成
@@ -126,6 +126,10 @@ skelc check --skel-in ./skel
 skelc gen go --skel-in ./skel --go-out ./skeled/golang
 go -C ./src/server test ./...
 ```
+
+使用 SQLite 或 PostgreSQL 的 Hub，数据库必须已经处于 Vine v0.15.7 或更高版本。
+Vine 不再在启动时迁移更低版本的数据库，请先用 Vine v0.15.7 启动旧数据库完成迁移，
+再执行升级。
 
 提升到生产环境之前，完成
 [生产就绪清单](../operations/production-readiness.md)。Skel 语言和 generator 的详细

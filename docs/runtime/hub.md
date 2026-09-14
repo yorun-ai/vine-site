@@ -90,9 +90,8 @@ Embedded NATS accepts Hub's internal Scheduler and Admin Debug publishers as
 `spiffe://<trust-domain>/vine/daemon/vine.link`; Portal is not allowed to connect.
 
 When `--dashboard-url` is omitted, enabling backend mTLS also changes the
-Dashboard Portal entry default from `http://:7099/` to `https://:7099/`. Existing
-built-in rules are migrated only when they still match the original defaults;
-customized Dashboard access is preserved.
+Dashboard Portal entry default to `https://:7099/`. Customized Dashboard access
+is preserved.
 
 The equivalent environment variables are `VINE_MTLS_CA_FILE`,
 `VINE_MTLS_CERT_FILE`, and `VINE_MTLS_KEY_FILE`.
@@ -130,7 +129,7 @@ one of `--mq-embedded-nats` and `--mq-external-nats-url`. When neither database
 option is set, Hub defaults to `--no-db`: it loads the seed source into memory
 and configuration stays read-only.
 
-Use `--seed-yaml-file ./seed.yaml` to import initial configuration, Portal sites,
+Use `--seed-hub-data-file ./seed.yaml` to import initial configuration, Portal sites,
 rules, and certificates at startup. With a database, the database remains the
 source of truth after the import.
 
@@ -148,12 +147,11 @@ appConfigs:
         WEST: LOCKED
 ```
 
-Hub converts structured values to JSON. Existing JSON strings, such as
-`value: '{"enabled":true}'`, remain supported as written. A string value still
-means legacy JSON text; write `value: '"text"'` when the value is itself a JSON
-string. Date and timestamp text is preserved verbatim, including its UTC offset
-and fractional seconds, and quoted strings and mapping keys keep their original
-spelling.
+Hub converts structured values to JSON. A string value contains JSON text, for
+example `value: '{"enabled":true}'`; write `value: '"text"'` when the value is
+itself a JSON string. Date and timestamp text is preserved verbatim, including
+its UTC offset and fractional seconds, and quoted strings and mapping keys keep
+their original spelling.
 
 Seed files and Dashboard YAML input reject YAML anchors (`&`), aliases (`*`),
 merge keys (`<<`), complex or null mapping keys, non-finite numbers, and custom
@@ -188,6 +186,70 @@ registration remains until the application explicitly unregisters it. This mode
 fits local debugging, integration tests, and standalone applications, but doesn't
 test distributed failure behavior such as network partitions or lease
 expiration.
+
+## Seed variables and field sources
+
+Vine v0.17.0 adds `--seed-hub-vars-file` and `--seed-hub-source-file` to Hub and
+`vine dev`. Supply a YAML variable dictionary alongside the seed template:
+
+```yaml
+# seed.yaml
+appConfigs:
+  - name: demo.Config
+    value:
+      enabled: ${enabled}
+      endpoint: https://${host}
+```
+
+```yaml
+# variables.yaml
+enabled: true
+host: api.example.com
+```
+
+A whole-field `${name}` reference preserves the variable's YAML type, while a
+reference embedded in text produces a string and requires a scalar, non-null
+variable. `${database.port:5432}` supplies a default when the key is missing; an
+undefined variable without a default fails startup. Variable paths use camelCase
+segments. Mapping keys cannot contain references, and inserted values are literal
+data that is not interpolated again. Seeds without references need no variable
+file. See [deployment variables](../framework/configuration.md#deployment-variables)
+for nested paths and validation rules.
+
+An optional source file maps JSON Pointer field paths in the original template
+(array indices start at zero) to origin labels:
+
+```yaml
+version: 1
+seedSha256: "<SHA-256 of the exact seed template bytes>"
+fields:
+  /appConfigs/0/value/endpoint:
+    source: profile/dev
+    define: domain/catalog
+    override: profile/dev
+```
+
+Omit `override` when there was no override. Labels are opaque to Vine; they do
+not control precedence. A mismatched digest or nonexistent field path fails
+startup. The map contains no file paths, line numbers, or variable values.
+
+Standalone applications can embed the template and source map with Go `embed`
+and pass `Option.SeedHubData` and `Option.SeedHubSource`, plus
+`Option.SeedHubVarsFile` for the deployment dictionary. Alternatively, pass
+`Option.SeedHubDataFile` with the optional `Option.SeedHubSourceFile`. Inline and
+file inputs cannot be mixed: an embedded template requires an embedded source
+map, and a file template requires a file source map. Variables are always
+supplied through a file. For file inputs the environment variables are
+`VINE_SEED_HUB_DATA_FILE`, `VINE_SEED_HUB_SOURCE_FILE`, and
+`VINE_SEED_HUB_VARS_FILE`.
+
+Hub stores sources with each configuration object, independently of template
+array ordering. The Dashboard's **Field sources** action shows definitions, last
+overrides, original templates, resolved variable values, and default usage.
+Explicit edits mark affected sources as `hub` and remove their old variable
+dependencies. Whole-object imports without sources clear the old source map.
+Source metadata stays in Hub and is not sent to Link or Portal. No-db mode keeps
+the same metadata in memory.
 
 ## Related Documentation
 
