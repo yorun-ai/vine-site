@@ -78,8 +78,7 @@ Scheduler、Admin Debug publisher，以及使用
 `spiffe://<trust-domain>/vine/daemon/vine.link` 身份的 Link client；Portal 不允许连接。
 
 省略 `--dashboard-url` 时，启用后台 mTLS 还会把 Dashboard Portal 入口的默认值
-从 `http://:7099/` 改为 `https://:7099/`。只有仍与原始默认值一致的已有内置规则
-会被迁移，用户自定义的 Dashboard 入口会保留。
+设为 `https://:7099/`；用户自定义的 Dashboard 入口会保留。
 
 对应环境变量是 `VINE_MTLS_CA_FILE`、`VINE_MTLS_CERT_FILE` 与
 `VINE_MTLS_KEY_FILE`。
@@ -110,7 +109,7 @@ vine hub serve \
 
 数据库参数 `--db-sqlite-file` 和 `--db-postgres-url` 至多提供一个；消息队列参数 `--mq-embedded-nats` 和 `--mq-external-nats-url` 必须二选一。两者都不提供时，Hub 默认使用 `--no-db`：seed 配置加载到内存，配置保持只读。
 
-可用 `--seed-yaml-file ./seed.yaml` 在启动时导入初始配置、Portal 站点、规则和证书。使用数据库时，导入后仍由数据库作为配置真源。
+可用 `--seed-hub-data-file ./seed.yaml` 在启动时导入初始配置、Portal 站点、规则和证书。使用数据库时，导入后仍由数据库作为配置真源。
 
 `appConfigs[].value` 可以直接使用 YAML 对象，内部支持嵌套 map 和列表。
 字段名与 JSON 保持一致，枚举 key 和 value 使用枚举名称。
@@ -126,8 +125,8 @@ appConfigs:
         WEST: LOCKED
 ```
 
-Hub 会把结构化值转换成 JSON。旧的 JSON 字符串写法，例如
-`value: '{"enabled":true}'`，仍按原样处理。字符串值仍表示旧格式的 JSON 文本；
+Hub 会把结构化值转换成 JSON。字符串值表示 JSON 文本，例如
+`value: '{"enabled":true}'`；
 如果配置值本身是 JSON 字符串，请使用 `value: '"text"'`。
 日期和时间戳保留原始文本，包括 UTC 偏移和小数秒；引号内的字符串和 map key 也保留原始拼写。
 
@@ -148,6 +147,62 @@ seed 文件和 Dashboard YAML 输入禁止锚点 `&`、别名 `*`、`<<` 合并�
 Hub 能作为单进程 runtime 的内部组件运行。此时 Hub API 使用 `inproc` transport，Redis 只提供进程内连接，且不启动对外监听端口。
 
 inproc 模式不使用 TTL、心跳或 registry sweeper；注册会一直保留到应用显式注销。它适合本地调试、集成测试和 standalone 应用，不用于验证断网、租约失效等分布式故障语义。
+
+## Seed 变量与字段来源
+
+Vine v0.17.0 为 Hub 和 `vine dev` 增加 `--seed-hub-vars-file`、
+`--seed-hub-source-file`。可以在 seed 模板之外传入 YAML 变量字典：
+
+```yaml
+# seed.yaml
+appConfigs:
+  - name: demo.Config
+    value:
+      enabled: ${enabled}
+      endpoint: https://${host}
+```
+
+```yaml
+# variables.yaml
+enabled: true
+host: api.example.com
+```
+
+完整字段的 `${name}` 引用保留变量的 YAML 类型；文本内部插值产生字符串，
+要求变量为非 null 的标量。`${database.port:5432}` 在 key 缺失时使用默认值；
+缺失且没有默认值的变量会导致启动失败。变量路径各段使用 camelCase。
+映射 key 不支持变量引用，插入的值作为字面数据使用，不会再次插值。
+没有变量引用的 seed 无需变量文件。嵌套路径与校验规则见
+[部署变量](../framework/configuration.md#deployment-variables)。
+
+可选的来源文件使用 JSON Pointer 定位原始模板中的字段（数组下标从 0 开始）：
+
+```yaml
+version: 1
+seedSha256: "<原始 seed 模板字节的 SHA-256>"
+fields:
+  /appConfigs/0/value/endpoint:
+    source: profile/dev
+    define: domain/catalog
+    override: profile/dev
+```
+
+没有覆盖时省略 `override`。标签仅用于说明来源，不控制优先级。
+摘要不匹配或字段路径不存在会导致启动失败。来源文件不包含具体文件路径、行列或变量值。
+
+standalone 应用可以通过 Go `embed` 嵌入模板和来源映射，并传入
+`Option.SeedHubData`、`Option.SeedHubSource`，部署变量字典通过
+`Option.SeedHubVarsFile` 指定。也可以使用 `Option.SeedHubDataFile` 和可选的
+`Option.SeedHubSourceFile`。嵌入与文件模式不能混用：嵌入模板必须搭配嵌入来源映射，
+文件模板必须搭配文件来源映射。变量在两种模式下都只能通过文件传入；文件模式对应的
+环境变量为 `VINE_SEED_HUB_DATA_FILE`、`VINE_SEED_HUB_SOURCE_FILE` 和
+`VINE_SEED_HUB_VARS_FILE`。
+
+Hub 将来源与配置对象一起保存，不依赖模板数组顺序。Dashboard 的“字段来源”
+显示最初定义、最后覆盖、原始模板、实际使用的变量值及默认值使用情况。
+显式编辑会把受影响的来源标记为 `hub`，并清除其旧变量依赖；
+不携带来源的整对象导入会清除旧来源映射。
+来源元数据只保存在 Hub，不传给 Link 或 Portal；no-db 模式将同样的元数据保存在内存中。
 
 ## 相关文档
 

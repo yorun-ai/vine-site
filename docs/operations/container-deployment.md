@@ -54,7 +54,9 @@ must configure exactly one option in each group:
 
 Do not set both options in a group. When using SQLite, mount persistent
 storage at `/data`. When a seed file is configured with
-`VINE_SEED_YAML_FILE`, mount that file into the container as well.
+`VINE_SEED_HUB_DATA_FILE`, mount that file into the container as well. Mount any
+source and variable files referenced by `VINE_SEED_HUB_SOURCE_FILE` and
+`VINE_SEED_HUB_VARS_FILE` too; each value must name its path inside the container.
 
 The Dockerfile defaults and accepted environment variables are:
 
@@ -67,7 +69,9 @@ The Dockerfile defaults and accepted environment variables are:
 | Hub | `VINE_DB_POSTGRES_URL` | empty | PostgreSQL connection URL |
 | Hub | `VINE_MQ_EMBEDDED_NATS` | `false` | Start embedded NATS |
 | Hub | `VINE_MQ_EXTERNAL_NATS_URL` | empty | External NATS URL |
-| Hub | `VINE_SEED_YAML_FILE` | empty | Startup seed file |
+| Hub | `VINE_SEED_HUB_DATA_FILE` | empty | Startup seed file |
+| Hub | `VINE_SEED_HUB_SOURCE_FILE` | empty | Optional field source map |
+| Hub | `VINE_SEED_HUB_VARS_FILE` | empty | Deployment variable YAML dictionary |
 | Hub | `VINE_DASHBOARD_URL` | empty | Explicit Dashboard URL |
 | Link | `VINE_HUB_ENDPOINT` | `http://hub:7071` | Hub Control API endpoint |
 | Link | `VINE_API_LISTEN` | `0.0.0.0:7079` | Application-facing Link API |

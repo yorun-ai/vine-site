@@ -128,8 +128,8 @@ For standalone mode:
 
 ```go title="main.go"
 standalone.NewWithOption[*CheckoutApp](standalone.Option{
-    SQLiteFile:   "./hub.sqlite",
-    SeedYAMLFile: "./seed.yaml",
+    SQLiteFile:      "./hub.sqlite",
+    SeedHubDataFile: "./seed.yaml",
 }).StartAndWait()
 ```
 
@@ -143,12 +143,105 @@ For an independently running Hub:
 vine hub serve \
   --db-sqlite-file ./hub.sqlite \
   --mq-embedded-nats \
-  --seed-yaml-file ./seed.yaml
+  --seed-hub-data-file ./seed.yaml
 ```
 
 The seed is imported into Hub's database, which remains the source of truth
 after import. Without a database, Hub keeps the seed in memory and serves it
 read-only.
+
+## Deployment variables {#deployment-variables}
+
+Seed variables let an application expose a small deployment configuration without
+requiring operators to understand its internal domain configurations. The developer
+decides which seed fields reference variables and leaves the rest fixed; one
+variable can supply several configuration fields.
+
+Deployment variables are available in Vine v0.17.0.
+
+### Expose selected settings
+
+For the checkout configuration above, expose the timeout and keep the currency
+fixed in the application seed:
+
+```yaml title="app/seed/hub.yaml"
+appConfigs:
+  - name: demo.checkout.CheckoutConfig
+    value:
+      timeoutMs: "${checkout.timeoutMs:3000}"
+      currency: CNY
+```
+
+The deployment file only needs the exposed settings:
+
+```yaml title="vars.yaml"
+checkout:
+  timeoutMs: 5000
+```
+
+The filename is your choice. Supply it with `--seed-hub-vars-file ./vars.yaml`,
+`VINE_SEED_HUB_VARS_FILE`, or `standalone.Option.SeedHubVarsFile`.
+Application code still receives `CheckoutConfig` with the resolved values; it
+does not need to read this file or interpret placeholders.
+
+### Declare the variable schema
+
+An application can declare the deployment dictionary as the Skel data type
+`app.Vars`, with nested data types:
+
+```skel title="app/skel/vars.skel"
+domain app
+
+data Vars {
+    checkout: CheckoutVars
+}
+
+data CheckoutVars {
+    timeoutMs: int
+}
+```
+
+Generate and import its Go package with the normal Skel workflow. Importing the
+generated package registers the schema, so standalone Hub can validate referenced
+variables. An independently running Hub only uses schemas registered in its own
+process. Without a registered `app.Vars`, placeholder lookup still works, but
+referenced values are not type-checked.
+
+### Substitution rules
+
+- Paths use camelCase segments separated by dots: `${database.host}` reads
+  `database.host` from the YAML dictionary.
+- `${database.port:5432}` uses the default only when the key is missing.
+  An explicit `null`, empty string, `0`, or `false` is passed to validation at
+  its use site; it does not select the default.
+- A whole-field reference can supply a scalar, object, or list. A reference
+  inside text, such as `"https://${host}/api"`, performs string interpolation.
+- Registered variable schemas check referenced values. Registered configuration
+  schemas also validate whole-object substitutions: required keys must be present,
+  and extra object keys are ignored. Unused dictionary values are not required.
+- Inserted values are not parsed again for placeholders.
+- A missing variable without a default fails seed initialization with an error
+  such as `variable "database.host" is missing and has no default`.
+
+No variables means no vars file is needed. The file can also be omitted when all
+referenced variables have defaults.
+
+### Initialization and later changes
+
+Hub resolves the seed before storing the final configuration. This is an
+initialization step, not a live binding to the variable file.
+
+| Hub storage | When variables take effect | How to change deployed values |
+| --- | --- | --- |
+| Default no-db mode | Every start, into a fresh in-memory store | Edit `vars.yaml` and restart; Dashboard configuration is read-only |
+| SQLite or PostgreSQL | The first seed initialization, recorded in database metadata | Update configuration through Hub; later starts skip seed, source, and vars files entirely |
+
+Field source records retain `source`, `define`, and `override`, together with the
+original template, the variable values used, and whether defaults were selected.
+Dashboard shows these in configuration comments or field information tooltips.
+The optional seed source map adds origin information; it does not supply variable
+values. See [standalone packaging](../getting-started/deployment-modes.md#deployment-configuration)
+for distributing a binary with a deployment configuration file.
 
 ## How a value reaches an execution
 

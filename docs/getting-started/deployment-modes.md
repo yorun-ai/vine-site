@@ -52,20 +52,73 @@ Shutdown reverses that order. Hub uses in-process Redis, while Link and Portal
 use inproc endpoints, so no runtime service needs to be started ahead of time.
 
 To embed seed configuration in the application, pass YAML text through
-`standalone.Option.SeedYAML`, for example a string populated by `go:embed`:
+`standalone.Option.SeedHubData`, for example a string populated by `go:embed`:
 
 ```go
 standalone.NewWithOption[*HelloApp](standalone.Option{
-    SeedYAML: "{}",
+    SeedHubData: "{}",
 }).StartAndWait()
 ```
 
-`SeedYAML` and `SeedYAMLFile` are mutually exclusive, including a seed file
+`SeedHubData` and `SeedHubDataFile` are mutually exclusive, including a seed file
 supplied through the CLI or environment. Without a database option, one of the
 two seed sources is required and configuration is read-only; use `{}` for empty
 configuration. Inline YAML is validated and imported exactly like a seed file,
 with or without a persistent database. It is available only from code, with no
 CLI flag or environment variable.
+
+### Ship a deployment configuration file {#deployment-configuration}
+
+For a standalone release, the developer can embed seed data and its optional
+source map in the binary, and expose selected settings through seed variables.
+Operators maintain a plain YAML dictionary without needing to know the internal
+domain configuration names or how their values are assembled.
+
+```go title="main.go (excerpt)"
+import _ "embed"
+
+//go:embed seed/hub.yaml
+var seedHubData string
+
+//go:embed seed/source.yaml
+var seedHubSource string
+
+func main() {
+    standalone.NewWithOption[*HelloApp](standalone.Option{
+        SeedHubData:   seedHubData,
+        SeedHubSource: seedHubSource,
+    }).StartAndWait()
+}
+```
+
+The embedded paths are relative to this Go source file. Import the application's
+generated `app.Vars` package as part of the application so its variable types are
+registered. The snippet reuses the `HelloApp` specification and `standalone`
+import from the surrounding application.
+
+Distribute the compiled binary and a `vars.yaml` containing the exposed deployment
+settings, then run:
+
+```bash
+./hello --seed-hub-vars-file ./vars.yaml
+```
+
+The seed data and source files are build inputs; they do not need to be shipped
+beside the executable. Variables are supplied only by file, never embedded via a
+Vine option. With no placeholders, or defaults for every reference, the binary
+can start without a vars file.
+
+No database is selected in this example, so configuration comes from the embedded
+seed and deployment dictionary on every start. Editing `vars.yaml` and restarting
+applies the new values. If SQLite or PostgreSQL is selected, seed variables only
+initialize the database once; later starts use the database configuration.
+
+You can instead keep the seed external with `--seed-hub-data-file` and the optional
+`--seed-hub-source-file`. If a source map is supplied, use embedded data with an
+embedded source map, or file data with a file source map; mixing them is rejected.
+The vars file is separate in either case. See
+[deployment variables](../framework/configuration.md#deployment-variables) for
+schema declarations, substitution syntax, and defaults.
 
 ### Characteristics and limitations
 
@@ -99,7 +152,7 @@ flowchart LR
 Start the runtime and application in separate terminals:
 
 ```bash
-vine dev --seed-yaml-file ./seed.yaml
+vine dev --seed-hub-data-file ./seed.yaml
 go -C ./src/server run ./cmd/myapp
 ```
 

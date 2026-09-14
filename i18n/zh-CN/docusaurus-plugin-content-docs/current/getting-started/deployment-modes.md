@@ -46,15 +46,60 @@ standalone.NewWithOption[*HelloApp](standalone.Option{
 
 启动顺序为 Hub → Portal → Link → 业务应用；停止时按相反顺序执行。Hub 使用进程内 Redis，Link 与 Portal 使用 inproc endpoint，因此不需要提前启动任何 runtime 服务。
 
-要将 seed 配置嵌入应用，可以通过 `standalone.Option.SeedYAML` 传入 YAML 文本，例如由 `go:embed` 填充的字符串：
+要将 seed 配置嵌入应用，可以通过 `standalone.Option.SeedHubData` 传入 YAML 文本，例如由 `go:embed` 填充的字符串：
 
 ```go
 standalone.NewWithOption[*HelloApp](standalone.Option{
-    SeedYAML: "{}",
+    SeedHubData: "{}",
 }).StartAndWait()
 ```
 
-`SeedYAML` 与 `SeedYAMLFile` 互斥，也不能同时通过 CLI 或环境变量指定 seed 文件。不指定数据库时，必须提供其中一种 seed 来源，配置只读；空配置使用 `{}`。内联 YAML 与 seed 文件使用完全相同的校验与导入流程，使用持久化数据库时也一样。该入口只能通过代码设置，不提供 CLI 参数或环境变量。
+`SeedHubData` 与 `SeedHubDataFile` 互斥，也不能同时通过 CLI 或环境变量指定 seed 文件。不指定数据库时，必须提供其中一种 seed 来源，配置只读；空配置使用 `{}`。内联 YAML 与 seed 文件使用完全相同的校验与导入流程，使用持久化数据库时也一样。该入口只能通过代码设置，不提供 CLI 参数或环境变量。
+
+### 交付单机应用配置文件 {#deployment-configuration}
+
+发布 standalone 应用时，开发者可以把 seed data 和可选的 source 信息嵌入二进制，
+通过 seed 变量暴露需要用户调整的参数。用户维护普通的 YAML 字典，无需了解内部的
+ domain 配置名称及其组装方式。
+
+```go title="main.go (excerpt)"
+import _ "embed"
+
+//go:embed seed/hub.yaml
+var seedHubData string
+
+//go:embed seed/source.yaml
+var seedHubSource string
+
+func main() {
+    standalone.NewWithOption[*HelloApp](standalone.Option{
+        SeedHubData:   seedHubData,
+        SeedHubSource: seedHubSource,
+    }).StartAndWait()
+}
+```
+
+嵌入路径相对于这份 Go 源文件。应用需要导入生成的 `app.Vars` 包，以注册变量类型。
+示例沿用所在应用中已有的 `HelloApp` 定义和 `standalone` 导入。
+
+交付编译后的二进制和包含部署参数的 `vars.yaml`，启动时执行：
+
+```bash
+./hello --seed-hub-vars-file ./vars.yaml
+```
+
+Seed data 和 source 文件是构建输入，运行时无需随二进制分发。
+变量只能通过文件提供，没有通过 Vine 选项嵌入变量的入口。
+没有占位符，或所有引用都有默认值时，二进制可以不带 vars 文件直接启动。
+
+示例未指定数据库，因此每次启动都从内嵌 seed 和部署字典加载配置；
+修改 `vars.yaml` 后重启即可生效。如果选择 SQLite 或 PostgreSQL，seed 变量只在
+首次初始化数据库时生效，后续启动以数据库中的配置为准。
+
+也可以将 seed 保留为外部文件，通过 `--seed-hub-data-file` 和可选的
+`--seed-hub-source-file` 提供。如果提供 source，必须与 data 一起嵌入或一起通过文件
+传入，不能混用。两种方式下 vars 都单独通过文件提供。结构定义、替换语法和默认值规则见
+[部署变量](../framework/configuration.md#deployment-variables)。
 
 ### 特点与限制
 
@@ -82,7 +127,7 @@ flowchart LR
 在两个终端中分别启动运行时和应用：
 
 ```bash
-vine dev --seed-yaml-file ./seed.yaml
+vine dev --seed-hub-data-file ./seed.yaml
 go -C ./src/server run ./cmd/myapp
 ```
 

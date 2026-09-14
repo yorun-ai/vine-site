@@ -164,9 +164,9 @@ take effect without restarting Portal. Omitting `routePathPrefix`
 from an API update leaves it unchanged; sending an empty string clears it.
 Seed YAML is a complete rule value: omitting the field means empty.
 
-When upgrading from `v0.14.1`, Hub automatically migrates saved rules. You do not
-need to recreate them. Use the following field names when editing seed files
-or calling the Admin API.
+Hub no longer migrates databases older than Vine v0.15.7. Start such a database
+with Vine v0.15.7 so its migration completes, then upgrade to the current
+release.
 
 Legacy YAML remains supported at both startup and Dashboard import. Each old
 field produces a warning identifying the rule, old field, and replacement:

@@ -98,7 +98,7 @@ sequenceDiagram
 
 ## 提供配置值
 
-Hub seed 文件使用配置的完整 Skel 名；`value` 字段可以直接写 YAML 对象（Hub 会转换为 JSON），也支持在 YAML 字符串中编码 JSON 的旧写法：
+Hub seed 文件使用配置的完整 Skel 名；`value` 字段可以直接写 YAML 对象（Hub 会转换为 JSON），也支持在 YAML 字符串中编码 JSON：
 
 ```yaml title="seed.yaml"
 appConfigs:
@@ -115,8 +115,8 @@ standalone 模式：
 
 ```go title="main.go"
 standalone.NewWithOption[*CheckoutApp](standalone.Option{
-    SQLiteFile:   "./hub.sqlite",
-    SeedYAMLFile: "./seed.yaml",
+    SQLiteFile:      "./hub.sqlite",
+    SeedHubDataFile: "./seed.yaml",
 }).StartAndWait()
 ```
 
@@ -129,11 +129,91 @@ standalone.NewWithOption[*CheckoutApp](standalone.Option{
 vine hub serve \
   --db-sqlite-file ./hub.sqlite \
   --mq-embedded-nats \
-  --seed-yaml-file ./seed.yaml
+  --seed-hub-data-file ./seed.yaml
 ```
 
 seed 会被导入 Hub 数据库，导入后数据库仍然是 source of truth；不指定数据库时，
 Hub 把 seed 保留在内存中并只读提供。
+
+## 部署变量 {#deployment-variables}
+
+Seed 变量让应用只向部署者暴露少量配置，而不要求他们理解内部的 domain 配置结构。
+开发者决定哪些 seed 字段引用变量，其余字段保留固定值；同一个变量可以供多个配置字段使用。
+
+Vine v0.17.0 提供部署变量功能。
+
+### 暴露指定配置项
+
+以上面的结算配置为例，在应用 seed 中暴露超时时间，币种保留固定值：
+
+```yaml title="app/seed/hub.yaml"
+appConfigs:
+  - name: demo.checkout.CheckoutConfig
+    value:
+      timeoutMs: "${checkout.timeoutMs:3000}"
+      currency: CNY
+```
+
+部署配置文件只需要包含暴露的参数：
+
+```yaml title="vars.yaml"
+checkout:
+  timeoutMs: 5000
+```
+
+文件名可以自行选择，通过 `--seed-hub-vars-file ./vars.yaml`、
+`VINE_SEED_HUB_VARS_FILE` 或 `standalone.Option.SeedHubVarsFile` 指定。
+应用代码仍然取得替换后的 `CheckoutConfig`，无需自行读取字典或解析占位符。
+
+### 定义变量结构
+
+应用可以用 Skel data 类型 `app.Vars` 定义部署字典，并嵌套其他 data 类型：
+
+```skel title="app/skel/vars.skel"
+domain app
+
+data Vars {
+    checkout: CheckoutVars
+}
+
+data CheckoutVars {
+    timeoutMs: int
+}
+```
+
+按正常的 Skel 流程生成并导入 Go 包。导入生成包会注册 schema，standalone 内的 Hub
+便能校验引用的变量。独立运行的 Hub 只能使用其自身进程已注册的 schema。
+没有注册 `app.Vars` 时仍可查找和替换变量，但不会对引用值做类型校验。
+
+### 替换规则
+
+- 路径由 camelCase 节点组成，用点分隔：`${database.host}` 读取 YAML 字典中的
+  `database.host`。
+- `${database.port:5432}` 仅在 key 缺失时使用默认值。显式的 `null`、空字符串、
+  `0`、`false` 会传递到使用位置进行校验，不会触发默认值。
+- 整个字段引用变量时，可以替换标量、对象或列表；文本中的引用，例如
+  `"https://${host}/api"`，则进行字符串插值。
+- 已注册的变量结构校验被引用的值；配置结构也会校验整个对象的替换，要求必需的 key
+  存在，多余的对象 key 忽略。未使用的字典值不要求提供。
+- 替换进来的值不会再次解析占位符。
+- 缺失且没有默认值的变量会导致 seed 初始化失败，例如
+  `variable "database.host" is missing and has no default`。
+
+Seed 没有变量时不需要 vars 文件；所有引用都有默认值时，也可以不传这个文件。
+
+### 初始化与后续修改
+
+Hub 先解析 seed，再保存最终配置。这是初始化步骤，不会建立到变量文件的动态绑定。
+
+| Hub 存储方式 | 变量何时生效 | 部署后如何修改 |
+| --- | --- | --- |
+| 默认 no-db 模式 | 每次启动时加载到新的内存数据库 | 修改 `vars.yaml` 后重启；Dashboard 配置只读 |
+| SQLite 或 PostgreSQL | 首次 seed 初始化，完成状态记录在数据库 metadata 中 | 通过 Hub 更新配置；后续启动完全跳过 seed、source、vars 文件 |
+
+字段来源记录保留 `source`、`define`、`override`，以及原始模板、实际使用的变量值和
+是否采用默认值。Dashboard 通过配置注释或字段信息浮层展示这些内容。
+可选的 seed source 文件补充来源信息，不提供变量值。
+二进制与部署配置文件的交付方式见[单机应用打包](../getting-started/deployment-modes.md#deployment-configuration)。
 
 ## 配置值如何到达 execution
 
