@@ -15,8 +15,8 @@ sidebar_label: 追踪与超时
 | --- | --- | --- |
 | `vrpc-trace` | RPC 客户端 | 传递 RPC 调用链 |
 | `vweb-trace` | Web 客户端 | 传递 Web 调用链 |
-| `vrpc-options` | RPC 客户端 | 传递 RPC 调用选项，目前只有 `timeout` |
-| `vweb-options` | Web 客户端 | 传递 Web 调用选项，目前只有 `timeout` |
+| `vrpc-options` | RPC 客户端 | 传递 RPC 调用选项：`timeout`，以及 App 到 Link 调用中的 `destination` |
+| `vweb-options` | Web 客户端 | 传递 Web 调用选项：`timeout` |
 | `portal-trace-id` | Portal 响应 | 返回本次请求的 trace id，方便排查 |
 
 trace header 使用逗号分隔的 `key=value` 格式：
@@ -26,14 +26,16 @@ vrpc-trace: id=123e4567e89b12d3a456426614174000,span=1234567890abcdef
 vweb-trace: id=123e4567e89b12d3a456426614174000,span=1234567890abcdef
 ```
 
-options header 目前只有 timeout：
+options header 使用同样的格式：
 
 ```text
 vrpc-options: timeout=30s
+vrpc-options: destination=order.service,timeout=30s
 vweb-options: timeout=30s
 ```
 
-timeout 使用 Go duration 格式，例如 `1000ms`、`1s`、`30s`。
+timeout 使用 Go duration 格式，例如 `1000ms`、`1s`、`30s`。Portal 转发外部请求时只
+保留 `timeout`，因此外部客户端无法指定 destination。
 
 ## 外部 RPC 客户端应该怎么传
 

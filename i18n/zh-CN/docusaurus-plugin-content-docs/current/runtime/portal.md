@@ -21,8 +21,24 @@ flowchart LR
 - **Endpoint 发现**：持续订阅 RPC 与 Web endpoint 注册，向网关提供可用实例。
 - **认证与授权**：根据 actor、service、resource Schema，在 RPC 转发前按需调用后端认证和权限服务。
 - **TLS 证书**：读取并监听 Hub 中的证书配置，按 SNI 匹配 HTTPS 证书。
+- **自身注册**：向 Hub 注册本实例及 Vine runtime 版本，并在运行期间持续续租，使 Hub
+  能够展示正在提供服务的 Portal 实例。
 
-Portal 只处理外部入口与网关策略；它不保存配置真源，不负责应用注册，也不运行心跳。
+Portal 只处理外部入口与网关策略；它不保存配置真源，也不负责应用及其能力的注册。
+
+## Portal 注册
+
+在分离部署中，Portal 启动时向 Hub 注册自身，每 10 秒续租一次，并在优雅退出时注销。
+最后一次心跳后 30 秒，Hub 会将某个 Portal 实例判定为停止服务，因此被强制终止的
+Portal 也会自动从列表中消失。Hub Dashboard 会在应用实例之外列出已注册的 Portal 实例。
+
+这些记录保存在 Hub 内存中，重启后的 Hub 不保留任何记录，各 Portal 在下一次心跳时
+重新注册。standalone 的 Portal 与 Hub 同进程，不可能比 Hub 存活更久，因此只注册一次，
+不发送心跳。
+
+Portal 可以运行在尚未提供 Portal 注册服务的旧版 Hub 上：它会继续提供服务，在每次心跳时
+重试注册并输出警告。升级运行中的部署时，应先升级 Hub；先升级 Portal 仍可工作，但在
+Hub 升级完成前会持续输出该警告。
 
 ## 启动
 
@@ -64,6 +80,8 @@ Portal 不需要重启来加载大多数网关变更。它监听 Hub Redis 中�
 - TLS 证书：用于 HTTPS listener 的 SNI 匹配。
 
 Hub 发布变更后，Portal 会更新相应 listener、网关或缓存状态；业务实例注册或失效时，endpoint 发现也会随之变化。
+
+Hub 重启同样如此。Portal 定时重新读取 Hub 信息，Hub 重启后通告不同的 watch 端点时，Portal 无需重启即可跟随。详见 [Hub 重启与端点变化](./hub.md#hub-重启与端点变化)。
 
 ## 可选凭据字段
 
@@ -135,24 +153,6 @@ API 更新时不传 `routePathPrefix` 表示不修改，传空字符串表示清
 
 Hub 不再迁移低于 Vine v0.15.7 的数据库。此类数据库请先用 Vine v0.15.7 启动完成迁移，
 再升级到当前版本。
-
-启动和 Dashboard 导入仍接受旧 YAML 字段，并提示对应的新字段名：
-
-| 旧 YAML 字段 | 新 YAML 字段 |
-| --- | --- |
-| `scheme` | `matchScheme` |
-| `host` | `matchHost` |
-| `port` | `matchPort` |
-| `pathPrefix` | `matchPathPrefix` |
-| `targetType` | `routeType` |
-| `siteName` | `routeSiteName` |
-| `targetPath` | `routePathPrefix` |
-| `redirectionPattern` | `routeRedirectionPattern` |
-
-同一条规则不能混用新旧字段，即使值相同、为空或为 `0`，也会在应用任何数据之前报错。
-Admin API 只接受新字段名，请更新管理入口规则的自定义 Admin 客户端。
-升级时应一起升级 Hub 和全部 Portal 实例；
-新旧 Hub、Portal 混用可能导致入口路由不可用。
 
 ## 规则校验
 

@@ -156,7 +156,6 @@ flowchart LR
 
 ```bash
 vine hub serve \
-  --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite
 
 vine portal serve \
@@ -198,7 +197,6 @@ flowchart LR
 ```bash
 # 1. 控制面
 vine hub serve \
-  --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite
 
 # 2. 对外网关（需要外部 HTTP / HTTPS 入口时）

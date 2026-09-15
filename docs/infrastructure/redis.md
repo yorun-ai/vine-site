@@ -10,8 +10,8 @@ application. Use this reference for the exact component, Cache, Locker, and
 lock-invalidation behavior exposed by `infra/redis`.
 
 The top-level `infra/redis` package exposes public types including `Option`,
-`TypeAdder`, `RedisSpec`, `Redis`, `Locker`, `Lock`, `Cache[T]`, and
-`NewCache[T](...)`.
+`TypeAdder`, `RedisSpec`, `Redis`, `Locker`, `Lock`, and `Cache[T]`. Caches are
+created through methods on `Redis`, not through a package-level constructor.
 
 `redis` doesn't rewrap the `go-redis` command set. Instead, it provides a
 consistent integration layer that:
@@ -525,7 +525,7 @@ strategy when duplicate loads are expensive.
 If you don't want to declare a cache type for injection, create one directly:
 
 ```go
-cache := redis.NewCache[*User](&cacheRedis.Redis, ctx, "user")
+cache := cacheRedis.NewCache[*User](ctx, "user")
 ```
 
 You can also provide a concrete type at runtime:

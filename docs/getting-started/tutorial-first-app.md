@@ -143,7 +143,6 @@ Install the matching Vine CLI, then start Hub separately:
 go install go.yorun.ai/vine/cmd/vine@main
 
 vine hub serve \
-  --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite
 ```
 

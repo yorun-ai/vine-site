@@ -20,7 +20,7 @@ flowchart LR
 ## 职责
 
 - **配置中心**：从 SQLite 或 PostgreSQL 读取配置，并同步到 Redis。
-- **服务注册中心**：接收 Link 上报的应用、RPC、Web、事件和任务能力；维护实例状态。
+- **服务注册中心**：接收 Link 上报的应用、RPC、Web、事件和任务能力；维护实例状态。它同时记录注册到 Hub 的 Portal 实例，Dashboard 据此展示正在提供服务的网关实例。
 - **运行时分发层**：将配置、注册、Portal 规则、schema 与证书写入 Redis，供消费者读取和订阅。
 - **组件 Control API**：提供 Link 与 Portal 使用的发现和注册服务。
 - **管理入口**：在独立 listener 上提供 Dashboard Rpc 与 Web handler；Dashboard
@@ -34,7 +34,6 @@ Hub 不是业务请求的转发路径。业务的外部请求由 Portal 处理�
 
 ```bash
 vine hub serve \
-  --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite
 ```
 
@@ -46,11 +45,13 @@ vine hub serve \
 | Hub Redis | `127.0.0.1:7072` | 运行时快照读取与订阅 |
 | Hub Admin API 与 Web | `127.0.0.1:7075` | Dashboard 管理 Rpc 与内嵌 Dashboard Web |
 
-可用 `--control-listen`、`--redis-listen` 和 `--admin-listen` 修改这些 listener。
+可用 `--control-listen`、`--watch-listen` 和 `--admin-listen` 修改这些 listener。
+watch listener 承载 Link 与 Portal 读取和订阅的流量，该 listener 兼容 Redis 协议。
 
 该 listener 边界也体现在 Hub 的 Skel 契约中。Link 与 Portal 使用
-`vine.hub.control` 域，其中包含 `InfoService` 和 `RegistryService`；Dashboard
-client 使用独立的 `vine.hub.admin` 域访问管理 Rpc 服务与 `DashboardWeb`。
+`vine.hub.control` 域，其中包含 `InfoService`、`RegistryService`、`LockService` 和
+`PortalRegistryService`；Dashboard client 使用独立的 `vine.hub.admin` 域访问管理
+Rpc 服务与 `DashboardWeb`。
 
 ## 后台 mTLS
 
@@ -62,7 +63,6 @@ vine hub serve \
   --mtls-ca-file /run/vine/ca.pem \
   --mtls-cert-file /run/vine/hub.pem \
   --mtls-key-file /run/vine/hub-key.pem \
-  --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite
 ```
 
@@ -95,7 +95,7 @@ API，但会收到告警，这条 h2c 路径也保持未经认证的状态；部
 后台身份证书。启用 mTLS 后，如果没有匹配的公开证书，Portal 会回退到一个短期、
 仅驻留当前进程的自签 Web 证书；配置的 Portal 证书始终优先。该回退能加密引导流量，
 但不会被浏览器信任。外部 PostgreSQL 与 NATS endpoint 也继续使用各自的安全配置；
-`--mq-external-nats-url` 当前只接受 `nats://`。
+`--mq-nats-endpoint` 当前只接受 `nats://`。
 
 :::
 
@@ -104,10 +104,14 @@ API，但会收到告警，这条 h2c 路径也保持未经认证的状态；部
 ```bash
 vine hub serve \
   --db-postgres-url postgres://user:password@db.example.com:5432/vine \
-  --mq-external-nats-url nats://nats.example.com:4222
+  --mq-mode=nats \
+  --mq-nats-endpoint nats://nats.example.com:4222
 ```
 
-数据库参数 `--db-sqlite-file` 和 `--db-postgres-url` 至多提供一个；消息队列参数 `--mq-embedded-nats` 和 `--mq-external-nats-url` 必须二选一。两者都不提供时，Hub 默认使用 `--no-db`：seed 配置加载到内存，配置保持只读。
+Hub 默认使用 `--mq-mode=embedded`。连接外部 NATS 时，必须同时提供
+`--mq-mode=nats` 和 `--mq-nats-endpoint`；embedded 模式拒绝 endpoint。
+
+数据库参数 `--db-sqlite-file` 和 `--db-postgres-url` 至多提供一个。两项数据库参数都不提供时，Hub 默认使用 `--no-db`：seed 配置加载到内存，配置保持只读。
 
 可用 `--seed-hub-data-file ./seed.yaml` 在启动时导入初始配置、Portal 站点、规则和证书。使用数据库时，导入后仍由数据库作为配置真源。
 
@@ -136,11 +140,74 @@ seed 文件和 Dashboard YAML 输入禁止锚点 `&`、别名 `*`、`<<` 合并�
 如果导入过程中发生数据库错误，部分数据可能已保存；重试前请检查当前配置。
 规则的填写要求见 [Portal](./portal.md#规则校验)。
 
+## Lock 模式
+
+Hub 默认使用 `--lock-mode=embedded`，通过 Control API 提供租约锁。
+锁状态保存在内存中，Hub 重启后会丢失。
+
+使用外部 Redis：
+
+```bash
+vine hub serve \
+  --db-sqlite-file ./hub.sqlite \
+  --lock-mode=redis \
+  --lock-redis-endpoint=redis://redis.example.com:6379/0
+```
+
+Link 直接连接 Hub 下发的 Redis endpoint。地址支持 `redis://` 和 `rediss://`，
+可以包含用户名、密码和数据库编号。对应环境变量为 `VINE_LOCK_MODE` 和
+`VINE_LOCK_REDIS_ENDPOINT`。
+
+`redis` 模式必须提供 endpoint，`embedded` 和 `disable` 模式拒绝 endpoint。
+使用 `--lock-mode=disable` 拒绝锁操作。standalone 固定使用进程内嵌锁，不暴露
+Lock 配置入口；不同 standalone 进程之间不共享锁。
+
+### 应用侧锁
+
+应用注入 `*lock.Locker` 即可获得自动续期的租约锁，其 key 按应用名隔离；注入
+`*lock.UniversalLocker` 时，key 在同一锁后端上的所有应用之间共享：
+
+```go title="service.go"
+type OrderService struct {
+    Locks *lock.Locker `inject:""`
+}
+
+func (s *OrderService) Settle(ctx context.Context, orderID string) {
+    lease := s.Locks.WithContext(ctx).Lock("settle:" + orderID)
+    defer lease.TryUnlock()
+
+    // 业务必须在 lease.Context() 结束时停止。
+    s.settleWhileOwned(lease.Context(), orderID)
+}
+```
+
+`Lock` 会等待直到获得租约，`TryLock` 只尝试一次，竞争失败时返回 `false`。竞争不是
+错误，但后端故障或 context 结束会 panic 并抛出框架错误。租约默认 30 秒，持有期间
+会在后台自动续期；`lock.WithTTL` 调整的是租约时长，不是等待上限，等待时长请通过
+`WithContext` 的 deadline 控制。续期失败会取消 `Lock.Context()` 并将租约标记为
+已损坏，此后 `Unlock` 会 panic，因此失去租约属于正常情况时应使用 `TryUnlock`。
+租约只是协调手段：不保证公平性，不可重入，也不能作为 fencing token。
+
+如果应用只需要协调互斥，且锁后端由部署统一提供，使用 `core/lock`；如果需要自己声明
+Redis Component 并自行管理 endpoint，则使用 [Redis 指南](../framework/redis-guide.md)
+中的 `infra/redis` 锁。
+
 ## 注册与租约
 
 普通进程模式下，Link 为应用和 RPC 服务注册写入带 TTL 的记录，并通过心跳续租。Hub 的 registry sweeper 发现租约过期后，会主动注销实例并发布删除事件。
 
 当 Link 或业务应用异常停止时，Portal 和其他 Link 会在注册失效后移除对应 endpoint，而不是持续转发到失效实例。
+
+## Hub 重启与端点变化
+
+Hub 在内存中保存注册、watch 和 Portal 实例记录，因此重启后对集群的视图是空的。Link 与 Portal 会自行恢复，无需随之重启：
+
+- 实例心跳发现 Hub 已不认识该实例时，Link 重新读取 Hub 信息，并重新注册本地应用实例。
+- Portal 定时重新读取 Hub 信息，因此 Hub 重启后通告的新端点无需人工干预即可生效。
+- watch、MQ、lock 端点变化时只重建受影响的连接；端点不变则保留现有连接，因此地址未变的 Hub 重启不会打断进行中的订阅。
+- watch 端点变化后 watcher 会重新订阅并对快照做 reconcile，端点失效期间变化的 key 会像普通变更一样上报。
+
+Hub 的 control API 端点仍属于配置：Link 与 Portal 连接启动时指定的 `--hub-endpoint`，Hub API 地址变化需要同步更新该配置。
 
 ## Inproc 模式
 

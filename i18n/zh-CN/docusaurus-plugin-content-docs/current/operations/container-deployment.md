@@ -40,29 +40,33 @@ capability，只为 Portal 授予绑定 80 和 443 所需的 `NET_BIND_SERVICE`�
 
 ## 运行配置
 
-Hub 默认不选择数据库或 NATS 模式。每个 Hub 容器必须在以下每组中准确配置一项：
+Hub 默认使用只读的 no-db 模式、内嵌 NATS 与内存锁。需要可写持久化，或需要不随 Hub
+进程消亡的消息系统时，按下表配置：
 
 | 关注点 | 选项一 | 选项二 |
 | --- | --- | --- |
 | 数据库 | `VINE_DB_SQLITE_FILE=/data/hub.sqlite` | `VINE_DB_POSTGRES_URL=postgres://...` |
-| 消息系统 | `VINE_MQ_EMBEDDED_NATS=true` | `VINE_MQ_EXTERNAL_NATS_URL=nats://...` |
+| 消息系统 | `VINE_MQ_MODE=embedded` | `VINE_MQ_MODE=nats` 搭配 `VINE_MQ_NATS_ENDPOINT=nats://...` |
 
-同一组不能同时设置两项。使用 SQLite 时，将持久化存储挂载到 `/data`。通过
+两项数据库配置不能同时设置。embedded 模式拒绝 `VINE_MQ_NATS_ENDPOINT`，
+nats 模式必须提供它。使用 SQLite 时，将持久化存储挂载到 `/data`。通过
 `VINE_SEED_HUB_DATA_FILE` 配置 seed 文件时，也需要将对应文件挂载进容器。
 `VINE_SEED_HUB_SOURCE_FILE` 和 `VINE_SEED_HUB_VARS_FILE` 引用的来源、变量文件
 也需要挂载；这些变量均应填写容器内的文件路径。
 
-Dockerfile 默认值和可接受的环境变量如下：
+镜像接受以下环境变量，其中默认值一列是变量未设置时实际生效的取值：
 
-| 镜像 | 变量 | 镜像默认值 | 用途 |
+| 镜像 | 变量 | 生效默认值 | 用途 |
 | --- | --- | --- | --- |
 | Hub | `VINE_CONTROL_LISTEN` | `0.0.0.0:7071` | Link 与 Portal 使用的 Control API |
 | Hub | `VINE_ADMIN_LISTEN` | `0.0.0.0:7075` | Admin API 与 Dashboard Web |
-| Hub | `VINE_REDIS_LISTEN` | `0.0.0.0:7072` | 内嵌 Redis endpoint |
+| Hub | `VINE_WATCH_LISTEN` | `0.0.0.0:7072` | 配置与发现 watch 端点 |
 | Hub | `VINE_DB_SQLITE_FILE` | 空 | SQLite 数据库路径 |
 | Hub | `VINE_DB_POSTGRES_URL` | 空 | PostgreSQL 连接 URL |
-| Hub | `VINE_MQ_EMBEDDED_NATS` | `false` | 启动内嵌 NATS |
-| Hub | `VINE_MQ_EXTERNAL_NATS_URL` | 空 | 外部 NATS URL |
+| Hub | `VINE_MQ_MODE` | `embedded` | MQ 模式：`embedded` 或 `nats` |
+| Hub | `VINE_MQ_NATS_ENDPOINT` | 空 | 外部 NATS URL |
+| Hub | `VINE_LOCK_MODE` | `embedded` | 锁后端：`embedded`、`redis` 或 `disable` |
+| Hub | `VINE_LOCK_REDIS_ENDPOINT` | 空 | `VINE_LOCK_MODE=redis` 时使用的 Redis endpoint |
 | Hub | `VINE_SEED_HUB_DATA_FILE` | 空 | 启动 seed 文件 |
 | Hub | `VINE_SEED_HUB_SOURCE_FILE` | 空 | 可选的字段来源文件 |
 | Hub | `VINE_SEED_HUB_VARS_FILE` | 空 | 部署变量 YAML 字典 |

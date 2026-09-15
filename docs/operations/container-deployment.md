@@ -44,31 +44,36 @@ into the images.
 
 ## Runtime configuration
 
-Hub does not pick a database or NATS mode by default. Every Hub container
-must configure exactly one option in each group:
+Hub defaults to read-only no-db mode, embedded NATS, and in-memory locks.
+Configure a database for writable persistence and an external NATS endpoint for
+messaging that survives the Hub process:
 
 | Concern | Option 1 | Option 2 |
 | --- | --- | --- |
 | Database | `VINE_DB_SQLITE_FILE=/data/hub.sqlite` | `VINE_DB_POSTGRES_URL=postgres://...` |
-| Messaging | `VINE_MQ_EMBEDDED_NATS=true` | `VINE_MQ_EXTERNAL_NATS_URL=nats://...` |
+| Messaging | `VINE_MQ_MODE=embedded` | `VINE_MQ_MODE=nats` with `VINE_MQ_NATS_ENDPOINT=nats://...` |
 
-Do not set both options in a group. When using SQLite, mount persistent
-storage at `/data`. When a seed file is configured with
+Do not set both database variables. Embedded messaging rejects
+`VINE_MQ_NATS_ENDPOINT`, and `nats` mode requires it. When using SQLite, mount
+persistent storage at `/data`. When a seed file is configured with
 `VINE_SEED_HUB_DATA_FILE`, mount that file into the container as well. Mount any
 source and variable files referenced by `VINE_SEED_HUB_SOURCE_FILE` and
 `VINE_SEED_HUB_VARS_FILE` too; each value must name its path inside the container.
 
-The Dockerfile defaults and accepted environment variables are:
+The images accept these environment variables; the default column shows the
+value in effect when a variable is unset:
 
-| Image | Variable | Image default | Purpose |
+| Image | Variable | Effective default | Purpose |
 | --- | --- | --- | --- |
 | Hub | `VINE_CONTROL_LISTEN` | `0.0.0.0:7071` | Control API for Link and Portal |
 | Hub | `VINE_ADMIN_LISTEN` | `0.0.0.0:7075` | Admin API and Dashboard Web |
-| Hub | `VINE_REDIS_LISTEN` | `0.0.0.0:7072` | Embedded Redis endpoint |
+| Hub | `VINE_WATCH_LISTEN` | `0.0.0.0:7072` | Watch endpoint for configuration and discovery |
 | Hub | `VINE_DB_SQLITE_FILE` | empty | SQLite database path |
 | Hub | `VINE_DB_POSTGRES_URL` | empty | PostgreSQL connection URL |
-| Hub | `VINE_MQ_EMBEDDED_NATS` | `false` | Start embedded NATS |
-| Hub | `VINE_MQ_EXTERNAL_NATS_URL` | empty | External NATS URL |
+| Hub | `VINE_MQ_MODE` | `embedded` | MQ mode: `embedded` or `nats` |
+| Hub | `VINE_MQ_NATS_ENDPOINT` | empty | External NATS URL |
+| Hub | `VINE_LOCK_MODE` | `embedded` | Lock backend: `embedded`, `redis`, or `disable` |
+| Hub | `VINE_LOCK_REDIS_ENDPOINT` | empty | Redis endpoint for `VINE_LOCK_MODE=redis` |
 | Hub | `VINE_SEED_HUB_DATA_FILE` | empty | Startup seed file |
 | Hub | `VINE_SEED_HUB_SOURCE_FILE` | empty | Optional field source map |
 | Hub | `VINE_SEED_HUB_VARS_FILE` | empty | Deployment variable YAML dictionary |

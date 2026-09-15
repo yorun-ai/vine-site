@@ -44,6 +44,7 @@ type Option struct {
     Logger              *logger.Logger
     ReturnIfSystemError bool
     ServerEndpoint      string
+    Transport           http.RoundTripper
 }
 ```
 
@@ -118,6 +119,7 @@ result, err := client.InvokeAs[string](methodInfo, arguments, options...)
 ```go
 type Option struct {
     App            meta.App
+    Logger         *logger.Logger
     MuteVerboseLog bool
     HandlerTypes   []reflect.Type
     Executor       Executor
@@ -209,8 +211,10 @@ rpcCtx := rpc.NewContext(ctx, trace, clientApp, initiator, actor)
 
 ```go
 type ServiceSpec struct {
+    Type     ServiceSpecType
     Name     string
     SkelName string
+    Hash     string
 
     ServerType        reflect.Type
     DefaultServerType reflect.Type
@@ -227,6 +231,8 @@ type ServiceSpec struct {
 }
 ```
 
+`Type` 决定注册服务端、客户端还是两者，取值必须是 `client`、`server` 或 `both`。
+
 ### `MethodSpec`
 
 ```go
@@ -235,12 +241,19 @@ type MethodSpec struct {
     SkelName string
 
     ArgumentsType               reflect.Type
+    CloneArguments              func(any) any
     ResultType                  reflect.Type
+    CloneResult                 func(any) any
+    ArgumentsSensitive          bool
+    ResultSensitive             bool
     ArgumentsContainsBinaryType bool
     ResultContainsBinaryType    bool
-    MuteSuccessLog              bool
+    MethodFuncs                 []any
 }
 ```
+
+`CloneArguments` 和 `CloneResult` 返回用于 in-process Rpc 的值隔离副本；设置了对应的
+类型时，二者均为必需。`MethodFuncs` 列出绑定到该 spec 的实现方法。
 
 ### `ServiceInfo`
 
@@ -250,6 +263,7 @@ type MethodSpec struct {
 type ServiceInfo interface {
     Name() string
     SkelName() string
+    Hash() string
     ServerType() reflect.Type
     DefaultServerType() reflect.Type
     ClientType() reflect.Type
@@ -269,18 +283,24 @@ type ServiceInfo interface {
 type MethodInfo interface {
     Name() string
     SkelName() string
-    ArgumentsType() reflect.Type
-    ResultType() reflect.Type
-    ArgumentsContainsBinaryType() bool
-    ResultContainsBinaryType() bool
-    MuteSuccessLog() bool
+
     Service() ServiceInfo
     FullURLPath() string
+
     HasArguments() bool
     NewArguments() any
+    ArgumentsType() reflect.Type
+    ArgumentsSensitive() bool
+    ArgumentsContainsBinaryType() bool
+    PositionArguments(arguments any) []any
+    CloneArguments(arguments any) any
+
     HasResult() bool
     NewResult() any
-    PositionArguments(arguments any) []any
+    ResultType() reflect.Type
+    ResultSensitive() bool
+    ResultContainsBinaryType() bool
+    CloneResult(result any) any
 }
 ```
 

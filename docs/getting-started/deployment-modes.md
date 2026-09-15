@@ -183,7 +183,6 @@ Start Hub first, then start Portal when you need an external entry point:
 
 ```bash
 vine hub serve \
-  --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite
 
 vine portal serve \
@@ -231,7 +230,6 @@ A minimal local process startup sequence:
 ```bash
 # 1. Control plane
 vine hub serve \
-  --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite
 
 # 2. External gateway (when an external HTTP/HTTPS entry point is required)

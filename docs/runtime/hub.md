@@ -24,7 +24,9 @@ flowchart LR
 - **Configuration center**: reads configuration from SQLite or PostgreSQL and
   synchronizes it to Redis.
 - **Service registry**: receives application, Rpc, Web, event, and task
-  capabilities reported by Link, and maintains instance state.
+  capabilities reported by Link, and maintains instance state. It also records
+  the Portal daemons that register with it, so the Dashboard can report which
+  gateway instances are serving.
 - **Runtime distribution layer**: writes configuration, registrations, Portal
   rules, schemas, and certificates to Redis for consumers to read and subscribe
   to.
@@ -42,7 +44,6 @@ The smallest local development setup uses SQLite and embedded NATS:
 
 ```bash
 vine hub serve \
-  --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite
 ```
 
@@ -54,13 +55,15 @@ The default listen addresses are:
 | Hub Redis | `127.0.0.1:7072` | Provides runtime snapshot reads and subscriptions. |
 | Hub Admin API and Web | `127.0.0.1:7075` | Serves Dashboard management Rpc and the embedded Dashboard Web application. |
 
-Use `--control-listen`, `--redis-listen`, and `--admin-listen` to override these
-listeners.
+Use `--control-listen`, `--watch-listen`, and `--admin-listen` to override these
+listeners. The watch listener carries the Redis-compatible traffic that Link and
+Portal read and subscribe to.
 
 The listener boundary is also expressed in Hub's Skel contracts. Link and
-Portal use the `vine.hub.control` domain, which contains `InfoService` and
-`RegistryService`. Dashboard clients use the separate `vine.hub.admin` domain
-for management Rpc services and `DashboardWeb`.
+Portal use the `vine.hub.control` domain, which contains `InfoService`,
+`RegistryService`, `LockService`, and `PortalRegistryService`. Dashboard clients
+use the separate `vine.hub.admin` domain for management Rpc services and
+`DashboardWeb`.
 
 ## Backend mTLS
 
@@ -73,7 +76,6 @@ vine hub serve \
   --mtls-ca-file /run/vine/ca.pem \
   --mtls-cert-file /run/vine/hub.pem \
   --mtls-key-file /run/vine/hub-key.pem \
-  --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite
 ```
 
@@ -112,7 +114,7 @@ mTLS enabled, a missing public certificate falls back to a short-lived,
 process-local self-signed Web certificate; a configured Portal certificate
 always takes precedence. This fallback encrypts bootstrap traffic but is not
 browser-trusted. External PostgreSQL and NATS endpoints also retain their own
-security configuration; `--mq-external-nats-url` currently accepts `nats://`.
+security configuration; `--mq-nats-endpoint` currently accepts `nats://`.
 
 :::
 
@@ -121,12 +123,15 @@ Production deployments can use PostgreSQL and an external NATS server:
 ```bash
 vine hub serve \
   --db-postgres-url postgres://user:password@db.example.com:5432/vine \
-  --mq-external-nats-url nats://nats.example.com:4222
+  --mq-mode=nats \
+  --mq-nats-endpoint nats://nats.example.com:4222
 ```
 
-Provide at most one of `--db-sqlite-file` and `--db-postgres-url`, and exactly
-one of `--mq-embedded-nats` and `--mq-external-nats-url`. When neither database
-option is set, Hub defaults to `--no-db`: it loads the seed source into memory
+Hub defaults to `--mq-mode=embedded`. Use `--mq-mode=nats` with
+`--mq-nats-endpoint` for external NATS; embedded mode rejects an endpoint.
+
+Provide at most one of `--db-sqlite-file` and `--db-postgres-url`. When neither
+database option is set, Hub defaults to `--no-db`: it loads the seed source into memory
 and configuration stays read-only.
 
 Use `--seed-hub-data-file ./seed.yaml` to import initial configuration, Portal sites,
@@ -164,6 +169,66 @@ items not selected in the Dashboard. A database error during import may leave
 some items saved; check the current configuration before retrying. See
 [Portal](./portal.md#rule-validation) for rule requirements.
 
+## Lock mode
+
+Hub defaults to `--lock-mode=embedded`, serving lease locks through its Control
+API. Lock state is held in memory and is lost when Hub restarts.
+
+To use an external Redis service:
+
+```bash
+vine hub serve \
+  --db-sqlite-file ./hub.sqlite \
+  --lock-mode=redis \
+  --lock-redis-endpoint=redis://redis.example.com:6379/0
+```
+
+Link connects directly to the Redis endpoint advertised by Hub. The endpoint
+supports `redis://` and `rediss://`, including URL credentials and a database
+number. The corresponding environment variables are `VINE_LOCK_MODE` and
+`VINE_LOCK_REDIS_ENDPOINT`.
+
+`redis` mode requires an endpoint. `embedded` and `disable` reject one.
+Use `--lock-mode=disable` to reject lock operations. Standalone always uses
+in-process embedded locks and exposes no lock configuration options; separate
+standalone processes do not share locks.
+
+### Application locks
+
+Applications acquire automatically renewed lease locks by injecting
+`*lock.Locker`, whose keys are scoped to the application name, or
+`*lock.UniversalLocker`, whose keys are shared by every application using the
+same lock backend:
+
+```go title="service.go"
+type OrderService struct {
+    Locks *lock.Locker `inject:""`
+}
+
+func (s *OrderService) Settle(ctx context.Context, orderID string) {
+    lease := s.Locks.WithContext(ctx).Lock("settle:" + orderID)
+    defer lease.TryUnlock()
+
+    // Work must stop when lease.Context() ends.
+    s.settleWhileOwned(lease.Context(), orderID)
+}
+```
+
+`Lock` waits for the lease and `TryLock` attempts acquisition once, returning
+`false` on contention. Contention is not an error, but a backend failure or a
+canceled context panics with a framework error. The default lease lasts 30
+seconds and renews in the background while it is held; `lock.WithTTL` changes the
+lease duration, not a wait limit. Bound waiting with a `WithContext` deadline.
+Renewal failure cancels `Lock.Context()` and marks the lease broken, after which
+`Unlock` panics; use `TryUnlock` when losing the lease is a normal outcome. These
+leases are coordination primitives: they provide neither fairness nor
+reentrancy, and they are not fencing tokens.
+
+Use `core/lock` when the application only needs coordination and the deployment
+already provides a lock backend. Use the `infra/redis` lockers described in the
+[Redis guide](../framework/redis-guide.md) when the application declares its own
+Redis component and manages that endpoint itself.
+
 ## Registration and Leases
 
 In normal process mode, Link writes application and Rpc service registrations
@@ -174,6 +239,27 @@ publishes a deletion event.
 If Link or a business application exits unexpectedly, Portal and other Link
 instances remove the corresponding endpoint after its registration expires
 instead of continuing to forward requests to a dead instance.
+
+## Hub Restart and Endpoint Changes
+
+Hub keeps registrations, watches, and Portal instance records in memory, so a
+restarted Hub starts from an empty view of the cluster. Link and Portal recover
+on their own instead of requiring a restart:
+
+- Link re-reads Hub information when an instance heartbeat reports that Hub no
+  longer knows the instance, and registers the local application instances again.
+- Portal re-reads Hub information on a timer, so a restarted Hub that advertises
+  different endpoints is followed without operator action.
+- A changed watch, MQ, or lock endpoint replaces only the affected connection. An
+  unchanged endpoint keeps the existing connection, so a restart that keeps the
+  same addresses does not interrupt active subscriptions.
+- Watchers re-subscribe on the new watch endpoint and reconcile their snapshot,
+  so keys that changed while the endpoint was stale are reported like any other
+  change.
+
+Hub's control API endpoint stays configuration: Link and Portal connect to the
+`--hub-endpoint` they were started with, and changing the Hub API address
+requires updating that configuration.
 
 ## Inproc Mode
 

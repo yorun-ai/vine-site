@@ -109,28 +109,36 @@ Inventory every listener:
 - [ ] Verify external traffic enters through Portal instead of bypassing gateway
   routing and admission.
 
-## Configure Hub persistence and messaging
+## Configure Hub persistence, messaging, and locks
 
-Hub requires exactly one database source and exactly one NATS mode:
+Production configuration must stay writable, so choose a database. Messaging and
+locks have working defaults, but their embedded backends hold state in the Hub
+process:
 
 - [ ] Choose one of SQLite and PostgreSQL.
-- [ ] Choose one of embedded NATS and an external NATS URL.
-- [ ] For an external NATS service, enable JetStream and use a `nats://` endpoint
-  accepted by the current CLI.
+- [ ] Keep the default `--mq-mode=embedded`, or use `--mq-mode=nats` with
+  `--mq-nats-endpoint` for external NATS.
+- [ ] For an external NATS service, enable JetStream and use a `nats://` endpoint.
+- [ ] Keep the default `--lock-mode=embedded`, or use `--lock-mode=redis` with
+  `--lock-redis-endpoint` when lease locks must outlive a Hub restart or be
+  shared with components outside this Hub.
 
-A production setup that needs independently operated persistence and messaging
-can start Hub with PostgreSQL and external NATS:
+A production setup that needs independently operated persistence, messaging, and
+locks can start Hub with PostgreSQL and external NATS:
 
 ```bash
 vine hub serve \
   --control-listen 10.0.1.10:7071 \
-  --redis-listen 10.0.1.10:7072 \
+  --watch-listen 10.0.1.10:7072 \
   --admin-listen 10.0.1.10:7075 \
   --mtls-ca-file /run/vine/ca.pem \
   --mtls-cert-file /run/vine/hub.pem \
   --mtls-key-file /run/vine/hub-key.pem \
   --db-postgres-url "$VINE_DB_POSTGRES_URL" \
-  --mq-external-nats-url "$VINE_MQ_EXTERNAL_NATS_URL"
+  --mq-mode=nats \
+  --mq-nats-endpoint "$VINE_MQ_NATS_ENDPOINT" \
+  --lock-mode=redis \
+  --lock-redis-endpoint "$VINE_LOCK_REDIS_ENDPOINT"
 ```
 
 The Hub database is the source of truth for imported configuration, Portal rules,
@@ -153,11 +161,11 @@ determines whether each stream uses memory or file storage.
 For example, provision file-backed, single-replica streams with the NATS CLI:
 
 ```bash
-nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_EVENTS \
+nats --server "$VINE_MQ_NATS_ENDPOINT" stream add VINE_EVENTS \
   --subjects "event.>" --retention interest \
   --storage file --replicas 1 --defaults
 
-nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_TASKS \
+nats --server "$VINE_MQ_NATS_ENDPOINT" stream add VINE_TASKS \
   --subjects "task.>" --retention workqueue \
   --storage file --replicas 1 --defaults
 ```
@@ -181,11 +189,11 @@ storage and verified recovery behavior part of the deployment.
 
 ## Validate registration and failure semantics
 
-| Mode | TTL and registry sweeper | Link heartbeat | Local application health check |
-| --- | --- | --- | --- |
-| Separated application and Link | Enabled | Enabled | Enabled |
-| Linked application with in-process Link and network Hub | Enabled | Enabled | Disabled; application and Link share one process |
-| Standalone with inproc Hub | Disabled | Disabled | Disabled |
+| Mode | TTL and registry sweeper | Link heartbeat | Portal registration | Local application health check |
+| --- | --- | --- | --- | --- |
+| Separated application and Link | Enabled | Enabled | Enabled | Enabled |
+| Linked application with in-process Link and network Hub | Enabled | Enabled | Enabled | Disabled; application and Link share one process |
+| Standalone with inproc Hub | Disabled | Disabled | Once, without a heartbeat | Disabled |
 
 With a normal network Hub, registrations carry leases. Link renews them through
 heartbeat, and Hub's registry sweeper unregisters expired application instances
@@ -207,6 +215,13 @@ tuning flags. Test a non-responsive application separately from a stopped
 process: Link can continue renewing the Hub lease while its application is
 wedged.
 
+Portal registers with Hub independently of application registration. It renews
+its own registration every 10 seconds, unregisters on graceful shutdown, and is
+dropped 30 seconds after its last heartbeat, so a terminated Portal stops being
+reported even when it cannot unregister. Portal instances are listed in the Hub
+Dashboard. Records are held in Hub memory, so a restart clears them until each
+Portal registers again.
+
 - [ ] Gracefully stop one application and verify its endpoint disappears.
 - [ ] Terminate a separately running application without graceful shutdown and
   verify Link removes it after repeated non-timeout console-ping failures.
@@ -215,6 +230,7 @@ wedged.
 - [ ] Interrupt Link-to-Hub connectivity and verify discovery converges after
   connectivity returns.
 - [ ] Confirm Portal and callers stop routing to an expired instance.
+- [ ] Confirm a terminated Portal stops appearing in the Hub Dashboard.
 - [ ] Run these checks with separate processes; do not substitute an inproc test.
 
 See [Runtime Mechanisms](../runtime/mechanisms.md) for registration and discovery

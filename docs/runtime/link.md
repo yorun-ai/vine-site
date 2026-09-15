@@ -32,10 +32,18 @@ flowchart LR
   locally owned application instance named by that request.
 - **Asynchronous message dispatch**: consumes NATS messages and delivers them to
   locally declared event listeners and task runners.
+- **Lease locks**: routes application lock operations to the lock backend that
+  Hub advertises.
 
 Link is the sole owner of local application capability state. The Rpc, Web,
 event, task, and configuration modules derive their runtime indexes from Link
 rather than maintaining separate copies of application instance state.
+
+A Hub restart does not require restarting Link. When Hub advertises different
+watch, MQ, or lock endpoints, Link replaces those connections and re-subscribes
+its watchers; a heartbeat that reports Hub has forgotten an instance registers
+the local application instances again. See
+[Hub Restart and Endpoint Changes](./hub.md#hub-restart-and-endpoint-changes).
 
 ## Starting Link
 

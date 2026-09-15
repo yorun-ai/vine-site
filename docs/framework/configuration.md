@@ -142,7 +142,6 @@ For an independently running Hub:
 ```bash
 vine hub serve \
   --db-sqlite-file ./hub.sqlite \
-  --mq-embedded-nats \
   --seed-hub-data-file ./seed.yaml
 ```
 
