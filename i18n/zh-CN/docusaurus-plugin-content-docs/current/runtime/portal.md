@@ -65,6 +65,8 @@ Portal 不需要重启来加载大多数网关变更。它监听 Hub Redis 中�
 
 Hub 发布变更后，Portal 会更新相应 listener、网关或缓存状态；业务实例注册或失效时，endpoint 发现也会随之变化。
 
+Hub 重启同样如此。Portal 定时重新读取 Hub 信息，Hub 重启后通告不同的 watch 端点时，Portal 无需重启即可跟随。详见 [Hub 重启与端点变化](./hub.md#hub-重启与端点变化)。
+
 ## 可选凭据字段
 
 RPC 和 Web 认证允许在 `Authorization` 中省略可选凭据字段。

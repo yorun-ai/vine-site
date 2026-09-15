@@ -83,6 +83,11 @@ After Hub publishes a change, Portal updates the corresponding listener, gateway
 or cache. Endpoint discovery also updates as business instances register or
 expire.
 
+Hub restarts are handled the same way. Portal re-reads Hub information on a
+timer, so a restarted Hub that advertises a different watch endpoint is followed
+without restarting Portal. See
+[Hub Restart and Endpoint Changes](./hub.md#hub-restart-and-endpoint-changes).
+
 ## Optional credentials
 
 For RPC and Web authentication, optional credential fields can be omitted from

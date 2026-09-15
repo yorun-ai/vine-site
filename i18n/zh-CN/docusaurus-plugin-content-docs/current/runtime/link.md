@@ -28,6 +28,8 @@ flowchart LR
 
 Link 是本地应用能力的唯一 owner。RPC、Web、Event、Task 与配置 Module 只从它派生各自的运行时索引，不直接维护另一份应用实例状态。
 
+Hub 重启不需要重启 Link。当 Hub 通告的 watch、MQ、lock 端点变化时，Link 重建这些连接并重新订阅 watcher；心跳发现 Hub 已忘记某个实例时，会重新注册本地应用实例。详见 [Hub 重启与端点变化](./hub.md#hub-重启与端点变化)。
+
 ## 启动
 
 Hub 启动后，可通过其 API endpoint 启动 Link：
