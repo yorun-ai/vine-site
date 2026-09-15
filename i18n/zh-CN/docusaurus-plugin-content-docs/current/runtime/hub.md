@@ -20,7 +20,7 @@ flowchart LR
 ## 职责
 
 - **配置中心**：从 SQLite 或 PostgreSQL 读取配置，并同步到 Redis。
-- **服务注册中心**：接收 Link 上报的应用、RPC、Web、事件和任务能力；维护实例状态。
+- **服务注册中心**：接收 Link 上报的应用、RPC、Web、事件和任务能力；维护实例状态。它同时记录注册到 Hub 的 Portal 实例，Dashboard 据此展示正在提供服务的网关实例。
 - **运行时分发层**：将配置、注册、Portal 规则、schema 与证书写入 Redis，供消费者读取和订阅。
 - **组件 Control API**：提供 Link 与 Portal 使用的发现和注册服务。
 - **管理入口**：在独立 listener 上提供 Dashboard Rpc 与 Web handler；Dashboard
@@ -45,11 +45,13 @@ vine hub serve \
 | Hub Redis | `127.0.0.1:7072` | 运行时快照读取与订阅 |
 | Hub Admin API 与 Web | `127.0.0.1:7075` | Dashboard 管理 Rpc 与内嵌 Dashboard Web |
 
-可用 `--control-listen`、`--redis-listen` 和 `--admin-listen` 修改这些 listener。
+可用 `--control-listen`、`--watch-listen` 和 `--admin-listen` 修改这些 listener。
+watch listener 承载 Link 与 Portal 读取和订阅的流量，该 listener 兼容 Redis 协议。
 
 该 listener 边界也体现在 Hub 的 Skel 契约中。Link 与 Portal 使用
-`vine.hub.control` 域，其中包含 `InfoService` 和 `RegistryService`；Dashboard
-client 使用独立的 `vine.hub.admin` 域访问管理 Rpc 服务与 `DashboardWeb`。
+`vine.hub.control` 域，其中包含 `InfoService`、`RegistryService`、`LockService` 和
+`PortalRegistryService`；Dashboard client 使用独立的 `vine.hub.admin` 域访问管理
+Rpc 服务与 `DashboardWeb`。
 
 ## 后台 mTLS
 
@@ -159,6 +161,36 @@ Link 直接连接 Hub 下发的 Redis endpoint。地址支持 `redis://` 和 `re
 `redis` 模式必须提供 endpoint，`embedded` 和 `disable` 模式拒绝 endpoint。
 使用 `--lock-mode=disable` 拒绝锁操作。standalone 固定使用进程内嵌锁，不暴露
 Lock 配置入口；不同 standalone 进程之间不共享锁。
+
+### 应用侧锁
+
+应用注入 `*lock.Locker` 即可获得自动续期的租约锁，其 key 按应用名隔离；注入
+`*lock.UniversalLocker` 时，key 在同一锁后端上的所有应用之间共享：
+
+```go title="service.go"
+type OrderService struct {
+    Locks *lock.Locker `inject:""`
+}
+
+func (s *OrderService) Settle(ctx context.Context, orderID string) {
+    lease := s.Locks.WithContext(ctx).Lock("settle:" + orderID)
+    defer lease.TryUnlock()
+
+    // 业务必须在 lease.Context() 结束时停止。
+    s.settleWhileOwned(lease.Context(), orderID)
+}
+```
+
+`Lock` 会等待直到获得租约，`TryLock` 只尝试一次，竞争失败时返回 `false`。竞争不是
+错误，但后端故障或 context 结束会 panic 并抛出框架错误。租约默认 30 秒，持有期间
+会在后台自动续期；`lock.WithTTL` 调整的是租约时长，不是等待上限，等待时长请通过
+`WithContext` 的 deadline 控制。续期失败会取消 `Lock.Context()` 并将租约标记为
+已损坏，此后 `Unlock` 会 panic，因此失去租约属于正常情况时应使用 `TryUnlock`。
+租约只是协调手段：不保证公平性，不可重入，也不能作为 fencing token。
+
+如果应用只需要协调互斥，且锁后端由部署统一提供，使用 `core/lock`；如果需要自己声明
+Redis Component 并自行管理 endpoint，则使用 [Redis 指南](../framework/redis-guide.md)
+中的 `infra/redis` 锁。
 
 ## 注册与租约
 

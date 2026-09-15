@@ -124,7 +124,6 @@ standalone 中 Hub 和 Link 的管理连接使用 inproc transport，不额外�
 go install go.yorun.ai/vine/cmd/vine@main
 
 vine hub serve \
-  --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite
 ```
 

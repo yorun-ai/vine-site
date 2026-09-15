@@ -129,13 +129,26 @@ For an upgrade:
 
 ```bash
 skelc check --skel-in ./skel
-skelc gen go --skel-in ./skel --go-out ./skeled/golang
+skelc gen go-module --skel-in ./skel --go-out ./skeled/golang \
+  --go-module example.com/demo/skeled/golang
 go -C ./src/server test ./...
 ```
+
+Use the module path declared by your project, the same value required by
+`src/server/go.mod`. See [Project Structure](./filetree.md) for the generated
+layout.
 
 A Hub backed by SQLite or PostgreSQL must already be on Vine v0.15.7 or later.
 Vine no longer migrates older databases at startup, so start an older database
 with Vine v0.15.7 to complete its migration before upgrading.
+
+Upgrade Hub before Portal. A Portal that runs against an older Hub keeps serving
+external traffic, but retries its registration on every heartbeat and logs a
+warning until Hub provides that service.
+
+An application that sets its own version must use a full semantic version, such
+as `1.2.3`, with an optional leading `v`. Earlier releases accepted an incomplete
+version such as `1.2`; replace it with a complete version before upgrading.
 
 Before promoting the result, complete the
 [Production Readiness Checklist](../operations/production-readiness.md). Skel language

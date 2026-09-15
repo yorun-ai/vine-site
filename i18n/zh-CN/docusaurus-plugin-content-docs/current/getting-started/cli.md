@@ -102,26 +102,24 @@ vine dev \
 
 ```bash
 vine hub serve \
-  --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite
 ```
 
-使用外部 NATS：
-
-启动 Hub 或 Link 前，先使用 NATS CLI 创建所需的 JetStream stream。下面的
-示例使用文件存储和单副本；请根据实际部署拓扑调整 `--storage` 和 `--replicas`：
+使用外部 NATS 时，先使用 NATS CLI 创建所需的 JetStream stream，再启动 Hub 或
+Link。下面的示例使用文件存储和单副本；请根据实际部署拓扑调整 `--storage` 和
+`--replicas`：
 
 ```bash
-export VINE_MQ_EXTERNAL_NATS_URL=nats://127.0.0.1:4222
+export VINE_MQ_NATS_ENDPOINT=nats://127.0.0.1:4222
 
-nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_EVENTS \
+nats --server "$VINE_MQ_NATS_ENDPOINT" stream add VINE_EVENTS \
   --subjects "event.>" \
   --retention interest \
   --storage file \
   --replicas 1 \
   --defaults
 
-nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_TASKS \
+nats --server "$VINE_MQ_NATS_ENDPOINT" stream add VINE_TASKS \
   --subjects "task.>" \
   --retention workqueue \
   --storage file \
@@ -129,13 +127,14 @@ nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_TASKS \
   --defaults
 ```
 
-分别运行 `nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream info
+分别运行 `nats --server "$VINE_MQ_NATS_ENDPOINT" stream info
 VINE_EVENTS` 和对应的 `VINE_TASKS` 命令，确认两个 stream 都已就绪，再启动
 Hub：
 
 ```bash
 vine hub serve \
-  --mq-external-nats-url "$VINE_MQ_EXTERNAL_NATS_URL" \
+  --mq-mode=nats \
+  --mq-nats-endpoint "$VINE_MQ_NATS_ENDPOINT" \
   --db-sqlite-file ./hub.sqlite
 ```
 
@@ -143,7 +142,8 @@ vine hub serve \
 
 ```bash
 vine hub serve \
-  --mq-external-nats-url nats://127.0.0.1:4222 \
+  --mq-mode=nats \
+  --mq-nats-endpoint nats://127.0.0.1:4222 \
   --db-postgres-url postgres://demo:demo@127.0.0.1:5432/hub
 ```
 
@@ -152,20 +152,18 @@ vine hub serve \
 ```bash
 vine hub serve \
   --control-listen 127.0.0.1:7071 \
-  --redis-listen 127.0.0.1:7072 \
+  --watch-listen 127.0.0.1:7072 \
   --admin-listen 127.0.0.1:7075 \
-  --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite
 ```
 
-Hub Control API、内嵌 Redis、Admin API 与 Web listener 默认分别监听
+Hub Control API、watch listener、Admin API 与 Web listener 默认分别监听
 `127.0.0.1:7071`、`127.0.0.1:7072`、`127.0.0.1:7075`。
 
 从 seed YAML 初始化数据：
 
 ```bash
 vine hub serve \
-  --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite \
   --seed-hub-data-file ./seed.yaml
 ```
@@ -179,7 +177,6 @@ no-db 模式每次启动都重新读取。用法见[部署变量](../framework/c
 ```bash
 vine hub serve \
   --dashboard-url http://:7099/ \
-  --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite
 ```
 
@@ -189,13 +186,29 @@ vine hub serve \
 会使用 Portal 的临时自签 Web 证书，直到配置匹配的公开证书；因此引导阶段浏览器会
 将该证书标记为不受信任。
 
+配置锁后端：
+
+```bash
+vine hub serve \
+  --lock-mode=redis \
+  --lock-redis-endpoint redis://redis.example.com:6379/0 \
+  --db-sqlite-file ./hub.sqlite
+```
+
+Hub 默认使用 `--lock-mode=embedded`，租约锁保存在自身内存中，重启后丢失。
+`--lock-mode=redis` 改为使用 `--lock-redis-endpoint` 指定的 Redis 数据库，该地址
+支持 `redis://` 和 `rediss://`。`--lock-mode=disable` 拒绝锁操作。应用侧用法见
+[Lock 模式](../runtime/hub.md#lock-模式)。
+
 环境变量也能提供同名配置：
 
 - `VINE_CONTROL_LISTEN`
 - `VINE_ADMIN_LISTEN`
-- `VINE_REDIS_LISTEN`
-- `VINE_MQ_EXTERNAL_NATS_URL`
-- `VINE_MQ_EMBEDDED_NATS`
+- `VINE_WATCH_LISTEN`
+- `VINE_LOCK_MODE`
+- `VINE_LOCK_REDIS_ENDPOINT`
+- `VINE_MQ_NATS_ENDPOINT`
+- `VINE_MQ_MODE`
 - `VINE_SEED_HUB_DATA_FILE`
 - `VINE_SEED_HUB_SOURCE_FILE`
 - `VINE_SEED_HUB_VARS_FILE`
@@ -206,7 +219,10 @@ vine hub serve \
 注意：
 
 - `--db-sqlite-file` 和 `--db-postgres-url` 必须二选一
-- `--mq-external-nats-url` 和 `--mq-embedded-nats` 必须二选一
+- Hub 默认使用 `--mq-mode=embedded`，此时拒绝 `--mq-nats-endpoint`。
+  连接外部 NATS 时，必须同时提供 `--mq-mode=nats` 和 `--mq-nats-endpoint`。
+- `--lock-mode=redis` 必须提供 `--lock-redis-endpoint`；`embedded` 和 `disable`
+  模式拒绝该参数。
 
 ## 后台 mTLS 参数
 
@@ -291,7 +307,7 @@ go -C ./src/server run ./cmd/myapp
 ### 单独启动运行时基础服务
 
 ```bash
-vine hub serve --mq-embedded-nats --db-sqlite-file ./hub.sqlite
+vine hub serve --db-sqlite-file ./hub.sqlite
 vine link serve --hub-endpoint http://127.0.0.1:7071
 vine portal serve --hub-endpoint http://127.0.0.1:7071
 ```

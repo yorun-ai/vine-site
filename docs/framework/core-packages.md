@@ -75,6 +75,7 @@ reference pages describe those advanced APIs:
 | Dependency bindings and scopes | [`core/di`](https://pkg.go.dev/go.yorun.ai/vine/core/di) | Binding common dependencies or writing custom integration code |
 | Filtered method execution | [`core/ctr`](https://pkg.go.dev/go.yorun.ai/vine/core/ctr) | Implementing filters or a custom execution pipeline |
 | Context, trace, application identity, and Actor | [`core/meta`](https://pkg.go.dev/go.yorun.ai/vine/core/meta) | Reading identity/context or starting an explicit call context |
+| Lease locks across application instances | [`core/lock`](https://pkg.go.dev/go.yorun.ai/vine/core/lock) | Coordinating work between instances without declaring a Redis component; see [Lock mode](../runtime/hub.md#lock-mode) |
 | Structured framework errors | [`core/ex`](https://pkg.go.dev/go.yorun.ai/vine/core/ex) | Returning stable error codes across a boundary |
 | Structured logging | [`core/logger`](https://pkg.go.dev/go.yorun.ai/vine/core/logger) | Writing application logs with Vine categories and context fields |
 | Sensitive-data projection | [`core/redact`](https://pkg.go.dev/go.yorun.ai/vine/core/redact) | Redacting generated or application data before diagnostics |

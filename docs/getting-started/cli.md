@@ -109,27 +109,24 @@ Start Hub with local NATS and SQLite:
 
 ```bash
 vine hub serve \
-  --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite
 ```
 
-Use an external NATS server:
-
-Before starting Hub or Link, use the NATS CLI to provision the required
-JetStream streams. This example uses file storage and one replica; adjust
-`--storage` and `--replicas` for the deployment topology:
+To use an external NATS server, provision the required JetStream streams with
+the NATS CLI before starting Hub or Link. This example uses file storage and one
+replica; adjust `--storage` and `--replicas` for the deployment topology:
 
 ```bash
-export VINE_MQ_EXTERNAL_NATS_URL=nats://127.0.0.1:4222
+export VINE_MQ_NATS_ENDPOINT=nats://127.0.0.1:4222
 
-nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_EVENTS \
+nats --server "$VINE_MQ_NATS_ENDPOINT" stream add VINE_EVENTS \
   --subjects "event.>" \
   --retention interest \
   --storage file \
   --replicas 1 \
   --defaults
 
-nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_TASKS \
+nats --server "$VINE_MQ_NATS_ENDPOINT" stream add VINE_TASKS \
   --subjects "task.>" \
   --retention workqueue \
   --storage file \
@@ -137,13 +134,14 @@ nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_TASKS \
   --defaults
 ```
 
-Verify both streams with `nats --server "$VINE_MQ_EXTERNAL_NATS_URL"
+Verify both streams with `nats --server "$VINE_MQ_NATS_ENDPOINT"
 stream info VINE_EVENTS` and the matching `VINE_TASKS` command, then start
 Hub:
 
 ```bash
 vine hub serve \
-  --mq-external-nats-url "$VINE_MQ_EXTERNAL_NATS_URL" \
+  --mq-mode=nats \
+  --mq-nats-endpoint "$VINE_MQ_NATS_ENDPOINT" \
   --db-sqlite-file ./hub.sqlite
 ```
 
@@ -151,7 +149,8 @@ Use PostgreSQL:
 
 ```bash
 vine hub serve \
-  --mq-external-nats-url nats://127.0.0.1:4222 \
+  --mq-mode=nats \
+  --mq-nats-endpoint nats://127.0.0.1:4222 \
   --db-postgres-url postgres://demo:demo@127.0.0.1:5432/hub
 ```
 
@@ -160,20 +159,18 @@ Specify listen addresses:
 ```bash
 vine hub serve \
   --control-listen 127.0.0.1:7071 \
-  --redis-listen 127.0.0.1:7072 \
+  --watch-listen 127.0.0.1:7072 \
   --admin-listen 127.0.0.1:7075 \
-  --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite
 ```
 
-The Hub Control API defaults to `127.0.0.1:7071`, embedded Redis to
+The Hub Control API defaults to `127.0.0.1:7071`, the watch listener to
 `127.0.0.1:7072`, and the Admin API and Web listener to `127.0.0.1:7075`.
 
 Initialize data from a seed YAML file:
 
 ```bash
 vine hub serve \
-  --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite \
   --seed-hub-data-file ./seed.yaml
 ```
@@ -188,7 +185,6 @@ Specify the Hub Dashboard URL:
 ```bash
 vine hub serve \
   --dashboard-url http://:7099/ \
-  --mq-embedded-nats \
   --db-sqlite-file ./hub.sqlite
 ```
 
@@ -199,13 +195,30 @@ can supply a host, port, and path, such as
 temporary self-signed Web certificate until a matching public certificate is
 configured, so browsers will report it as untrusted during bootstrap.
 
+Configure the lock backend:
+
+```bash
+vine hub serve \
+  --lock-mode=redis \
+  --lock-redis-endpoint redis://redis.example.com:6379/0 \
+  --db-sqlite-file ./hub.sqlite
+```
+
+Hub keeps lease locks in its own memory by default (`--lock-mode=embedded`), so
+they are lost on restart. `--lock-mode=redis` delegates them to the Redis
+database named by `--lock-redis-endpoint`, which accepts `redis://` and
+`rediss://` URLs. `--lock-mode=disable` rejects lock operations. See
+[Lock mode](../runtime/hub.md#lock-mode) for application usage.
+
 These settings are also available as environment variables:
 
 - `VINE_CONTROL_LISTEN`
 - `VINE_ADMIN_LISTEN`
-- `VINE_REDIS_LISTEN`
-- `VINE_MQ_EXTERNAL_NATS_URL`
-- `VINE_MQ_EMBEDDED_NATS`
+- `VINE_WATCH_LISTEN`
+- `VINE_LOCK_MODE`
+- `VINE_LOCK_REDIS_ENDPOINT`
+- `VINE_MQ_NATS_ENDPOINT`
+- `VINE_MQ_MODE`
 - `VINE_SEED_HUB_DATA_FILE`
 - `VINE_SEED_HUB_SOURCE_FILE`
 - `VINE_SEED_HUB_VARS_FILE`
@@ -216,7 +229,10 @@ These settings are also available as environment variables:
 Notes:
 
 - Pick exactly one of `--db-sqlite-file` and `--db-postgres-url`.
-- Pick exactly one of `--mq-external-nats-url` and `--mq-embedded-nats`.
+- Hub defaults to `--mq-mode=embedded`, which rejects `--mq-nats-endpoint`.
+  Use `--mq-mode=nats` with `--mq-nats-endpoint` to connect to external NATS.
+- `--lock-mode=redis` requires `--lock-redis-endpoint`; `embedded` and `disable`
+  reject it.
 
 ## Backend mTLS flags
 
@@ -306,7 +322,7 @@ go -C ./src/server run ./cmd/myapp
 ### Start runtime services separately
 
 ```bash
-vine hub serve --mq-embedded-nats --db-sqlite-file ./hub.sqlite
+vine hub serve --db-sqlite-file ./hub.sqlite
 vine link serve --hub-endpoint http://127.0.0.1:7071
 vine portal serve --hub-endpoint http://127.0.0.1:7071
 ```

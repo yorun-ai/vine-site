@@ -25,6 +25,7 @@ flowchart LR
 - **Web 投递**：接收 Portal 已选定的 Web 请求，并转发给请求中指定的本地应用
   实例。
 - **异步消息派发**：消费 NATS 消息，投递给本地声明的 Event Listener 和 Task Runner。
+- **租约锁**：将应用的锁操作转发到 Hub 通告的锁后端。
 
 Link 是本地应用能力的唯一 owner。RPC、Web、Event、Task 与配置 Module 只从它派生各自的运行时索引，不直接维护另一份应用实例状态。
 

@@ -68,6 +68,7 @@ Listener 或 Runner，而不是手工构造 `ServiceSpec`、`WebSpec`、`EventSp
 | 依赖绑定与 scope | [`core/di`](https://pkg.go.dev/go.yorun.ai/vine/core/di) | 绑定公共依赖或编写自定义集成 |
 | 带 filter 的方法执行 | [`core/ctr`](https://pkg.go.dev/go.yorun.ai/vine/core/ctr) | 实现 filter 或自定义执行管线 |
 | Context、trace、应用身份与 Actor | [`core/meta`](https://pkg.go.dev/go.yorun.ai/vine/core/meta) | 读取身份/context 或显式创建调用 context |
+| 跨应用实例的租约锁 | [`core/lock`](https://pkg.go.dev/go.yorun.ai/vine/core/lock) | 在不声明 Redis Component 的前提下协调实例间的互斥，见[Lock 模式](../runtime/hub.md#lock-模式) |
 | 结构化框架错误 | [`core/ex`](https://pkg.go.dev/go.yorun.ai/vine/core/ex) | 跨边界返回稳定错误码 |
 | 结构化日志 | [`core/logger`](https://pkg.go.dev/go.yorun.ai/vine/core/logger) | 使用 Vine category 与 context 字段记录应用日志 |
 | 敏感数据投影 | [`core/redact`](https://pkg.go.dev/go.yorun.ai/vine/core/redact) | 在诊断输出前遮蔽生成类型或应用数据 |

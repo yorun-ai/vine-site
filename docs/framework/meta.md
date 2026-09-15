@@ -40,7 +40,9 @@ appInfo, err := meta.NewApp(
 Constraints:
 
 - `name` must be a dot-separated lowercase name, such as `demo.service`.
-- `version` must be valid semantic versioning.
+- `version` must be a full semantic version, such as `1.2.3` or `0.0.0-dev`. A
+  leading `v` from the Go module form is accepted; an incomplete version such as
+  `1.2` or `01.2.3` is rejected.
 - `instanceId` must be a valid UUID.
 
 ### `Trace`

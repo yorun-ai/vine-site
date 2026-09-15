@@ -128,7 +128,6 @@ standalone.NewWithOption[*CheckoutApp](standalone.Option{
 ```bash
 vine hub serve \
   --db-sqlite-file ./hub.sqlite \
-  --mq-embedded-nats \
   --seed-hub-data-file ./seed.yaml
 ```
 

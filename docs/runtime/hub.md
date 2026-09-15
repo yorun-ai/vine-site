@@ -24,7 +24,9 @@ flowchart LR
 - **Configuration center**: reads configuration from SQLite or PostgreSQL and
   synchronizes it to Redis.
 - **Service registry**: receives application, Rpc, Web, event, and task
-  capabilities reported by Link, and maintains instance state.
+  capabilities reported by Link, and maintains instance state. It also records
+  the Portal daemons that register with it, so the Dashboard can report which
+  gateway instances are serving.
 - **Runtime distribution layer**: writes configuration, registrations, Portal
   rules, schemas, and certificates to Redis for consumers to read and subscribe
   to.
@@ -53,13 +55,15 @@ The default listen addresses are:
 | Hub Redis | `127.0.0.1:7072` | Provides runtime snapshot reads and subscriptions. |
 | Hub Admin API and Web | `127.0.0.1:7075` | Serves Dashboard management Rpc and the embedded Dashboard Web application. |
 
-Use `--control-listen`, `--redis-listen`, and `--admin-listen` to override these
-listeners.
+Use `--control-listen`, `--watch-listen`, and `--admin-listen` to override these
+listeners. The watch listener carries the Redis-compatible traffic that Link and
+Portal read and subscribe to.
 
 The listener boundary is also expressed in Hub's Skel contracts. Link and
-Portal use the `vine.hub.control` domain, which contains `InfoService` and
-`RegistryService`. Dashboard clients use the separate `vine.hub.admin` domain
-for management Rpc services and `DashboardWeb`.
+Portal use the `vine.hub.control` domain, which contains `InfoService`,
+`RegistryService`, `LockService`, and `PortalRegistryService`. Dashboard clients
+use the separate `vine.hub.admin` domain for management Rpc services and
+`DashboardWeb`.
 
 ## Backend mTLS
 
@@ -188,6 +192,42 @@ number. The corresponding environment variables are `VINE_LOCK_MODE` and
 Use `--lock-mode=disable` to reject lock operations. Standalone always uses
 in-process embedded locks and exposes no lock configuration options; separate
 standalone processes do not share locks.
+
+### Application locks
+
+Applications acquire automatically renewed lease locks by injecting
+`*lock.Locker`, whose keys are scoped to the application name, or
+`*lock.UniversalLocker`, whose keys are shared by every application using the
+same lock backend:
+
+```go title="service.go"
+type OrderService struct {
+    Locks *lock.Locker `inject:""`
+}
+
+func (s *OrderService) Settle(ctx context.Context, orderID string) {
+    lease := s.Locks.WithContext(ctx).Lock("settle:" + orderID)
+    defer lease.TryUnlock()
+
+    // Work must stop when lease.Context() ends.
+    s.settleWhileOwned(lease.Context(), orderID)
+}
+```
+
+`Lock` waits for the lease and `TryLock` attempts acquisition once, returning
+`false` on contention. Contention is not an error, but a backend failure or a
+canceled context panics with a framework error. The default lease lasts 30
+seconds and renews in the background while it is held; `lock.WithTTL` changes the
+lease duration, not a wait limit. Bound waiting with a `WithContext` deadline.
+Renewal failure cancels `Lock.Context()` and marks the lease broken, after which
+`Unlock` panics; use `TryUnlock` when losing the lease is a normal outcome. These
+leases are coordination primitives: they provide neither fairness nor
+reentrancy, and they are not fencing tokens.
+
+Use `core/lock` when the application only needs coordination and the deployment
+already provides a lock backend. Use the `infra/redis` lockers described in the
+[Redis guide](../framework/redis-guide.md) when the application declares its own
+Redis component and manages that endpoint itself.
 
 ## Registration and Leases
 

@@ -123,13 +123,23 @@ schema 仍然是最终的 runtime 检查，因此修改 Vine 或 skelc 版本后
 
 ```bash
 skelc check --skel-in ./skel
-skelc gen go --skel-in ./skel --go-out ./skeled/golang
+skelc gen go-module --skel-in ./skel --go-out ./skeled/golang \
+  --go-module example.com/demo/skeled/golang
 go -C ./src/server test ./...
 ```
+
+`--go-module` 请填写项目实际声明的 module path，与 `src/server/go.mod` 中的取值一致。
+生成产物的目录结构见[项目结构](./filetree.md)。
 
 使用 SQLite 或 PostgreSQL 的 Hub，数据库必须已经处于 Vine v0.15.7 或更高版本。
 Vine 不再在启动时迁移更低版本的数据库，请先用 Vine v0.15.7 启动旧数据库完成迁移，
 再执行升级。
+
+升级时应先升级 Hub，再升级 Portal。Portal 在旧版 Hub 上仍可继续处理外部流量，但每次
+心跳都会重试注册并输出警告，直到 Hub 提供该服务为止。
+
+自行设置版本号的应用必须使用完整的 semver，例如 `1.2.3`，可带 `v` 前缀。更早的版本
+允许 `1.2` 这类不完整的写法，请在升级前改为完整版本。
 
 提升到生产环境之前，完成
 [生产就绪清单](../operations/production-readiness.md)。Skel 语言和 generator 的详细

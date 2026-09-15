@@ -28,10 +28,30 @@ flowchart LR
   forwarding Rpc requests.
 - **TLS certificates**: reads and watches certificates stored in Hub and matches
   HTTPS certificates by SNI.
+- **Self-registration**: registers its own instance and Vine runtime version with
+  Hub, then renews the registration while it runs, so Hub can report which Portal
+  instances are serving.
 
 Portal only handles external entry points and gateway policy. It isn't the
-configuration source of truth, doesn't register applications, and doesn't send
-heartbeats.
+configuration source of truth, and it doesn't register applications or their
+capabilities with Hub.
+
+## Portal registration
+
+In a separated deployment, Portal registers itself with Hub at startup, renews
+the registration every 10 seconds, and unregisters on graceful shutdown. Hub
+reports a Portal instance as serving until 30 seconds pass without a heartbeat,
+so a terminated Portal disappears from the list on its own. The Hub Dashboard
+shows registered Portal instances alongside application instances.
+
+Hub keeps these records in memory, so a restarted Hub begins with none. Every
+Portal registers again on its next heartbeat. Standalone Portal shares Hub's
+process and cannot outlive it, so it registers once without a heartbeat.
+
+A Portal may run against an older Hub that has no Portal registry service. It
+keeps serving, retries the registration on each heartbeat, and logs a warning.
+When upgrading a running deployment, upgrade Hub first: a Portal upgraded before
+Hub still works, but reports that warning until Hub catches up.
 
 ## Starting Portal
 
@@ -172,26 +192,6 @@ Seed YAML is a complete rule value: omitting the field means empty.
 Hub no longer migrates databases older than Vine v0.15.7. Start such a database
 with Vine v0.15.7 so its migration completes, then upgrade to the current
 release.
-
-Legacy YAML remains supported at both startup and Dashboard import. Each old
-field produces a warning identifying the rule, old field, and replacement:
-
-| Legacy YAML | Current YAML |
-| --- | --- |
-| `scheme` | `matchScheme` |
-| `host` | `matchHost` |
-| `port` | `matchPort` |
-| `pathPrefix` | `matchPathPrefix` |
-| `targetType` | `routeType` |
-| `siteName` | `routeSiteName` |
-| `targetPath` | `routePathPrefix` |
-| `redirectionPattern` | `routeRedirectionPattern` |
-
-A single rule cannot mix legacy and current fields, even when their values
-are identical, empty, or zero. Such imports fail before applying any data.
-The Admin API requires the current field names. Update custom Admin clients
-that manage entry rules. Upgrade Hub and all Portal instances together;
-mixing old and new versions can make entry routes unavailable.
 
 ## Rule validation
 

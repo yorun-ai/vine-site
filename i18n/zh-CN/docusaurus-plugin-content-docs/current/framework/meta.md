@@ -40,7 +40,8 @@ appInfo, err := meta.NewApp(
 约束：
 
 - `name` 必须是点分小写名，例如 `demo.service`
-- `version` 必须是合法 semver
+- `version` 必须是完整的 semver，例如 `1.2.3` 或 `0.0.0-dev`。允许 Go module 形式的
+  `v` 前缀；`1.2`、`01.2.3` 之类不完整的版本会被拒绝
 - `instanceId` 必须是合法 UUID
 
 ### `Trace`

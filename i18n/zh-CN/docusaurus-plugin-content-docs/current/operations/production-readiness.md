@@ -94,28 +94,34 @@ Redis 还要求 ACL 用户名与 client 证书身份一致。外部 PostgreSQL �
 - [ ] 将 Hub Redis 访问权视为应用配置和 TLS 私钥材料的访问权。
 - [ ] 确认外部流量通过 Portal 进入，而不是绕过网关路由和准入。
 
-## 配置 Hub 持久化与消息系统
+## 配置 Hub 持久化、消息系统与锁
 
-Hub 必须且只能选择一种数据库来源和一种 NATS 模式：
+生产环境的配置必须可写，因此应选择一种数据库。消息系统和锁有可用的默认实现，但内嵌
+后端的状态都保存在 Hub 进程内：
 
 - [ ] 在 SQLite 与 PostgreSQL 中二选一。
-- [ ] 在内嵌 NATS 与外部 NATS URL 中二选一。
-- [ ] 使用外部 NATS 时，启用 JetStream，并使用当前 CLI 接受的
-  `nats://` endpoint。
+- [ ] 保持默认的 `--mq-mode=embedded`，或通过 `--mq-mode=nats` 和
+  `--mq-nats-endpoint` 使用外部 NATS。
+- [ ] 使用外部 NATS 时，启用 JetStream，并使用 `nats://` endpoint。
+- [ ] 保持默认的 `--lock-mode=embedded`；当租约锁需要跨越 Hub 重启，或需要与本 Hub
+  之外的其他组件共享时，改用 `--lock-mode=redis` 和 `--lock-redis-endpoint`。
 
-需要独立运维持久化和消息系统的生产环境，可以用 PostgreSQL 和外部 NATS
-启动 Hub：
+需要独立运维持久化、消息系统和锁的生产环境，可以用 PostgreSQL、外部 NATS 和外部
+Redis 启动 Hub：
 
 ```bash
 vine hub serve \
   --control-listen 10.0.1.10:7071 \
-  --redis-listen 10.0.1.10:7072 \
+  --watch-listen 10.0.1.10:7072 \
   --admin-listen 10.0.1.10:7075 \
   --mtls-ca-file /run/vine/ca.pem \
   --mtls-cert-file /run/vine/hub.pem \
   --mtls-key-file /run/vine/hub-key.pem \
   --db-postgres-url "$VINE_DB_POSTGRES_URL" \
-  --mq-external-nats-url "$VINE_MQ_EXTERNAL_NATS_URL"
+  --mq-mode=nats \
+  --mq-nats-endpoint "$VINE_MQ_NATS_ENDPOINT" \
+  --lock-mode=redis \
+  --lock-redis-endpoint "$VINE_LOCK_REDIS_ENDPOINT"
 ```
 
 Hub 数据库是导入配置、Portal rule 和证书的事实来源。不指定数据库参数会进入只读的
@@ -135,11 +141,11 @@ retention。每个 stream 使用内存还是文件存储，由外部 NATS 部署
 例如，可以使用 NATS CLI 创建采用文件存储的单副本 stream：
 
 ```bash
-nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_EVENTS \
+nats --server "$VINE_MQ_NATS_ENDPOINT" stream add VINE_EVENTS \
   --subjects "event.>" --retention interest \
   --storage file --replicas 1 --defaults
 
-nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_TASKS \
+nats --server "$VINE_MQ_NATS_ENDPOINT" stream add VINE_TASKS \
   --subjects "task.>" --retention workqueue \
   --storage file --replicas 1 --defaults
 ```
@@ -161,11 +167,11 @@ nats --server "$VINE_MQ_EXTERNAL_NATS_URL" stream add VINE_TASKS \
 
 ## 验证注册与故障语义
 
-| 模式 | TTL 与 registry sweeper | Link 心跳 | 本地应用健康检查 |
-| --- | --- | --- | --- |
-| 应用与 Link 分开运行 | 启用 | 启用 | 启用 |
-| 应用与 Link 同进程、Hub 走网络的 linked | 启用 | 启用 | 禁用；应用与 Link 共享一个进程 |
-| 使用 inproc Hub 的 standalone | 禁用 | 禁用 | 禁用 |
+| 模式 | TTL 与 registry sweeper | Link 心跳 | Portal 注册 | 本地应用健康检查 |
+| --- | --- | --- | --- | --- |
+| 应用与 Link 分开运行 | 启用 | 启用 | 启用 | 启用 |
+| 应用与 Link 同进程、Hub 走网络的 linked | 启用 | 启用 | 启用 | 禁用；应用与 Link 共享一个进程 |
+| 使用 inproc Hub 的 standalone | 禁用 | 禁用 | 注册一次，不发送心跳 | 禁用 |
 
 使用普通网络 Hub 时，注册信息带有租约。Link 通过心跳续期，Hub 的
 registry sweeper 会注销过期的应用实例并发布删除事件。独立运行的 Link
@@ -183,6 +189,11 @@ standalone/inproc 模式下，注册信息会保留到显式 unregister。此时
 无响应应用和已停止进程：应用卡住时，Link 仍可能继续续订它在 Hub 中的
 租约。
 
+Portal 的注册独立于应用注册。Portal 每 10 秒续租一次自己的注册，优雅退出时注销；
+最后一次心跳后 30 秒，Hub 会将其移除，因此即使无法注销，被终止的 Portal 也不会继续
+显示。Portal 实例会列在 Hub Dashboard 中。这些记录保存在 Hub 内存里，Hub 重启后需要
+各 Portal 重新注册才会再次出现。
+
 - [ ] 优雅停止一个应用，确认其 endpoint 消失。
 - [ ] 不执行优雅停止而终止一个独立运行的应用，确认 Link 在 console ping
   连续发生非 timeout 失败后将其移除。
@@ -190,6 +201,7 @@ standalone/inproc 模式下，注册信息会保留到显式 unregister。此时
   移除。
 - [ ] 中断 Link 到 Hub 的连接，确认连接恢复后 discovery 最终收敛。
 - [ ] 确认 Portal 和调用方不再向过期实例路由。
+- [ ] 确认被终止的 Portal 不再出现在 Hub Dashboard 中。
 - [ ] 使用独立进程完成这些检查，不要以 inproc 测试替代。
 
 注册和发现流程见 [运行机制](../runtime/mechanisms.md)。

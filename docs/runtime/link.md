@@ -32,6 +32,8 @@ flowchart LR
   locally owned application instance named by that request.
 - **Asynchronous message dispatch**: consumes NATS messages and delivers them to
   locally declared event listeners and task runners.
+- **Lease locks**: routes application lock operations to the lock backend that
+  Hub advertises.
 
 Link is the sole owner of local application capability state. The Rpc, Web,
 event, task, and configuration modules derive their runtime indexes from Link
