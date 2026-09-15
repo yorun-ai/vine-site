@@ -73,6 +73,7 @@ type ApplicationSpec interface {
     Name() string
     InitComponents(addComponent TypeAdder)
     InitModules(addModule TypeAdder)
+    InitHooks(add *HookAdder)
     BindCommon(b *di.Binder)
 }
 ```
@@ -83,6 +84,7 @@ type ApplicationSpec interface {
   多个纯小写字母段，例如 `demo.checkout`
 - `InitComponents(...)`：声明 Component 类型
 - `InitModules(...)`：声明 Module 类型
+- `InitHooks(...)`：注册应用级生命周期回调
 - `BindCommon(...)`：注册应用级公共依赖
 
 业务应用嵌入 `app.Application` 即可获得默认实现，再覆盖需要的方法。
@@ -310,11 +312,14 @@ type WebberSpec interface {
 
 `WebberEnabled` 提供默认空实现。
 
-weber 的访问前缀是：
+Webber 在 `/web/access` 前缀下注册，Link 按选定的 Web Skel name 路由：
 
 ```text
-/web/access/default@<appName>
+/web/access/<webSkelName>
 ```
+
+Web Skel name 的格式是 `<domain>.<WebName>`，因此 [Web](./web.md) 中的示例可通过
+`/web/access/<domain>.UserPortalWeb` 访问。
 
 ### Event：`EventerSpec`
 

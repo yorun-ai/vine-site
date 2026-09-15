@@ -163,7 +163,7 @@ func TestGreeting(t *testing.T) {
     execution := runtime.NewExecution(testkit.ExecutionOption{
         Actor: meta.NewAnonymousActor(),
     })
-    client := testkit.NewClient[skeled.GreetingServiceClient](execution)
+    client := execution.NewClient[skeled.GreetingServiceClient]()
 
     got := client.Hello("Vine")
     require.Equal(t, "Hello, Vine", got.Message)

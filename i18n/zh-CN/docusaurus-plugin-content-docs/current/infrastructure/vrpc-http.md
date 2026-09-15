@@ -40,7 +40,7 @@ POST /rpc/invoke/demo.greeting.GreetingService/hello HTTP/1.1
 | `content-type` | 是 | 请求体编码：`application/vrpc+json` 或 `application/vrpc+cbor`。 |
 | `vrpc-trace` | 是 | Trace 信息，格式为 `id=<32位小写十六进制>,span=<16位小写十六进制>`。 |
 | `vrpc-client` | 是 | 调用方应用信息：`name`、`version` 和 `instanceId`。 |
-| `vrpc-options` | 否 | 调用选项，目前只支持正数 `timeout`。 |
+| `vrpc-options` | 否 | 调用选项：正数 `timeout`，以及 App 到 Link 调用中的 `destination`。 |
 | `vrpc-actor` | 否 | Base64url 编码的 Actor JSON，由受信任的接入层生成或转发。 |
 | `vrpc-initiator` | 否 | Base64url 编码的最初调用方信息，由 Vine 运行时传播。 |
 | `accept-encoding` | 否 | Portal 对外响应支持 `zstd` 和 `gzip`。 |
@@ -58,10 +58,12 @@ vrpc-options: timeout=10s
 `vrpc-client` 的约束是：
 
 - `name` 使用小写字母和点，例如 `demo.client`。
-- `version` 是语义化版本。
+- `version` 是纯语义化版本；Go module 形式的 `v` 前缀会在写入 Header 时去掉。
 - `instanceId` 是 UUID。
 
 `timeout` 使用 Go duration 格式，例如 `500ms`、`10s`、`1m`。Header 缺失时，核心 transport 不额外创建 deadline；Portal rpcgw 默认使用 `30s`，并拒绝超过 `120s` 的值。
+
+`destination` 用于 App 到 Link 调用指定目标应用。Portal 会在外部请求中移除它，因此经 rpcgw 到达应用的只有 `timeout`。
 
 应用间直连要求 `vrpc-trace` 同时包含 `id` 和 `span`。Portal rpcgw 也要求该 Header，但允许外部客户端只传 `id`，并在入口补充 span。
 
@@ -99,7 +101,7 @@ CBOR 使用相同的数据模型，只把整个信封和 `params` 改为 CBOR �
 | --- | --- |
 | `content-type` | `application/vrpc+json` 或 `application/vrpc+cbor`。 |
 | `vrpc-status` | Vine Rpc 状态码，例如 `OK`、`INVALID_REQUEST` 或 `NOT_FOUND`。 |
-| `vrpc-server` | 服务端应用的逻辑 `name`、`version` 和 `instanceId`；逻辑名称不包含内部 `@runtime` 后缀。 |
+| `vrpc-server` | 服务端应用的逻辑 `name`、`version` 和 `instanceId`。 |
 
 成功响应使用 `result` 字段，`error` 为 `null`：
 

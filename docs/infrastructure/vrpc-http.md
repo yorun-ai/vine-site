@@ -46,7 +46,7 @@ Methods other than `POST` are not valid vRPC invoke requests.
 | `content-type` | Yes | Request body encoding: `application/vrpc+json` or `application/vrpc+cbor`. |
 | `vrpc-trace` | Yes | Trace data in the form `id=<32 lowercase hex chars>,span=<16 lowercase hex chars>`. |
 | `vrpc-client` | Yes | Calling application `name`, `version`, and `instanceId`. |
-| `vrpc-options` | No | Invocation options; currently only a positive `timeout` is supported. |
+| `vrpc-options` | No | Invocation options: a positive `timeout`, plus `destination` on App-to-Link calls. |
 | `vrpc-actor` | No | Base64url-encoded Actor JSON, created or forwarded by a trusted entry layer. |
 | `vrpc-initiator` | No | Base64url-encoded original caller information propagated by the Vine runtime. |
 | `accept-encoding` | No | Portal external responses support `zstd` and `gzip`. |
@@ -64,12 +64,17 @@ vrpc-options: timeout=10s
 `vrpc-client` constraints:
 
 - `name` uses lowercase letters and dots, like `demo.client`.
-- `version` is a semantic version.
+- `version` is a plain semantic version. A leading `v` from the Go module form is
+  removed before the header is written.
 - `instanceId` is a UUID.
 
 `timeout` uses Go duration syntax, like `500ms`, `10s`, or `1m`. When the header
 is absent, the core transport does not create an additional deadline. Portal
 rpcgw uses a `30s` default and rejects values above `120s`.
+
+`destination` names the target application for an App-to-Link call. Portal
+removes it from an external request, so only `timeout` reaches the application
+through rpcgw.
 
 Direct application-to-application transport requires both `id` and `span` in
 `vrpc-trace`. Portal rpcgw also requires the header, but allows an external
@@ -116,7 +121,7 @@ Every decodable vRPC response contains at least:
 | --- | --- |
 | `content-type` | `application/vrpc+json` or `application/vrpc+cbor`. |
 | `vrpc-status` | Vine Rpc status, such as `OK`, `INVALID_REQUEST`, or `NOT_FOUND`. |
-| `vrpc-server` | Server application's logical `name`, `version`, and `instanceId`; the logical name excludes the internal `@runtime` suffix. |
+| `vrpc-server` | Server application's logical `name`, `version`, and `instanceId`. |
 
 A successful response uses `result` and sets `error` to `null`:
 

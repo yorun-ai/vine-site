@@ -15,8 +15,8 @@ When an external request enters Portal, these headers are relevant:
 | --- | --- | --- |
 | `vrpc-trace` | Rpc client | Propagates the Rpc call chain |
 | `vweb-trace` | Web client | Propagates the Web call chain |
-| `vrpc-options` | Rpc client | Carries Rpc call options; currently only `timeout` |
-| `vweb-options` | Web client | Carries Web call options; currently only `timeout` |
+| `vrpc-options` | Rpc client | Carries Rpc call options: `timeout`, and `destination` on App-to-Link calls |
+| `vweb-options` | Web client | Carries Web call options: `timeout` |
 | `portal-trace-id` | Portal response | Returns the trace id for this request |
 
 Trace headers use comma-delimited `key=value` fields:
@@ -26,14 +26,17 @@ vrpc-trace: id=123e4567e89b12d3a456426614174000,span=1234567890abcdef
 vweb-trace: id=123e4567e89b12d3a456426614174000,span=1234567890abcdef
 ```
 
-Options headers currently only contain timeout:
+Options headers use the same form:
 
 ```text
 vrpc-options: timeout=30s
+vrpc-options: destination=order.service,timeout=30s
 vweb-options: timeout=30s
 ```
 
-Timeout values use Go duration syntax, such as `1000ms`, `1s`, or `30s`.
+Timeout values use Go duration syntax, such as `1000ms`, `1s`, or `30s`. Portal
+keeps only `timeout` when it forwards an external request, so an external client
+cannot select a destination.
 
 ## External Rpc Clients
 

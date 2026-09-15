@@ -46,6 +46,7 @@ type Option struct {
     Logger              *logger.Logger
     ReturnIfSystemError bool
     ServerEndpoint      string
+    Transport           http.RoundTripper
 }
 ```
 
@@ -122,6 +123,7 @@ The default is `false`.
 ```go
 type Option struct {
     App            meta.App
+    Logger         *logger.Logger
     MuteVerboseLog bool
     HandlerTypes   []reflect.Type
     Executor       Executor
@@ -214,8 +216,10 @@ It represents:
 
 ```go
 type ServiceSpec struct {
+    Type     ServiceSpecType
     Name     string
     SkelName string
+    Hash     string
 
     ServerType        reflect.Type
     DefaultServerType reflect.Type
@@ -232,6 +236,8 @@ type ServiceSpec struct {
 }
 ```
 
+`Type` selects the registered halves and must be `client`, `server`, or `both`.
+
 ### `MethodSpec`
 
 ```go
@@ -240,12 +246,20 @@ type MethodSpec struct {
     SkelName string
 
     ArgumentsType               reflect.Type
+    CloneArguments              func(any) any
     ResultType                  reflect.Type
+    CloneResult                 func(any) any
+    ArgumentsSensitive          bool
+    ResultSensitive             bool
     ArgumentsContainsBinaryType bool
     ResultContainsBinaryType    bool
-    MuteSuccessLog              bool
+    MethodFuncs                 []any
 }
 ```
+
+`CloneArguments` and `CloneResult` return value-isolated copies used for
+in-process Rpc; each is required when its corresponding type is set.
+`MethodFuncs` lists the implementation methods bound to the spec.
 
 ### `ServiceInfo`
 
@@ -255,6 +269,7 @@ After registration, service metadata is exposed as `ServiceInfo`:
 type ServiceInfo interface {
     Name() string
     SkelName() string
+    Hash() string
     ServerType() reflect.Type
     DefaultServerType() reflect.Type
     ClientType() reflect.Type
@@ -274,18 +289,24 @@ type ServiceInfo interface {
 type MethodInfo interface {
     Name() string
     SkelName() string
-    ArgumentsType() reflect.Type
-    ResultType() reflect.Type
-    ArgumentsContainsBinaryType() bool
-    ResultContainsBinaryType() bool
-    MuteSuccessLog() bool
+
     Service() ServiceInfo
     FullURLPath() string
+
     HasArguments() bool
     NewArguments() any
+    ArgumentsType() reflect.Type
+    ArgumentsSensitive() bool
+    ArgumentsContainsBinaryType() bool
+    PositionArguments(arguments any) []any
+    CloneArguments(arguments any) any
+
     HasResult() bool
     NewResult() any
-    PositionArguments(arguments any) []any
+    ResultType() reflect.Type
+    ResultSensitive() bool
+    ResultContainsBinaryType() bool
+    CloneResult(result any) any
 }
 ```
 

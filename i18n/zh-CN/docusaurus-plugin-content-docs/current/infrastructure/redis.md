@@ -8,7 +8,7 @@ sidebar_label: Redis API
 把 Redis 接进应用时，先看[使用 Redis](../framework/redis-guide.md)。需要确认 component、
 Cache、Locker 或锁失效的精确行为时，再查这里的 `infra/redis` API。
 
-顶层 `infra/redis` 暴露 `Option`、`TypeAdder`、`RedisSpec`、`Redis`、`Locker`、`Lock`、`Cache[T]` 和 `NewCache[T](...)` 等公共类型。
+顶层 `infra/redis` 暴露 `Option`、`TypeAdder`、`RedisSpec`、`Redis`、`Locker`、`Lock` 和 `Cache[T]` 等公共类型。cache 通过 `Redis` 上的方法创建，没有包级构造函数。
 
 `redis` 的定位不是重新封装 `go-redis` 命令集，而是提供一层统一接入：
 
@@ -496,7 +496,7 @@ singleflight 或其他防止缓存击穿的机制。
 如果不想通过注入声明 cache 类型，可直接：
 
 ```go
-cache := redis.NewCache[*User](&cacheRedis.Redis, ctx, "user")
+cache := cacheRedis.NewCache[*User](ctx, "user")
 ```
 
 如果需要运行时传入具体类型，可直接：
@@ -528,7 +528,7 @@ vine:cache:user:1
 
 - Redis 组件统一嵌入 `redis.Redis`
 - 优先把稳定前缀声明成注入式 locker
-- 需要缓存时，通过 `InitCaches(...)` 声明注入式 cache，或用 `NewCache(...)` 直接创建
+- 需要缓存时，通过 `InitCaches(...)` 声明注入式 cache，或用 `Redis.NewCache(...)` 直接创建
 - 需要感知锁失效时，监听 `lock.Context()`
 - `Lock` 一旦 broken，就丢弃它并重新走一次新的 `Locker.Lock(...)`
 - 失锁应返回 `false` 而不是 panic 时，使用 `TryUnlock()`，不要组合

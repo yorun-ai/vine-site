@@ -74,6 +74,7 @@ type ApplicationSpec interface {
     Name() string
     InitComponents(addComponent TypeAdder)
     InitModules(addModule TypeAdder)
+    InitHooks(add *HookAdder)
     BindCommon(b *di.Binder)
 }
 ```
@@ -85,6 +86,7 @@ Its methods are:
   dots, such as `demo.checkout`.
 - `InitComponents(...)`: declares component types.
 - `InitModules(...)`: declares module types.
+- `InitHooks(...)`: registers application lifecycle callbacks.
 - `BindCommon(...)`: registers application-wide dependencies.
 
 A business application can embed `app.Application` to obtain the default implementations, then override only the methods it needs.
@@ -317,11 +319,15 @@ type WebberSpec interface {
 
 `WebberEnabled` provides empty default implementations.
 
-The Webber access prefix is:
+The Webber registers under the `/web/access` prefix, and Link routes a request
+to the Web Skel name it selected:
 
 ```text
-/web/access/default@<appName>
+/web/access/<webSkelName>
 ```
+
+A Web Skel name is `<domain>.<WebName>`, so the sample Web in
+[Web](./web.md) is reached at `/web/access/<domain>.UserPortalWeb`.
 
 ### Event: `EventerSpec`
 
