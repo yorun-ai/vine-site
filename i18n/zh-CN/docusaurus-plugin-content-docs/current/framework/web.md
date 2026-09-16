@@ -15,6 +15,12 @@ web UserPortalWeb {
 }
 ```
 
+当前端需要固定的公开前缀时，加上 `mount /path`。此时 Portal 会使用该前缀进行匹配和
+转发，而不是站点规则上配置的前缀；handler 中的路由仍相对该前缀书写，因此声明
+`mount /console` 时，`router.GET("/health", ...)` 对外提供的是 `/console/health`。
+路由行为见 [Portal](../runtime/portal.md#入口路径映射)，声明写法见
+[Skel 语法参考](https://skel.yorun.ai/docs/actors-and-access)。
+
 生成代码后，实现对应的 Web server，并在 `Routes` 中注册路由：
 
 ```go title="web.go"
@@ -31,6 +37,11 @@ func (h *UserPortal) Health() {
     h.Context.JSON(200, map[string]string{"status": "ok"})
 }
 ```
+
+用 `router.SubRouter("/orders")` 把相关路由归组到同一路径下。`BasePath()` 返回 Router
+在 Web 内的累计路径：根 Router 返回该 Web 的挂载路径，未声明挂载路径时返回 `"/"`；
+orders Router 返回 `"/orders"`，其 `SubRouter("/:id")` 返回 `"/orders/:id"`。转发前被
+剥离的入口前缀不包含在内，因此仅凭此值不能还原外部 URL。
 
 在应用中启用 Web 能力并注册 handler：
 

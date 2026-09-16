@@ -144,6 +144,26 @@ conditions.
 
 ## Entry path mapping
 
+When the Web contract behind a Web site declares a mount path, Portal uses that
+path for both matching and forwarding, so the prefixes configured on the SITE
+rules that target the site have no effect while the mount path exists:
+
+- The rule editor shows both path fields with the Web path, disables editing, and
+  identifies the Web as their source.
+- Seed rules may omit both prefixes.
+- A mount path of `/` serves from the root.
+- The stored prefixes are kept, and apply again if the Web stops declaring a
+  mount path.
+- Site and contract changes refresh the effective paths without restarting Portal.
+
+Built-in Dashboard access rules and redirect rules are unchanged.
+
+During a rolling upgrade, upgrade Hub first and confirm that it publishes the
+resolved rule prefixes before upgrading Portal.
+
+The following mapping options apply when the target Web has no mount path, or
+when the target site is RpcGW.
+
 SITE rules accept `routePathPrefix`, a path prefix within the target site. Portal
 matches the original request using `matchPathPrefix`, replaces that prefix with
 `routePathPrefix`, and then dispatches to the site's WebGW or RpcGW. This changes the

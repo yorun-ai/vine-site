@@ -144,7 +144,9 @@ with Vine v0.15.7 to complete its migration before upgrading.
 
 Upgrade Hub before Portal. A Portal that runs against an older Hub keeps serving
 external traffic, but retries its registration on every heartbeat and logs a
-warning until Hub provides that service.
+warning until Hub provides that service. Portal also reads the path prefixes Hub
+resolves for Web sites that declare a mount path, so confirm that Hub publishes
+those fields before upgrading Portal.
 
 An application that sets its own version must use a full semantic version, such
 as `1.2.3`, with an optional leading `v`. Earlier releases accepted an incomplete
