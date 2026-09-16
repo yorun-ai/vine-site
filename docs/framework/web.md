@@ -15,6 +15,14 @@ web UserPortalWeb {
 }
 ```
 
+Add `mount /path` when the frontend needs a fixed public prefix. Portal then matches
+and forwards that prefix instead of the prefixes configured on the site's rules, and
+the handler's routes stay relative to it, so `router.GET("/health", ...)` answers
+`/console/health` when the Web declares `mount /console`. See
+[Portal](../runtime/portal.md#entry-path-mapping) for the routing behavior and the
+[Skel syntax reference](https://skel.yorun.ai/docs/actors-and-access) for the
+declaration.
+
 After generating code, implement the corresponding Web server and register routes in `Routes`:
 
 ```go title="web.go"
@@ -31,6 +39,13 @@ func (h *UserPortal) Health() {
     h.Context.JSON(200, map[string]string{"status": "ok"})
 }
 ```
+
+Group related routes with `router.SubRouter("/orders")`. `BasePath()` returns the
+accumulated path within the Web: the root router returns the Web's mount path, or
+`"/"` when the Web declares none, then the orders router returns `"/orders"` and
+its `SubRouter("/:id")` returns `"/orders/:id"`. Entry prefixes stripped before
+forwarding are not included, so this value alone does not reconstruct an external
+URL.
 
 Enable the Web capability and register the handler in the application:
 
