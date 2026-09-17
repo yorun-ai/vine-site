@@ -37,7 +37,7 @@ sequenceDiagram
   participant Hub as Hub
   participant Peers as Other Links / Portal
 
-  App->>App: Build DI, components, modules, and handlers
+  App->>App: Construct the application
   App->>App: Run BeforeAppStart
   App->>App: Start the App server
   App->>RuntimeLink: Register identity and capabilities

@@ -28,7 +28,7 @@ flowchart LR
 - **租约锁**：将应用的锁操作转发到 Hub 通告的锁后端。
 
 
-Hub 重启不需要重启 Link。当 Hub 通告的 watch、MQ、lock 端点变化时，Link 重建这些连接并重新订阅 watcher；心跳发现 Hub 已忘记某个实例时，会重新注册本地应用实例。详见 [Hub 重启与端点变化](./hub.md#hub-重启与端点变化)。
+Hub 重启不需要重启 Link。Link 会重新连接、重新注册本地应用，并自动重新订阅配置与发现变更。详见 [Hub 重启与端点变化](./hub.md#hub-重启与端点变化)。
 
 ## 启动
 
@@ -88,7 +88,7 @@ Link，目标 Link 再校验本地实例与 Handler，并调用应用 endpoint�
 
 ### Event 与 Task
 
-Link 根据已注册的 Listener 与 Runner 创建并更新 Event、Task 消费，应用代码无需自行创建。
+应用声明 Event Listener 与 Task Runner，由 Link 管理对应的消费端。
 
 ## Inproc 模式
 

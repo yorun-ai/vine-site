@@ -64,7 +64,7 @@ trust domain，DNS SAN 不授予组件身份。发现到的明文 endpoint 会�
 自签 Web 证书，用于加密引导访问。该临时证书不受浏览器信任，也不是生产证书。其他
 明文路径都必须限制在 loopback 或可信私有网络中。
 
-内嵌 Redis ACL 继续隔离 `vine.hub`、`vine.link`、`vine.portal`；启用 mTLS 后，
+内嵌 Redis ACL 隔离各个组件身份；启用 mTLS 后，
 Redis 还要求 ACL 用户名与 client 证书身份一致。外部 PostgreSQL 和 NATS endpoint
 使用它们自己的认证与加密配置。
 
@@ -128,7 +128,8 @@ vine hub serve \
 ```
 
 Hub 数据库是导入配置、Portal rule 和证书的事实来源。不指定数据库参数会进入只读的
-`--no-db` 模式，不适合生产环境。Redis 不能替代数据库。
+`--no-db` 模式，不适合生产环境。Hub 通过 Redis 发布运行时快照与变更，但这些数据不能
+替代数据库。
 
 :::warning Event 与 Task 的持久性
 
@@ -183,21 +184,21 @@ standalone/inproc 模式下，注册信息会保留到显式 unregister。此时
 心跳、租约过期扫描或本地应用健康检查，因此 standalone 测试通过并
 不能证明分布式存活机制正确。
 
-在当前源码中，独立运行的 Link 每 5 秒检查一次应用，console ping 的 timeout
-是 2 秒；连续三次发生非 timeout 失败后，Link 会注销应用。
-调用 timeout 只会写入日志，不会增加该失败计数。Hub 租约为 30 秒，sweeper
-每 5 秒运行一次。这些时间是当前实现常量，不是 CLI 调优参数。请分别测试
+独立运行的 Link 每 5 秒检查一次应用，每次检查的 timeout 是 2 秒；连续三次
+非调用 timeout 的失败后，Link 会注销该应用。调用 timeout 只会写入日志，
+不计入该失败次数。Hub 在最后一次心跳后 30 秒使实例注册过期，并每 5 秒
+移除一次过期注册。这些值无法通过 CLI 参数配置。请分别测试
 无响应应用和已停止进程：应用卡住时，Link 仍可能继续续订它在 Hub 中的
 租约。
 
 Portal 的注册独立于应用注册。Portal 每 10 秒续租一次自己的注册，优雅退出时注销；
 最后一次心跳后 30 秒，Hub 会将其移除，因此即使无法注销，被终止的 Portal 也不会继续
-显示。Portal 实例会列在 Hub Dashboard 中。这些记录保存在 Hub 内存里，Hub 重启后需要
-各 Portal 重新注册才会再次出现。
+显示。Portal 实例会列在 Hub Dashboard 中。Hub 重启会清空 Portal 实例列表，直到
+各 Portal 重新注册。
 
 - [ ] 优雅停止一个应用，确认其 endpoint 消失。
-- [ ] 不执行优雅停止而终止一个独立运行的应用，确认 Link 在 console ping
-  连续发生非 timeout 失败后将其移除。
+- [ ] 不执行优雅停止而终止一个独立运行的应用，确认 Link 在连续的非调用
+  timeout 失败后将其移除。
 - [ ] 终止 Link 或断开其连接，确认 Hub 在剩余 endpoint 的租约过期后将其
   移除。
 - [ ] 中断 Link 到 Hub 的连接，确认连接恢复后 discovery 最终收敛。
@@ -213,9 +214,8 @@ Portal 的注册独立于应用注册。Portal 每 10 秒续租一次自己的�
 
 1. 以逆序执行 Module 的 `BeforeAppStop()` hook。
 2. 以逆序执行 Component 的 `BeforeAppStop()` hook。
-3. 通过 Link 注销应用，包括 Link 侧的传播等待与排空。
-4. 停止应用 server：HTTP shutdown 会等待在途 Handler，inproc shutdown
-   则移除其 route registration。
+3. 通过 Link 注销应用，包括传播与排空。
+4. 停止应用 server：HTTP shutdown 会等待在途 Handler。
 5. 取消 runtime context。
 6. 以逆序执行 Module 和 Component 的 `AfterAppStop()` hook。
 
@@ -265,9 +265,8 @@ Portal 的注册独立于应用注册。Portal 每 10 秒续租一次自己的�
 - [ ] 添加和移除实例后，验证 Portal 的 endpoint 选择与路由。
 - [ ] 缩容时先优雅停止应用，再终止 Link。
 
-已记录的控制面拓扑只有一个 Hub。当前文档没有定义 active-active Hub
-协调或 failover 协议，因此在单独验证该架构之前，增加 Hub 进程数量
-不等于生产 HA。
+只支持单一 Hub 的控制面拓扑。不支持 active-active Hub 协调或 failover；
+不要把增加 Hub 进程数量当作生产环境的高可用方案。
 
 Portal 维护自己的 endpoint 订阅，并以轮询方式选择 RPC 和 Web
 目标。Link 也会维护本地与远端调用所需的 discovery 状态。注册变更是异步

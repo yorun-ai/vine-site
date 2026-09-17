@@ -106,7 +106,7 @@ mTLS enabled, a missing public certificate falls back to a short-lived,
 process-local self-signed Web certificate; a configured Portal certificate
 always takes precedence. This fallback encrypts bootstrap traffic but is not
 browser-trusted. External PostgreSQL and NATS endpoints also retain their own
-security configuration; `--mq-nats-endpoint` currently accepts `nats://`.
+security configuration; `--mq-nats-endpoint` accepts `nats://`.
 
 :::
 
@@ -233,12 +233,12 @@ instead of continuing to forward requests to a dead instance.
 
 ## Hub Restart and Endpoint Changes
 
-Hub keeps registration and watch state in memory, so a restarted Hub starts
-empty. Link and Portal reconnect, re-register, and re-subscribe on their own, and
-a restart that keeps the same addresses does not interrupt active subscriptions.
+A restarted Hub starts without registration or watch state, so Link and Portal
+register and subscribe again. A restart that keeps the same addresses does not
+interrupt active subscriptions.
 
-Hub's control API endpoint stays configuration: Link and Portal connect to the
-`--hub-endpoint` they were started with, and changing the Hub API address
+The Hub control API endpoint is fixed configuration: Link and Portal connect to
+the `--hub-endpoint` they were started with, and changing the Hub API address
 requires updating that configuration.
 
 ## Inproc Mode

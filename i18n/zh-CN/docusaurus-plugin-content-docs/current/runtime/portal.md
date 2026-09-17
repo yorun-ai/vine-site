@@ -75,9 +75,9 @@ Portal 不需要重启来加载大多数网关变更。它监听 Hub Redis 中�
 - actor、service、resource Schema：决定 RPC 的认证与权限准入。
 - TLS 证书：用于 HTTPS listener 的 SNI 匹配。
 
-Hub 发布变更后，Portal 会更新相应 listener、网关或缓存状态；业务实例注册或失效时，endpoint 发现也会随之变化。
+Hub 发布配置变更后，Portal 无需重启即可使其生效；业务实例注册或失效时，endpoint 发现也会随之刷新。
 
-Hub 重启同样如此。Portal 定时重新读取 Hub 信息，Hub 重启后通告不同的 watch 端点时，Portal 无需重启即可跟随。详见 [Hub 重启与端点变化](./hub.md#hub-重启与端点变化)。
+Hub 重启无需对 Portal 做任何操作：Portal 会重新连接运行中的 Hub，并在不重启的情况下继续提供服务。详见 [Hub 重启与端点变化](./hub.md#hub-重启与端点变化)。
 
 ## 可选凭据字段
 

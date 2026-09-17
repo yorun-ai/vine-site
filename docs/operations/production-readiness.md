@@ -75,10 +75,10 @@ That temporary certificate is not browser-trusted and is not a production
 certificate. Keep any other plaintext path on loopback or a trusted private
 network.
 
-The embedded Redis ACL still separates `vine.hub`, `vine.link`, and
-`vine.portal`. With mTLS, Redis also requires the ACL username to match the
-client certificate identity. External PostgreSQL and NATS endpoints use their
-own authentication and encryption configuration.
+The embedded Redis ACL keeps each component identity separate. With mTLS, Redis
+also requires the ACL username to match the client certificate identity.
+External PostgreSQL and NATS endpoints use their own authentication and
+encryption configuration.
 
 :::
 
@@ -148,7 +148,7 @@ vine hub serve \
 The Hub database is the source of truth for imported configuration, Portal rules,
 and certificates. Omitting the database options selects the read-only `--no-db`
 mode, which is not suitable for production. Hub publishes runtime snapshots and
-changes through its Redis is not a replacement for the database.
+changes through Redis; that data does not replace the database.
 
 :::warning Event and Task durability
 
@@ -209,25 +209,26 @@ In standalone/inproc mode, registration stays until explicit unregister. There i
 no heartbeat, no lease expiry, and no local application health check, so a passing
 standalone test doesn't validate distributed liveness.
 
-In the current source, a separately running Link checks each application every 5
-seconds with a 2-second console-ping timeout and unregisters it after three
-consecutive non-timeout failures. Invocation timeouts are logged but do not
-increment that failure count. Hub leases last 30 seconds and the sweeper runs
-every 5 seconds. These timings are current implementation constants, not CLI
-tuning flags. Test a non-responsive application separately from a stopped
-process: Link can continue renewing the Hub lease while its application is
-wedged.
+A separately running Link checks each application every 5 seconds, with a
+2-second timeout for each check, and unregisters an application after three
+consecutive failures that are not invocation timeouts. Invocation timeouts are
+logged but do not count toward that limit. Hub expires an instance registration
+30 seconds after its last heartbeat and removes expired registrations every 5
+seconds. These values are not configurable through CLI flags. Test a
+non-responsive application separately from a stopped process: Link can continue
+renewing the Hub lease while its application is wedged.
 
 Portal registers with Hub independently of application registration. It renews
 its own registration every 10 seconds, unregisters on graceful shutdown, and is
 dropped 30 seconds after its last heartbeat, so a terminated Portal stops being
 reported even when it cannot unregister. Portal instances are listed in the Hub
-Dashboard. Records are held in Hub memory, so a restart clears them until each
-Portal registers again.
+Dashboard. A Hub restart clears the Portal instance list until each Portal
+registers again.
 
 - [ ] Gracefully stop one application and verify its endpoint disappears.
 - [ ] Terminate a separately running application without graceful shutdown and
-  verify Link removes it after repeated non-timeout console-ping failures.
+  verify Link removes it after repeated health-check failures that are not
+  invocation timeouts.
 - [ ] Terminate or disconnect Link and verify Hub removes the remaining endpoints
   after their leases expire.
 - [ ] Interrupt Link-to-Hub connectivity and verify discovery converges after
@@ -245,10 +246,8 @@ Within a business application, `StopGracefully()` runs in this order:
 
 1. Module `BeforeAppStop()` hooks in reverse order.
 2. Component `BeforeAppStop()` hooks in reverse order.
-3. Application unregistration through Link, including Link-side propagation and
-   drain.
-4. Application server shutdown: HTTP shutdown waits for in-flight handlers, while
-   inproc shutdown removes its route registrations.
+3. Application unregistration through Link, including propagation and drain.
+4. Application server shutdown: HTTP shutdown waits for in-flight handlers.
 5. Runtime context cancellation.
 6. Module and component `AfterAppStop()` hooks in reverse order.
 
@@ -305,10 +304,9 @@ application restart when changing startup-only values. See
   removed.
 - [ ] Scale down through graceful application shutdown before terminating Link.
 
-The documented control-plane topology has one Hub. The current documentation doesn't
-define active-active Hub coordination or a failover protocol, so don't count
-additional Hub processes as production HA without validating that architecture
-separately.
+One Hub is the supported control-plane topology. Active-active Hub coordination
+and failover are not supported; do not treat additional Hub processes as
+production high availability.
 
 Portal maintains its own endpoint subscriptions and uses round-robin selection
 for Rpc and Web targets. Link also maintains discovery state for local and remote

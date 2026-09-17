@@ -93,13 +93,11 @@ data in Hub Redis:
   authorization admission.
 - TLS certificates: provide SNI matching for HTTPS listeners.
 
-After Hub publishes a change, Portal updates the corresponding listener, gateway,
-or cache. Endpoint discovery also updates as business instances register or
-expire.
+Published configuration changes take effect in Portal without a restart, and
+endpoint discovery refreshes as business instances register or expire.
 
-Hub restarts are handled the same way. Portal re-reads Hub information on a
-timer, so a restarted Hub that advertises a different watch endpoint is followed
-without restarting Portal. See
+A Hub restart needs no action on Portal: Portal reconnects to the running Hub and
+continues serving without a restart. See
 [Hub Restart and Endpoint Changes](./hub.md#hub-restart-and-endpoint-changes).
 
 ## Optional credentials

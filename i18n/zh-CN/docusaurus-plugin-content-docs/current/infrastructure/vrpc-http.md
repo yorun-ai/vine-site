@@ -61,7 +61,7 @@ vrpc-options: timeout=10s
 - `version` 是纯语义化版本；Go module 形式的 `v` 前缀会在写入 Header 时去掉。
 - `instanceId` 是 UUID。
 
-`timeout` 使用 Go duration 格式，例如 `500ms`、`10s`、`1m`。Header 缺失时，核心 transport 不额外创建 deadline；Portal rpcgw 默认使用 `30s`，并拒绝超过 `120s` 的值。
+`timeout` 使用 Go duration 格式，例如 `500ms`、`10s`、`1m`。Header 缺失时不额外设置 deadline；Portal rpcgw 默认使用 `30s`，并拒绝超过 `120s` 的值。
 
 `destination` 用于 App 到 Link 调用指定目标应用。Portal 会在外部请求中移除它，因此经 rpcgw 到达应用的只有 `timeout`。
 

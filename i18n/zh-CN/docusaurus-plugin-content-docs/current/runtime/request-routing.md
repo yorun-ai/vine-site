@@ -35,7 +35,7 @@ sequenceDiagram
   participant Hub as Hub
   participant Peers as 其他 Link / Portal
 
-  App->>App: 构建 DI、component、module 与 handler
+  App->>App: 构造应用
   App->>App: 执行 BeforeAppStart
   App->>App: 启动 App server
   App->>RuntimeLink: 注册身份与能力

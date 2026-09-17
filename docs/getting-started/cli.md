@@ -188,8 +188,8 @@ corresponding environment variables are `VINE_MTLS_CA_FILE`,
 Programs using `app/linked` configure the embedded Link through flags that name
 it: `--link-mtls-ca-file`, `--link-mtls-cert-file`, and `--link-mtls-key-file`,
 or `VINE_LINK_MTLS_CA_FILE`, `VINE_LINK_MTLS_CERT_FILE`, and
-`VINE_LINK_MTLS_KEY_FILE`. They can also set `linked.Option.MTLSCAFile`,
-`MTLSCertFile`, and `MTLSKeyFile` directly.
+`VINE_LINK_MTLS_KEY_FILE`. They can also set `MTLSCAFile`, `MTLSCertFile`, and
+`MTLSKeyFile` on `linked.Option` directly.
 
 When Link or Portal enables mTLS, `--hub-endpoint` must use `https://`. Backend
 service registrations are also required to use HTTPS, preventing a component

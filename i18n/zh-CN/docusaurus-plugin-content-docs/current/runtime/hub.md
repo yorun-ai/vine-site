@@ -90,7 +90,7 @@ API，但会收到告警，这条 h2c 路径也保持未经认证的状态；部
 后台身份证书。启用 mTLS 后，如果没有匹配的公开证书，Portal 会回退到一个短期、
 仅驻留当前进程的自签 Web 证书；配置的 Portal 证书始终优先。该回退能加密引导流量，
 但不会被浏览器信任。外部 PostgreSQL 与 NATS endpoint 也继续使用各自的安全配置；
-`--mq-nats-endpoint` 当前只接受 `nats://`。
+`--mq-nats-endpoint` 只接受 `nats://`。
 
 :::
 
@@ -195,10 +195,10 @@ Redis Component 并自行管理 endpoint，则使用 [Redis 指南](../framework
 
 ## Hub 重启与端点变化
 
-Hub 在内存中保存注册与 watch 状态，因此重启后是空的。Link 与 Portal 会自行重连、重新注册
-并重新订阅，地址未变的 Hub 重启不会打断进行中的订阅。
+Hub 重启后不保留注册与 watch 状态，Link 与 Portal 会重新注册并重新订阅；
+地址未变的 Hub 重启不会打断进行中的订阅。
 
-Hub 的 control API 端点仍属于配置：Link 与 Portal 连接启动时指定的 `--hub-endpoint`，Hub API 地址变化需要同步更新该配置。
+Hub 的 control API 端点属于固定配置：Link 与 Portal 连接启动时指定的 `--hub-endpoint`，Hub API 地址变化需要同步更新该配置。
 
 ## Inproc 模式
 

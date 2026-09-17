@@ -180,8 +180,8 @@ Hub、Link 与 Portal 的身份分别是
 
 使用 `app/linked` 的程序通过带 Link 前缀的参数配置内嵌 Link：`--link-mtls-ca-file`、
 `--link-mtls-cert-file` 和 `--link-mtls-key-file`，或 `VINE_LINK_MTLS_CA_FILE`、
-`VINE_LINK_MTLS_CERT_FILE` 和 `VINE_LINK_MTLS_KEY_FILE`；也可以直接设置
-`linked.Option.MTLSCAFile`、`MTLSCertFile` 和 `MTLSKeyFile`。
+`VINE_LINK_MTLS_CERT_FILE` 和 `VINE_LINK_MTLS_KEY_FILE`；也可以直接在
+`linked.Option` 上设置 `MTLSCAFile`、`MTLSCertFile` 和 `MTLSKeyFile`。
 
 Link 或 Portal 启用 mTLS 时，`--hub-endpoint` 必须使用 `https://`；后台服务注册
 也必须使用 HTTPS，组件不会静默接受旧的明文 endpoint。

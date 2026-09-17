@@ -35,10 +35,9 @@ flowchart LR
 - **Lease locks**: routes application lock operations to the lock backend that
   Hub advertises.
 
-A Hub restart does not require restarting Link. When Hub advertises different
-watch, MQ, or lock endpoints, Link replaces those connections and re-subscribes
-its watchers; a heartbeat that reports Hub has forgotten an instance registers
-the local application instances again. See
+A Hub restart does not require restarting Link. Link reconnects, re-registers
+its local applications, and re-subscribes to configuration and discovery changes
+automatically. See
 [Hub Restart and Endpoint Changes](./hub.md#hub-restart-and-endpoint-changes).
 
 ## Starting Link
@@ -108,8 +107,8 @@ freshness, and failure boundaries.
 
 ### Event and Task
 
-Link creates and updates Event and Task consumers from the registered listeners
-and runners; application code does not create them.
+Applications declare Event listeners and Task runners; Link manages the
+corresponding consumers.
 
 ## Inproc Mode
 
