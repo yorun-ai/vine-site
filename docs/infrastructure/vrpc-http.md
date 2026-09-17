@@ -69,8 +69,8 @@ vrpc-options: timeout=10s
 - `instanceId` is a UUID.
 
 `timeout` uses Go duration syntax, like `500ms`, `10s`, or `1m`. When the header
-is absent, the core transport does not create an additional deadline. Portal
-rpcgw uses a `30s` default and rejects values above `120s`.
+is absent, no additional deadline is applied. Portal rpcgw uses a `30s` default
+and rejects values above `120s`.
 
 `destination` names the target application for an App-to-Link call. Portal
 removes it from an external request, so only `timeout` reaches the application

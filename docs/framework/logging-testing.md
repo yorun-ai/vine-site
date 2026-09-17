@@ -121,7 +121,7 @@ data LoginRequest {
 }
 ```
 
-`@sensitive` can also mark an entire data or config declaration, an Event `payload` block, and Actor `credential` or `info` blocks. The corresponding generated type implements the `SkelSensitive()` marker method from the `skel.Sensitive` interface, adding no data field and changing neither JSON nor CBOR; `core/redact` replaces values of that type with `<redacted>` as a whole. Event declarations and Actor `auth` containers cannot be marked. When an entire Rpc method input/output or Resource check input is marked, skelc records the metadata in `MethodSpec`, and the corresponding payload log is masked as a whole. Whole Task trigger input metadata is recorded in Task `TriggerSpec` for code that processes Task arguments.
+`@sensitive` can also mark an entire data or config declaration, an Event `payload` block, and Actor `credential` or `info` blocks. The corresponding generated type implements the `SkelSensitive()` marker method from the `skel.Sensitive` interface, adding no data field and changing neither JSON nor CBOR; `core/redact` replaces values of that type with `<redacted>` as a whole. Event declarations and Actor `auth` containers cannot be marked. When an entire Rpc method input/output, Resource check input, or Task trigger input is marked, the corresponding payload log is masked as a whole.
 
 `core/redact` is independent of the concrete Rpc, Event, and Task architecture,
 so it can render ordinary Go values directly:

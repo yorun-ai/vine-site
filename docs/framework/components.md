@@ -6,10 +6,8 @@ sidebar_label: Components & Modules
 # Components & Modules
 
 Components and modules split an application into functional units that can be
-initialized, injected, and stopped independently. `app.New` creates the App
-shell, constructs and validates its specification, and captures runtime inputs;
-it doesn't yet construct declared components or modules. `Start` constructs
-and injects them and runs their startup hooks. Graceful shutdown runs their
+initialized, injected, and stopped independently. Vine constructs and injects
+them during `Start` and runs their startup hooks; graceful shutdown runs their
 stop hooks in reverse order.
 
 ## Capability overview

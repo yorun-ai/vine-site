@@ -65,6 +65,36 @@ flowchart LR
   Client["客户端"] --> Portal["Portal 站点与准入"] --> Link["Link Web proxy"] --> Handler["应用 Web handler"]
 ```
 
-standalone 模式仍走相同的匹配与转发逻辑，但 endpoint 使用进程内连接。静态资源能通过 `web.NewAssetsServer` 提供，转发已有后端用 `web.NewReverseProxy`。
+handler 读取的路径从自身挂载位置开始：声明 `mount /console` 的 Web，收到 `/console/orders` 的请求时读到的是 `/console/orders`，注册的路由也基于同一路径解析。
+
+standalone 模式仍走相同的匹配与转发逻辑，但 endpoint 使用进程内连接。
+
+### 静态资源
+
+在 Web handler 中匿名内嵌 `web.AssetsServer`，在 `DIInit` 中设置 accessor，并把 `Routes` 委托给它：
+
+```go title="assets.go"
+//go:embed dist
+var assetsFS embed.FS
+
+type UserPortal struct {
+    skeled.DefaultUserPortalWebServer
+    web.AssetsServer
+}
+
+func (h *UserPortal) DIInit() {
+    h.AssetsServer.SetAccessor(web.NewEmbedAssetsAccessor(assetsFS, "dist"))
+}
+
+func (h *UserPortal) Routes(router *web.Router) {
+    h.AssetsServer.Routes(router)
+}
+```
+
+必须匿名按值内嵌：`Serve` 需要属于注册进框架的 handler 类型，写成具名字段或指针内嵌会在注册时 panic。accessor 通过 `DIInit` 注入。
+
+`AssetsServer.Routes` 既处理挂载路径之下的所有路径，也处理挂载根路径本身，因此访问挂载根会返回 index，而不是重定向到应用内部保留的路径；`*path` 参数表示挂载路径之后的部分，未声明挂载路径的 Web 则从根路径提供服务。
+
+转发已有后端改用 `web.NewReverseProxy`。
 
 Portal 配置见 [Portal](../runtime/portal.md)，Actor 与 Web 语法见 [Skel 语法](https://skel.yorun.ai/docs/syntax)。

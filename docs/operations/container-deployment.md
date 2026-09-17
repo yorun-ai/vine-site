@@ -56,9 +56,9 @@ messaging that survives the Hub process:
 Do not set both database variables. Embedded messaging rejects
 `VINE_MQ_NATS_ENDPOINT`, and `nats` mode requires it. When using SQLite, mount
 persistent storage at `/data`. When a seed file is configured with
-`VINE_SEED_HUB_DATA_FILE`, mount that file into the container as well. Mount any
-source and variable files referenced by `VINE_SEED_HUB_SOURCE_FILE` and
-`VINE_SEED_HUB_VARS_FILE` too; each value must name its path inside the container.
+`VINE_SEED_DATA_FILE`, mount that file into the container as well. Mount any
+source and variable files referenced by `VINE_SEED_SOURCE_FILE` and
+`VINE_SEED_VARS_FILE` too; each value must name its path inside the container.
 
 The images accept these environment variables; the default column shows the
 value in effect when a variable is unset:
@@ -66,7 +66,7 @@ value in effect when a variable is unset:
 | Image | Variable | Effective default | Purpose |
 | --- | --- | --- | --- |
 | Hub | `VINE_CONTROL_LISTEN` | `0.0.0.0:7071` | Control API for Link and Portal |
-| Hub | `VINE_ADMIN_LISTEN` | `0.0.0.0:7075` | Admin API and Dashboard Web |
+| Hub | `VINE_ADMIN_LISTEN` | `0.0.0.0:7099` | Admin API and Dashboard |
 | Hub | `VINE_WATCH_LISTEN` | `0.0.0.0:7072` | Watch endpoint for configuration and discovery |
 | Hub | `VINE_DB_SQLITE_FILE` | empty | SQLite database path |
 | Hub | `VINE_DB_POSTGRES_URL` | empty | PostgreSQL connection URL |
@@ -74,10 +74,9 @@ value in effect when a variable is unset:
 | Hub | `VINE_MQ_NATS_ENDPOINT` | empty | External NATS URL |
 | Hub | `VINE_LOCK_MODE` | `embedded` | Lock backend: `embedded`, `redis`, or `disable` |
 | Hub | `VINE_LOCK_REDIS_ENDPOINT` | empty | Redis endpoint for `VINE_LOCK_MODE=redis` |
-| Hub | `VINE_SEED_HUB_DATA_FILE` | empty | Startup seed file |
-| Hub | `VINE_SEED_HUB_SOURCE_FILE` | empty | Optional field source map |
-| Hub | `VINE_SEED_HUB_VARS_FILE` | empty | Deployment variable YAML dictionary |
-| Hub | `VINE_DASHBOARD_URL` | empty | Explicit Dashboard URL |
+| Hub | `VINE_SEED_DATA_FILE` | empty | Startup seed file |
+| Hub | `VINE_SEED_SOURCE_FILE` | empty | Optional field source map |
+| Hub | `VINE_SEED_VARS_FILE` | empty | Deployment variable YAML dictionary |
 | Link | `VINE_HUB_ENDPOINT` | `http://hub:7071` | Hub Control API endpoint |
 | Link | `VINE_API_LISTEN` | `0.0.0.0:7079` | Application-facing Link API |
 | Link | `VINE_INGRESS_LISTEN` | `0.0.0.0:7082` | Link ingress endpoint |
@@ -86,8 +85,10 @@ value in effect when a variable is unset:
 | All | `VINE_MTLS_CERT_FILE` | empty | Component certificate file |
 | All | `VINE_MTLS_KEY_FILE` | empty | Component private-key file |
 
-The three mTLS variables must be set together or left unset. See
-the [CLI reference](../getting-started/cli.md) for flag equivalents and detailed
+The three mTLS variables must be set together or left unset. The Hub Admin API
+and Dashboard listener stays cleartext HTTP regardless of backend mTLS, so reach
+it directly and keep it on a private network. See the
+[CLI reference](../getting-started/cli.md) for flag equivalents and detailed
 service semantics.
 
 ## Kubernetes quick start
@@ -120,17 +121,18 @@ The base creates:
 - a single-replica Hub `StatefulSet`, a headless Service, and a 5 Gi
   `ReadWriteOnce` volume claim for SQLite;
 - a Link `Deployment` and internal API/ingress Service;
-- a Portal `Deployment` and a `LoadBalancer` Service for ports 80, 443, and
-  the default Dashboard entry on 7099;
-- startup, readiness, and liveness TCP probes for every component;
+- a Portal `Deployment` and a `LoadBalancer` Service for ports 80 and 443;
+- startup, readiness, and liveness TCP probes on Hub's Control API and on Link's
+  API, the listeners that always exist. Portal has no probe, because it serves
+  the access of every entry Hub publishes and therefore owns no port that always
+  exists;
 - restricted pod and container security contexts with no service-account token,
   no privilege escalation, a runtime-default seccomp profile, and a read-only
   root filesystem.
 
 Link and Portal use init containers to wait for Hub's Control API at `hub:7071`.
-The Hub Service is headless because embedded NATS selects a dynamic port and
-reports it through `InfoService`; direct Pod resolution keeps that port
-reachable. With SQLite, keep Hub at a single replica.
+The Hub Service is headless so Pods resolve directly, which keeps the dynamic
+embedded-NATS port reachable. With SQLite, keep Hub at a single replica.
 
 Portal uses a `LoadBalancer` Service by default. On a cluster without a cloud
 load balancer, change the Service to `ClusterIP` and expose the Portal

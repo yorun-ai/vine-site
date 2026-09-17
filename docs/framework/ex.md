@@ -130,8 +130,6 @@ code := ex.NotFound
 kind := code.Type() // ApplicationError
 ```
 
-`Type` is derived from `Code` and does not need to be stored separately.
-
 ### `Category()`
 
 ```go
@@ -243,7 +241,7 @@ err := ex.New(
 This preserves these behaviors:
 
 - `errors.Is(...)` can still identify the wrapped error.
-- `causeError` is not serialized across processes.
+- The wrapped cause is not serialized across processes.
 
 ### Success and fallback errors
 
@@ -257,7 +255,7 @@ internalErr := ex.NewInternal()
 
 ## Error-object behavior
 
-### `Type()` is derived from `Code`
+### `Type()`
 
 ```go
 err := ex.New(ex.NotFound, "missing user")

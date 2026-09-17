@@ -63,9 +63,8 @@ application := app.New[*DemoApp](
 
 Custom flags follow the same rule: validate or normalize constructor inputs in
 the application specification's `DIInit()` when later initialization depends on
-them. Treat flags as immutable input after construction. Objects in later
-dependency containers receive copies; mutating one injected flag is not a
-process-wide configuration mechanism.
+them. Treat flags as immutable input after construction, and do not mutate an
+injected flag to reconfigure the process.
 
 An application type and an application name can each be constructed only once in
 a process, even after the application has stopped. Applications are also
@@ -81,23 +80,17 @@ It has four conceptual phases.
 
 ### 1. Connect and assemble
 
-Vine first connects to Link and obtains the runtime information needed by the
-application. It then creates:
-
-- The application dependency graph.
-- Declared components.
-- Declared modules.
-- Rpc, Web, Event, and Task servers and their execution containers.
+Vine connects to Link and assembles the application dependency graph, including
+the declared components and modules.
 
 Declared component and module instances are application-lifetime singletons.
 Their injected fields and `DIInit()` methods run while the graph is being
-constructed. Framework component minders also initialize their components at this
-point -- an RDB component, for example, can open its database before lifecycle
-hooks begin.
+constructed. Managed components initialize here as well, so an RDB component can
+open its database before lifecycle hooks begin.
 
 `BindCommon(...)`, component `Bind(...)`, and module `Bind(...)` are dependency
-declarations, not lifecycle callbacks. Vine may apply them to more than one
-container. They should be deterministic and free of operational side effects.
+declarations, not lifecycle callbacks. They should be deterministic and free of
+operational side effects.
 
 #### Application callbacks
 
@@ -123,8 +116,8 @@ func (*DemoApp) InitHooks(add *app.HookAdder) {
 }
 ```
 
-Callback parameters are resolved through DI after module initialization and
-retained for later invocation, including shutdown callbacks. They can receive
+Callback parameters are resolved through DI and remain available to every
+callback, including shutdown callbacks. They can receive
 components, modules, clients, and common dependencies. Startup callbacks run in
 registration order; shutdown callbacks run in reverse registration order. All
 callbacks run synchronously and must be non-variadic. Only `BeforeAppStart` may

@@ -128,8 +128,8 @@ realm := actor.Realm()
 identifier := actor.Identifier()
 ```
 
-These methods are available from Vine v0.15.1. Declaring an identifier requires
-skelc support for `@identifier` and regenerated contracts. An actor without the
+Declaring an identifier requires skelc support for `@identifier` and regenerated
+contracts. An actor without the
 marker returns an empty identifier. Absent, anonymous, and authenticating actors
 return empty realm and identifier values. Renaming the actor or its domain changes
 its realm.

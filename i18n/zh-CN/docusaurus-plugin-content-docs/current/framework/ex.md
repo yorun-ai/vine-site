@@ -130,8 +130,6 @@ code := ex.NotFound
 kind := code.Type() // ApplicationError
 ```
 
-`Type` 不需要单独存储，而是由 `Code` 自动推导。
-
 ### `Category()`
 
 ```go
@@ -246,7 +244,7 @@ err := ex.New(
 行为上：
 
 - 通过 `errors.Is(...)` 能继续判断被包装的原始错误
-- `causeError` 不会参与跨进程序列化
+- 被包装的 cause 不会参与跨进程序列化
 
 ### 成功态与兜底错误
 
@@ -262,7 +260,7 @@ internalErr := ex.NewInternal()
 
 ## 错误对象行为
 
-### `Type()` 由 `Code` 自动派生
+### `Type()`
 
 ```go
 err := ex.New(ex.NotFound, "missing user")

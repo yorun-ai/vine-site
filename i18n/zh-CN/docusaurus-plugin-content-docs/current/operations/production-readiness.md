@@ -47,8 +47,9 @@ skelc version
 :::warning 后台 mTLS 边界
 
 Vine 可以为 Hub、Link 与 Portal 强制使用部署提供的 mTLS 身份。在每个进程上同时
-配置三个 `--mtls-*-file` 参数后，Hub Control API、Admin API、内嵌 Redis 与
-NATS、Link ingress，以及组件代理 client 都会使用 mTLS。证书通过精确的
+配置三个 `--mtls-*-file` 参数后，Hub Control API、内嵌 Redis 与
+NATS、Link ingress，以及组件代理 client 都会使用 mTLS；Hub Admin API 的 listener
+保持明文 HTTP，因为它承载的 Dashboard 由操作者的浏览器访问。证书通过精确的
 X.509-SVID URI SAN `spiffe://<trust-domain>/vine/daemon/vine.hub`、
 `spiffe://<trust-domain>/vine/daemon/vine.link`、
 `spiffe://<trust-domain>/vine/daemon/vine.portal` 标识组件；同一部署的所有组件必须使用相同
@@ -63,7 +64,7 @@ trust domain，DNS SAN 不授予组件身份。发现到的明文 endpoint 会�
 自签 Web 证书，用于加密引导访问。该临时证书不受浏览器信任，也不是生产证书。其他
 明文路径都必须限制在 loopback 或可信私有网络中。
 
-内嵌 Redis ACL 继续隔离 `vine.hub`、`vine.link`、`vine.portal`；启用 mTLS 后，
+内嵌 Redis ACL 隔离各个组件身份；启用 mTLS 后，
 Redis 还要求 ACL 用户名与 client 证书身份一致。外部 PostgreSQL 和 NATS endpoint
 使用它们自己的认证与加密配置。
 
@@ -75,12 +76,12 @@ Redis 还要求 ACL 用户名与 client 证书身份一致。外部 PostgreSQL �
 | --- | --- | --- | --- |
 | Hub Control API | `127.0.0.1:7071` | Link 与 Portal | 启用后台 mTLS，只绑定到可达的私有地址 |
 | Hub Redis | `127.0.0.1:7072` | Link 与 Portal | 启用后台 mTLS；不要把它发布为通用 Redis 服务 |
-| Hub Admin API 与 Web | `127.0.0.1:7075` | Portal | 启用后台 mTLS，并与组件流量隔离 |
+| Hub Admin API 与 Dashboard | `127.0.0.1:7099` | 操作者的浏览器 | 无论后台 mTLS 如何配置都使用明文 HTTP；让它只监听 loopback 或位于私有网络，并限制可访问范围 |
 | Link API | `127.0.0.1:7079` | Link 管理的业务应用 | 优先使用 loopback；非 loopback listener 会告警，且未认证 h2c 流量必须由部署侧保护 |
 | Link ingress | `0.0.0.0:0` | Hub 调试工具、Portal 和远端 Link 实例 | 启用后台 mTLS；网络策略要求固定端口时设置固定地址 |
 | 业务应用 HTTP | `127.0.0.1:0` | 它对应的 Link sidecar | 让应用与 Link 位于同一主机和部署信任边界内 |
 | 普通 Hub 模式的内嵌 NATS | 随机 TCP 端口 | Hub 内部 publisher 与 Link 实例 | 启用后台 mTLS；运维需要固定 endpoint 时使用外部 NATS |
-| Portal entry | Dashboard 默认 `http://:7099/`，启用 mTLS 时默认 `https://:7099/`；其他入口由 Hub 中的 Portal rule 定义 | 外部客户端 | 只暴露预期的 listener，并在生产使用前替换临时自签证书 |
+| Portal 入口 | 各入口声明的 scheme、host 和 port | 外部客户端 | 只暴露预期的 listener，并在生产使用前替换临时自签证书 |
 
 - [ ] 只允许表格中列出的调用方集合。
 - [ ] 准备一个 CA，以及分别标识 `vine.hub`、`vine.link`、`vine.portal` 且同时
@@ -92,6 +93,8 @@ Redis 还要求 ACL 用户名与 client 证书身份一致。外部 PostgreSQL �
 - [ ] 优先将每个应用与其 Link sidecar 部署在同一主机和部署信任边界内。特殊拓扑
   使用非 loopback Link API 时，必须明确保护并限制这条未认证 h2c 路径。
 - [ ] 将 Hub Redis 访问权视为应用配置和 TLS 私钥材料的访问权。
+- [ ] 由 standalone 进程提供 Admin API 时，把 `--hub-admin-listen` 绑定到 loopback 或
+  加以保护，因为该 listener 不携带任何认证。
 - [ ] 确认外部流量通过 Portal 进入，而不是绕过网关路由和准入。
 
 ## 配置 Hub 持久化、消息系统与锁
@@ -113,7 +116,7 @@ Redis 启动 Hub：
 vine hub serve \
   --control-listen 10.0.1.10:7071 \
   --watch-listen 10.0.1.10:7072 \
-  --admin-listen 10.0.1.10:7075 \
+  --admin-listen 127.0.0.1:7099 \
   --mtls-ca-file /run/vine/ca.pem \
   --mtls-cert-file /run/vine/hub.pem \
   --mtls-key-file /run/vine/hub-key.pem \
@@ -125,8 +128,8 @@ vine hub serve \
 ```
 
 Hub 数据库是导入配置、Portal rule 和证书的事实来源。不指定数据库参数会进入只读的
-`--no-db` 模式，不适合生产环境。Hub 通过 Redis 分发层发布 runtime 快照和变更；
-Redis 不能替代数据库。
+`--no-db` 模式，不适合生产环境。Hub 通过 Redis 发布运行时快照与变更，但这些数据不能
+替代数据库。
 
 :::warning Event 与 Task 的持久性
 
@@ -167,36 +170,35 @@ nats --server "$VINE_MQ_NATS_ENDPOINT" stream add VINE_TASKS \
 
 ## 验证注册与故障语义
 
-| 模式 | TTL 与 registry sweeper | Link 心跳 | Portal 注册 | 本地应用健康检查 |
+| 模式 | 租约过期 | Link 心跳 | Portal 注册 | 本地应用健康检查 |
 | --- | --- | --- | --- | --- |
 | 应用与 Link 分开运行 | 启用 | 启用 | 启用 | 启用 |
 | 应用与 Link 同进程、Hub 走网络的 linked | 启用 | 启用 | 启用 | 禁用；应用与 Link 共享一个进程 |
 | 使用 inproc Hub 的 standalone | 禁用 | 禁用 | 注册一次，不发送心跳 | 禁用 |
 
-使用普通网络 Hub 时，注册信息带有租约。Link 通过心跳续期，Hub 的
-registry sweeper 会注销过期的应用实例并发布删除事件。独立运行的 Link
-还会检查它管理的应用。Linked 模式保留网络租约和心跳，但由于 Link
-和应用共享一个进程，不需要单独执行本地应用健康检查。
+使用普通网络 Hub 时，注册信息带有租约。Link 通过心跳续期；租约过期的实例会被移除并
+发布删除事件。独立运行的 Link 还会检查它管理的应用。Linked 模式保留网络租约和心跳，
+但由于 Link 和应用共享一个进程，不需要单独执行本地应用健康检查。
 
 standalone/inproc 模式下，注册信息会保留到显式 unregister。此时没有
 心跳、租约过期扫描或本地应用健康检查，因此 standalone 测试通过并
 不能证明分布式存活机制正确。
 
-在当前源码中，独立运行的 Link 每 5 秒检查一次应用，console ping 的 timeout
-是 2 秒；连续三次发生非 timeout 失败后，Link 会注销应用。
-调用 timeout 只会写入日志，不会增加该失败计数。Hub 租约为 30 秒，sweeper
-每 5 秒运行一次。这些时间是当前实现常量，不是 CLI 调优参数。请分别测试
+独立运行的 Link 每 5 秒检查一次应用，每次检查的 timeout 是 2 秒；连续三次
+非调用 timeout 的失败后，Link 会注销该应用。调用 timeout 只会写入日志，
+不计入该失败次数。Hub 在最后一次心跳后 30 秒使实例注册过期，并每 5 秒
+移除一次过期注册。这些值无法通过 CLI 参数配置。请分别测试
 无响应应用和已停止进程：应用卡住时，Link 仍可能继续续订它在 Hub 中的
 租约。
 
 Portal 的注册独立于应用注册。Portal 每 10 秒续租一次自己的注册，优雅退出时注销；
 最后一次心跳后 30 秒，Hub 会将其移除，因此即使无法注销，被终止的 Portal 也不会继续
-显示。Portal 实例会列在 Hub Dashboard 中。这些记录保存在 Hub 内存里，Hub 重启后需要
-各 Portal 重新注册才会再次出现。
+显示。Portal 实例会列在 Hub Dashboard 中。Hub 重启会清空 Portal 实例列表，直到
+各 Portal 重新注册。
 
 - [ ] 优雅停止一个应用，确认其 endpoint 消失。
-- [ ] 不执行优雅停止而终止一个独立运行的应用，确认 Link 在 console ping
-  连续发生非 timeout 失败后将其移除。
+- [ ] 不执行优雅停止而终止一个独立运行的应用，确认 Link 在连续的非调用
+  timeout 失败后将其移除。
 - [ ] 终止 Link 或断开其连接，确认 Hub 在剩余 endpoint 的租约过期后将其
   移除。
 - [ ] 中断 Link 到 Hub 的连接，确认连接恢复后 discovery 最终收敛。
@@ -212,9 +214,8 @@ Portal 的注册独立于应用注册。Portal 每 10 秒续租一次自己的�
 
 1. 以逆序执行 Module 的 `BeforeAppStop()` hook。
 2. 以逆序执行 Component 的 `BeforeAppStop()` hook。
-3. 通过 Link 注销应用，包括 Link 侧的传播等待与排空。
-4. 停止应用 server：HTTP shutdown 会等待在途 Handler，inproc shutdown
-   则移除其 route registration。
+3. 通过 Link 注销应用，包括传播与排空。
+4. 停止应用 server：HTTP shutdown 会等待在途 Handler。
 5. 取消 runtime context。
 6. 以逆序执行 Module 和 Component 的 `AfterAppStop()` hook。
 
@@ -264,9 +265,8 @@ Portal 的注册独立于应用注册。Portal 每 10 秒续租一次自己的�
 - [ ] 添加和移除实例后，验证 Portal 的 endpoint 选择与路由。
 - [ ] 缩容时先优雅停止应用，再终止 Link。
 
-已记录的控制面拓扑只有一个 Hub。当前文档没有定义 active-active Hub
-协调或 failover 协议，因此在单独验证该架构之前，增加 Hub 进程数量
-不等于生产 HA。
+只支持单一 Hub 的控制面拓扑。不支持 active-active Hub 协调或 failover；
+不要把增加 Hub 进程数量当作生产环境的高可用方案。
 
 Portal 维护自己的 endpoint 订阅，并以轮询方式选择 RPC 和 Web
 目标。Link 也会维护本地与远端调用所需的 discovery 状态。注册变更是异步

@@ -38,27 +38,11 @@ type Option struct {
 - 也支持裸地址：
   - `127.0.0.1:6379`
 
-`redis` 会优先调用 `go-redis` 的 `ParseURL(...)`；解析失败时退回裸地址模式。创建 client 时固定使用 Redis RESP2 协议，并关闭 identity 上报。
 
 ### `RedisSpec`
 
-Redis 组件接口是：
-
-```go
-type RedisSpec interface {
-    InitOption(option *Option)
-    InitLockers(add TypeAdder)
-    InitCaches(add TypeAdder)
-}
-```
-
-具体来说：
-
-- `InitOption(...)` 初始化 Redis 连接参数
-- `InitLockers(...)` 声明这个 Redis 组件下可注入的 locker 类型
-- `InitCaches(...)` 声明这个 Redis 组件下可注入的 cache 类型
-
-业务组件通过嵌入 `redis.Redis` 获得该契约的默认实现。
+业务组件通过嵌入 `redis.Redis`，并按下方示例实现 `InitOption`、`InitLockers` 和
+`InitCaches`。
 
 ### `Redis`
 
@@ -90,18 +74,9 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 }
 ```
 
-## 初始化流程
-
-应用启动时按以下顺序接入 Redis：
-
-1. app 创建用户组件 `*CacheRedis`
-2. 调用 `InitOption(...)`、`InitLockers(...)` 和 `InitCaches(...)`
-3. 打开 Redis client，并将 `Cmdable` 提供给用户组件
-4. 为已声明的 Locker 和 Cache 注册依赖注入工厂
-
 ## DI 语义
 
-Vine 将用户声明的 Redis 组件作为单例提供给应用，并通过 factory 创建 Locker 和 Cache。每个 factory 会自动取得当前 `context.Context`，业务代码只需声明注入字段。
+业务对象只需声明注入字段。
 
 业务侧要直接操作 Redis，注入自己定义的 Redis 组件即可：
 
@@ -269,12 +244,6 @@ func (s *UserService) RebuildUser(userID string) {
 
 ```
 
-这个示例里，实际 Redis key 会是：
-
-```text
-vine:lock:user:<userID>
-```
-
 ## Lock
 
 ### `Locker.Lock(...)`
@@ -292,38 +261,6 @@ lock, ok := locker.Lock(key)
 
 同步 `Lock(...)` 和 `Unlock()` 调用中的 Redis 基础设施错误会直接 panic，不走
 返回值。锁竞争不是基础设施错误，因此仍使用 `false` 返回值。
-
-实际 Redis key 规则是：
-
-- 全局前缀固定为 `vine:lock:`
-- 始终使用 `<KeyPrefix()> + ":" + key`
-
-例如：
-
-```go
-lock, ok := userLocker.Lock("1")
-if !ok {
-    return
-}
-```
-
-如果这个 locker 使用 `KeyPrefix() == "user"`，对应的 Redis key 是：
-
-```text
-vine:lock:user:1
-```
-
-如果传空 key：
-
-```go
-lock, ok := userLocker.Lock("")
-```
-
-最终 Redis key 会是：
-
-```text
-vine:lock:user:
-```
 
 ### 默认锁
 
@@ -358,31 +295,11 @@ ctx := lock.Context()
 refresh 失败原因。手动成功调用 `Unlock()` 时，cause 是普通的
 `context.Canceled`。
 
-### refresh 策略
+### 续约
 
-默认 refresh 行为：
-
-- 正常 refresh 间隔：`10s`
-- 失败后 retry 间隔：`3s`
-- 最大 retry 次数：`7`
-- 单次 refresh 命令最长执行时间：`2s`
-
-当一次正常的 refresh tick 到来时：
-
-1. 先立即尝试 refresh
-2. Redis 返回 `0`，说明 token 已不再属于当前持有者，Vine 会立即把锁标记为
-   broken，不再重试
-3. transport 错误每 `3s` 重试一次，但仅当命令和下一次 retry 仍处于保守的本地
-   租约截止点内时才重试
-4. retry 次数达到上限或租约截止点到期时标记 broken，以先发生者为准
-
-refresh 在后台 goroutine 中运行，不会从这个 goroutine panic。确认所有权丢失或
-refresh 预算耗尽后，它会把失败原因记录为锁 context 的取消 cause，将锁标记为
-broken，并取消这个 context。
-
-本地截止点会预留 Redis TTL 的 10%（最多 1 秒）作为安全余量。每次 refresh 命令
-使用“两秒 timeout”和“本地截止点”中更早的时间，因此命令和它的 retry 预算都
-不可能超出 Vine 仍视为有效的租约。
+持锁期间锁会自动续约，因此长时间运行的临界区不会因为租约到期而失效。当续约无法
+再触达 Redis，或 Redis 报告锁已由其他持有者持有时，Vine 会把锁标记为 broken，并
+取消 `Lock.Context()`。
 
 ### broken 状态
 
@@ -402,18 +319,17 @@ broken，并取消这个 context。
 
 `IsBroken()` 只是一次状态快照；它不会保留锁，也不会与随后的 `Unlock()` 原子
 同步。refresh 可能在两次调用之间把锁标成 broken。原子的 `TryUnlock()` 是这类
-两步调用的安全替代：锁未获取、已释放、已 broken 或 token 不再持有 Redis key
-时返回 `false`，Redis 命令错误仍然 panic。建议限制临界区时长，在
+两步调用的安全替代：锁未获取、已释放、已 broken 或已不再由当前 token 持有时
+返回 `false`，Redis 命令错误仍然 panic。建议限制临界区时长，在
 `Lock.Context()` 取消后立即停止工作；需要 fail-fast 时用 `Unlock()`，把失锁当作
 预期情况时用 `TryUnlock()`。
 
 ### `Lock.TryUnlock()`
 
-`TryUnlock()` 会在锁的 mutex 内完成本地状态检查和释放尝试；token 比较与删除也
-通过 Redis 脚本原子执行：
+`TryUnlock()` 原子地完成状态检查与带 token 校验的释放，结果有三种：
 
-- `true`：当前 token 持有 Redis key，并已将其删除
-- `false`：锁未获取、已释放、已 broken，或 Redis key 已不再属于当前 token
+- `true`：当前 token 持有锁，并已释放
+- `false`：锁未获取、已释放、已 broken，或已不再由当前 token 持有
 - panic：Redis 无法执行释放命令
 
 所有权不匹配时，方法会先把锁标记为 broken，并用所有权丢失原因取消锁 context，
@@ -507,22 +423,10 @@ cache := cacheRedis.NewCacheByType(reflect.TypeFor[*UserCache](), ctx).(*UserCac
 
 ### key 规则
 
-实际 Redis key 规则是：
-
-```text
-vine:cache:<keyPrefix>:<key>
-```
-
-例如：
-
-```text
-vine:cache:user:1
-```
-
 `KeyPrefix()` 的默认规则和 `Locker` 一样：
 
-- 默认情况下，每个 cache 类型都会基于完整类型名拿到唯一前缀
-- 如果需要多个不同 cache 类型共享同一组 Redis key，必须显式覆写 `KeyPrefix()` 并返回相同值
+- 默认情况下，每个 cache 类型都会拿到唯一前缀
+- 如果需要多个不同 cache 类型共享同一组条目，必须显式覆写 `KeyPrefix()` 并返回相同值
 
 ## Cache 与锁的使用规则
 

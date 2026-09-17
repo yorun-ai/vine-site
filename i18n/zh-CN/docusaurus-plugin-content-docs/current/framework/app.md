@@ -140,9 +140,10 @@ instance := app.New[*DemoApp]()
 顶层 `app.NewWithOption(...)` 的 `Option` 提供 `LinkEndpoint`，也可以通过 `--link-endpoint` 或 `VINE_LINK_ENDPOINT` 提供。
 
 `app.NewBundled(...)` 将 `app.New(...)` 或 `app.NewWithOption(...)` 创建的多个应用
-组合进同一个进程生命周期，并连接外部 Link，包括 `vine dev` 托管的 Link。应用按
-声明顺序启动、按逆序停止。bundle 不会启动 Hub、Portal 或 Link，每个子应用保留
-自己配置的 Link endpoint；多个应用共享一个 Link sidecar 时应使用同一个 endpoint。
+组合进同一个进程生命周期，并连接外部 Link，包括用 `vine link serve` 独立运行的
+Link。应用按声明顺序启动、按逆序停止。bundle 不会启动 Hub、Portal 或 Link，每个
+子应用保留自己配置的 Link endpoint；多个应用共享一个 Link sidecar 时应使用同一个
+endpoint。
 
 ```go
 app.NewBundled(
@@ -155,7 +156,7 @@ app.NewBundled(
 
 - `linked.New(...)`：同进程启动一个 Link，再以 inproc app 形式启动业务 app。`linked.Option` 支持 `HubEndpoint`、`IngressListen`、`MTLSCAFile`、`MTLSCertFile` 和 `MTLSKeyFile`，这些值也可以改由对应的命令行参数或环境变量设置。证书标识的是内嵌 `vine.link` workload，而不是业务应用
 - `linked.NewBundled(...)`：多个业务 app 共享一个同进程 Link，并连接外部 Hub。注意，被打包的 linked app 不能再带自己的 `linked.Option`
-- `standalone.New(...)`：同进程启动 Hub、Portal、Link 和一个业务 app。`standalone.Option` 支持 seed YAML、SQLite 文件、PostgreSQL URL 和 Dashboard URL
+- `standalone.New(...)`：同进程启动 Hub、Portal、Link 和一个业务 app。`standalone.Option` 支持 seed YAML、SQLite 文件、PostgreSQL URL，以及进程内 Hub 的 Admin API 与 Dashboard 监听地址
 - `standalone.NewBundled(...)`：把多个 standalone app 打包进同一套内置 Hub / Portal / Link。注意，被打包的 standalone app 不能再带自己的 `standalone.Option`
 
 ## Flag 模型
@@ -407,41 +408,15 @@ Module 如果实现 `PathPrefixRouteModule`，还能主动追加自定义前缀 
 
 - app 默认启 HTTP server
 - `ListenAddr == ""` 时监听随机端口
-- server 使用 h2c 运行
-
-框架内部还支持 inproc 模式，用于框架自带应用互联。它不是顶层 `app` 包的公共创建入口。
-
-inproc 下会注册：
-
-- 所有 RPC route
-- 所有 `/web/access/...` route
+- server 使用 h2c 运行：同一地址同时提供 HTTP/1.1 和未加密 HTTP/2，客户端通过 prior
+  knowledge 使用 HTTP/2，而不是 HTTP/1.1 的 `Upgrade: h2c` 握手
 
 ## 启动与停止流程
 
-`Start()` 大致顺序：
-
-1. 初始化 Linker 和配置 reader
-2. 初始化 injector
-3. 初始化 Component
-4. 初始化 Module
-5. 初始化 console / servicer / webber / eventer / tasker
-6. 执行 Component `BeforeAppStart()`
-7. 执行 Module `BeforeAppStart()`
-8. 启动 HTTP 或 inproc server
-9. 启动 servicer / eventer / tasker
-10. 向 Link 注册 app 能力
-11. 执行 Component `AfterAppStart()`
-12. 执行 Module `AfterAppStart()`
-
-`StopGracefully()` 大致顺序：
-
-1. 逆序执行 Module `BeforeAppStop()`
-2. 逆序执行 Component `BeforeAppStop()`
-3. 注销 app
-4. 停止 HTTP 或 inproc server
-5. 取消运行时 context
-6. 逆序执行 Module `AfterAppStop()`
-7. 逆序执行 Component `AfterAppStop()`
+启动时，先执行 Component、再执行 Module 的 `BeforeAppStart()`，之后 app 才开始监听并注册；
+对应的 `AfterAppStart()` 在这两步完成之后执行。停止时，`BeforeAppStop()` 按逆序执行，之后
+app 注销并停止，`AfterAppStop()` 随后执行。每一步的细节见
+[应用生命周期](../runtime/application-lifecycle.md)。
 
 在 `linked` 模式下，外层 app 会先等待业务 app 完成 `StopGracefully()`，再停止同进程内的 Link。这样可以避免业务 app 注销时 Link 的 inproc Handler 已经卸载的问题。
 

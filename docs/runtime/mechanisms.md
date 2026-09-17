@@ -240,7 +240,7 @@ reaching the application.
 
 Web selection has a different owner. Portal matches the external entry and site,
 selects from its distributed Web endpoint snapshot, and sends the request to the
-Link that owns the chosen application. The target Link's `webproxy` indexes only
+Link that owns the chosen application. The target Link indexes only
 its local applications and performs the final handler lookup and delivery.
 
 Neither path is a durable workflow engine. A selected target failing does not

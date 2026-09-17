@@ -172,38 +172,8 @@ incoming trace
 
 If the client only sends a trace id and no span, Portal creates an entry span. That span is only a parent anchor for the server-side tree and may not have matching client-side logs.
 
-## How Vine Derives Spans Internally
-
-Vine uses `meta.Trace` for trace context:
-
-```go
-type Trace interface {
-    Id() string
-    Span() string
-    ParentSpan() string
-    NewChildTrace() Trace
-}
-```
-
-Cross-process headers only carry `id` and `span`. The receiver treats the header `span` as the remote parent and creates a new child trace locally.
-
-Normal Rpc call:
-
-```text
-current handler trace
-  -> rpc client trace
-      -> rpc server handler trace
-```
-
-Portal gateway:
-
-```text
-incoming trace
-  -> gateway trace
-      -> auth/check/forward trace
-```
-
-`ParentSpan()` only exists on the local trace object. Use it for logs or future OTel mapping, but it isn't written into headers.
+Cross-process headers carry only `id` and `span`; the receiver treats the header
+`span` as the remote parent and continues the chain locally.
 
 ## Relationship With OTel
 

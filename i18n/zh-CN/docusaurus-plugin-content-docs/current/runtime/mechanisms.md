@@ -211,8 +211,7 @@ endpoint 启动和注册完成都发生在 `AfterAppStart` hook **之前**。因
 应用。
 
 Web 的选择者不同。Portal 匹配外部 entry 和 site，从自己的分布式 Web endpoint
-快照中选择目标，再把请求发送给所选应用所属的 Link。目标 Link 的 `webproxy`
-只索引本地应用，负责最后的 Handler 查找与投递。
+快照中选择目标，再把请求发送给所选应用所属的 Link。目标 Link 只索引本地应用，负责最后的 Handler 查找与投递。
 
 两条路径都不是持久化 workflow engine。目标失败并不表示同一个请求会透明迁移到
 另一个目标。设计重试前请先阅读[注册、发现与请求路由](./request-routing.md)。

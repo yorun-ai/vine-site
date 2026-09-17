@@ -104,8 +104,8 @@ skelc gen go \
 
 The output directory contains data models, schemas, and service code. A server
 implementation outside the generated package must embed
-`DefaultGreetingServiceServer`: the generated interface carries a package-private
-seal method, so another package cannot implement it from scratch. Calls use the
+`DefaultGreetingServiceServer`; the generated interface cannot be implemented
+from scratch in another package. Calls use the
 generated client. Regeneration replaces these files; make contract changes in
 `.skel`, not in the generated Go.
 

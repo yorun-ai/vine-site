@@ -131,16 +131,12 @@ go -C ./src/server test ./...
 `--go-module` 请填写项目实际声明的 module path，与 `src/server/go.mod` 中的取值一致。
 生成产物的目录结构见[项目结构](./filetree.md)。
 
-使用 SQLite 或 PostgreSQL 的 Hub，数据库必须已经处于 Vine v0.15.7 或更高版本。
-Vine 不再在启动时迁移更低版本的数据库，请先用 Vine v0.15.7 启动旧数据库完成迁移，
-再执行升级。
+自行设置版本号的应用必须使用完整的 semver，例如 `1.2.3`，可带 `v` 前缀；`1.2` 这类
+不完整的写法在创建应用时即被拒绝。
 
-升级时应先升级 Hub，再升级 Portal。Portal 在旧版 Hub 上仍可继续处理外部流量，但每次
-心跳都会重试注册并输出警告，直到 Hub 提供该服务为止。Portal 还会读取 Hub 为声明了挂载
-路径的 Web 站点解析出的路径前缀，因此请先确认 Hub 已下发这些字段，再升级 Portal。
-
-自行设置版本号的应用必须使用完整的 semver，例如 `1.2.3`，可带 `v` 前缀。更早的版本
-允许 `1.2` 这类不完整的写法，请在升级前改为完整版本。
+生成的 Go 包由 skelc v0.21.0 或更高版本产生，并依赖 Vine v0.20.2 或更高版本。与 runtime
+一起重新生成，可以让生成的 schema 与 handler 形态与所安装的 Vine 保持一致。生成器的产物以及应用代码复制生成 bean 的方式，见
+[Go 生成](https://skel.yorun.ai/docs/generation/go)。
 
 提升到生产环境之前，完成
 [生产就绪清单](../operations/production-readiness.md)。Skel 语言和 generator 的详细

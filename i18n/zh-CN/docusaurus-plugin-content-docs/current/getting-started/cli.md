@@ -5,10 +5,8 @@ sidebar_label: Vine CLI
 
 # Vine CLI
 
-`vine` 命令可以启动本地开发运行时或单独的 Hub、Link、Portal，也能查看当前
-binary 的构建版本。
+`vine` 命令可以启动单独的 Hub、Link、Portal，也能查看当前 binary 的构建版本。
 
-- `dev`：为独立进程中的业务应用启动本地运行时
 - `hub` / `link` / `portal`：启动 Vine 运行时基础服务
 - `version`：查看当前 CLI 版本
 
@@ -42,57 +40,6 @@ vine version
 
 正式发布应用时，请把 `main` 换成与应用 module 相同、经过审查的 commit 或 tag。
 升级前先看[版本兼容性](./compatibility.md)。
-
-## dev
-
-`dev` 在一个 CLI 进程中启动 Hub、Portal 和 Link，供本地业务应用调试：
-
-```bash
-vine dev --seed-hub-data-file ./seed.yaml
-```
-
-Hub Rpc、Redis、NATS、Portal 到 Hub、Link 到 Hub，以及 Portal 到 Link 的流量
-均使用进程内 transport。Link 仍监听 `127.0.0.1:7079`，因此另一个进程中的业务
-应用会保留正常的网络边界：
-
-```go title="main.go"
-app.New[*HelloApp]().StartAndWait()
-```
-
-`app.New` 默认使用的 Link endpoint 已经是 `http://127.0.0.1:7079`。需要其他地址
-时，将 `--link-api-listen` 与 `VINE_LINK_ENDPOINT` 或
-`app.Option.LinkEndpoint` 配套设置。
-
-未指定数据库时，`dev` 使用默认的 `--no-db` 模式：seed 文件加载到内存，配置保持只读。
-需要跨运行保留 Hub 状态并可写时，指定数据库文件；需要初始化应用配置或 Portal 路由时，指定 seed：
-
-```bash
-vine dev \
-  --db-sqlite-file ./hub-dev.sqlite \
-  --seed-hub-data-file ./seed.yaml \
-  --dashboard-url http://:7099/
-```
-
-可用选项：
-
-- `--link-api-listen`：供外部应用连接的 Link API 地址，默认
-  `127.0.0.1:7079`
-- `--no-db`：不使用持久化数据库，两个数据库参数都未指定时的默认值；此时必须提供
-  `--seed-hub-data-file`，配置只读
-- `--db-sqlite-file` / `--db-postgres-url`：可选的 Hub 持久化存储
-- `--seed-hub-data-file`：Hub seed 数据；默认的 `--no-db` 模式下必需
-- `--seed-hub-source-file`：可选的 seed 字段来源文件
-- `--seed-hub-vars-file`：部署变量 YAML 字典
-- `--dashboard-url`：Hub Dashboard 的 Portal 入口；默认 `http://:7099/`，启用
-  后台 mTLS 时默认 `https://:7099/`
-
-对应的环境变量为 `VINE_API_LISTEN`、`VINE_NO_DB`、`VINE_DB_SQLITE_FILE`、
-`VINE_DB_POSTGRES_URL`、`VINE_SEED_HUB_DATA_FILE`、
-`VINE_SEED_HUB_SOURCE_FILE`、`VINE_SEED_HUB_VARS_FILE` 和 `VINE_DASHBOARD_URL`。
-按 `Ctrl+C` 会依次优雅停止 Link、Portal 和 Hub。
-
-`dev` 保留 App 到 Link 以及 Link 到 App 的网络边界，但不模拟本地 Vine 运行时
-内部的网络故障、租约或 TTL 过期。部署与基础设施验证仍使用各组件的独立命令。
 
 ## hub
 
@@ -153,38 +100,29 @@ vine hub serve \
 vine hub serve \
   --control-listen 127.0.0.1:7071 \
   --watch-listen 127.0.0.1:7072 \
-  --admin-listen 127.0.0.1:7075 \
+  --admin-listen 127.0.0.1:7099 \
   --db-sqlite-file ./hub.sqlite
 ```
 
-Hub Control API、watch listener、Admin API 与 Web listener 默认分别监听
-`127.0.0.1:7071`、`127.0.0.1:7072`、`127.0.0.1:7075`。
+Hub Control API、watch listener、Admin API 与 Dashboard listener 默认分别监听
+`127.0.0.1:7071`、`127.0.0.1:7072`、`127.0.0.1:7099`。
 
 从 seed YAML 初始化数据：
 
 ```bash
 vine hub serve \
   --db-sqlite-file ./hub.sqlite \
-  --seed-hub-data-file ./seed.yaml
+  --seed-data-file ./seed.yaml
 ```
 
-可通过 `--seed-hub-source-file` 提供字段来源，通过 `--seed-hub-vars-file`
+可通过 `--seed-source-file` 提供字段来源，通过 `--seed-vars-file`
 提供部署变量字典。SQLite 或 PostgreSQL 仅在首次初始化时读取这些文件；
 no-db 模式每次启动都重新读取。用法见[部署变量](../framework/configuration.md#deployment-variables)。
 
-指定 Hub Dashboard 访问地址：
-
-```bash
-vine hub serve \
-  --dashboard-url http://:7099/ \
-  --db-sqlite-file ./hub.sqlite
-```
-
-`--dashboard-url` 默认值是 `http://:7099/`，启用后台 mTLS 时则是
-`https://:7099/`。它用于配置 Hub Dashboard 的 Portal 入口规则，支持指定 host、
-端口和路径，例如 `https://hub.example.com:8443/admin`。mTLS 下的 HTTPS 默认入口
-会使用 Portal 的临时自签 Web 证书，直到配置匹配的公开证书；因此引导阶段浏览器会
-将该证书标记为不受信任。
+admin listener 提供 Dashboard，并在 `/api/invoke` 上响应 Admin API，浏览器因此只需访问
+同一个 origin。Dashboard 只属于这个 listener：Hub 不为它发布 Portal 入口、站点或规则，
+它也不需要单独的访问地址。即使启用了后台 mTLS，该 listener 仍使用明文 HTTP，因为操作者
+的浏览器并不持有 mesh 证书；请让它只监听 loopback 或位于可信网络内。
 
 配置锁后端：
 
@@ -209,10 +147,9 @@ Hub 默认使用 `--lock-mode=embedded`，租约锁保存在自身内存中，�
 - `VINE_LOCK_REDIS_ENDPOINT`
 - `VINE_MQ_NATS_ENDPOINT`
 - `VINE_MQ_MODE`
-- `VINE_SEED_HUB_DATA_FILE`
-- `VINE_SEED_HUB_SOURCE_FILE`
-- `VINE_SEED_HUB_VARS_FILE`
-- `VINE_DASHBOARD_URL`
+- `VINE_SEED_DATA_FILE`
+- `VINE_SEED_SOURCE_FILE`
+- `VINE_SEED_VARS_FILE`
 - `VINE_DB_SQLITE_FILE`
 - `VINE_DB_POSTGRES_URL`
 
@@ -241,8 +178,10 @@ Hub、Link 与 Portal 的身份分别是
 组件身份授权。对应环境变量是 `VINE_MTLS_CA_FILE`、`VINE_MTLS_CERT_FILE` 和
 `VINE_MTLS_KEY_FILE`。
 
-使用 `app/linked` 的程序也支持相同的参数和环境变量；还可以通过
-`linked.Option.MTLSCAFile`、`MTLSCertFile` 和 `MTLSKeyFile` 直接配置内嵌 Link。
+使用 `app/linked` 的程序通过带 Link 前缀的参数配置内嵌 Link：`--link-mtls-ca-file`、
+`--link-mtls-cert-file` 和 `--link-mtls-key-file`，或 `VINE_LINK_MTLS_CA_FILE`、
+`VINE_LINK_MTLS_CERT_FILE` 和 `VINE_LINK_MTLS_KEY_FILE`；也可以直接在
+`linked.Option` 上设置 `MTLSCAFile`、`MTLSCertFile` 和 `MTLSKeyFile`。
 
 Link 或 Portal 启用 mTLS 时，`--hub-endpoint` 必须使用 `https://`；后台服务注册
 也必须使用 HTTPS，组件不会静默接受旧的明文 endpoint。
@@ -297,12 +236,16 @@ vine portal serve \
 
 ## 常见工作流
 
-### 本地调试外部应用
+### 让外部应用连接本地运行时服务
 
 ```bash
-vine dev --seed-hub-data-file ./seed.yaml
+vine hub serve --seed-data-file ./seed.yaml
+vine link serve --hub-endpoint http://127.0.0.1:7071
 go -C ./src/server run ./cmd/myapp
 ```
+
+`app.New` 创建的应用默认连接 `http://127.0.0.1:7079` 的 Link API；Link 监听其他
+地址时，使用 `VINE_LINK_ENDPOINT` 或 `app.Option.LinkEndpoint`。
 
 ### 单独启动运行时基础服务
 

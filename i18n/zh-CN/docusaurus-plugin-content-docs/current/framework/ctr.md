@@ -72,11 +72,8 @@ type Option struct {
 - `BindAppliers`：给容器根 injector 注册依赖
 - `FilterTypes`：声明 filter 类型，执行时由 DI 创建实例
 
-框架会自动补充：
-
-- 所有 filter 的 `ExecutionScope` 绑定
-- `*ctr.Context` 的 `ExecutionScope` 绑定
-- 最后一个“真正调用目标方法”的内置 filter
+执行期间，已声明的每个 filter 和 `*ctr.Context` 都可直接使用，目标方法会在所有 filter
+返回之后执行。
 
 ## 最基本的调用
 

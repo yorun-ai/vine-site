@@ -38,17 +38,8 @@ type Option struct {
 
 ### `DatabaseSpec`
 
-The database component interface is:
-
-```go
-type DatabaseSpec interface {
-    InitOption(option *Option)
-    InitDao(add TypeAdder)
-}
-```
-
-A business component receives the default implementation of this contract by
-embedding `rdb.Database`.
+A business component embeds `rdb.Database` and overrides `InitOption` and
+`InitDao` as needed.
 
 ### `Database`
 
@@ -81,15 +72,6 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 }
 ```
 
-## Initialization Flow
-
-During startup, the application integrates the database in this order:
-
-1. Creates the user component `*ConfigDatabase`.
-2. Calls `InitOption(...)` and `InitDao(...)`.
-3. Opens or reuses a database connection.
-4. Registers dependency-injection factories for the declared DAOs.
-
 ## Connection Behavior
 
 ### Connection String Parsing
@@ -106,40 +88,16 @@ The underlying rules:
 
 - Components with the same `ConnURL` reuse one connection.
 - The first component to open that URL determines its pool settings.
-- An internal reference count determines when the connection is closed.
 
 ### Connection-Pool Defaults
 
-Connection-pool settings include:
-
-- `SetMaxOpenConns(...)`
-- `SetMaxIdleConns(...)`
-- `SetConnMaxIdleTime(...)`
-- `SetConnMaxLifetime(...)`
-
-The default policy:
-
-- `MaxOpenConn` defaults to `10`.
-- `MaxIdleConns` is approximately `30%` of the maximum.
-- The maximum idle time is `1h`.
-- The maximum total connection lifetime is `8h`.
-
-## DI Semantics
-
-Vine provides the user-declared database component to the application as a
-singleton and creates each DAO through a factory. The DAO factory receives:
-
-- `context.Context`
-- `*logger.Logger`
-
-It then injects `gorm.DB.WithContext(...)` into the DAO, so request context and
-the structured logger follow database operations.
+`MaxOpenConn` defaults to `10`; set it on `Option` to change the pool size.
 
 ## Lifecycle
 
-The database connection is opened or reused when the component starts. Its shared
-reference for the `ConnURL` is released after the application stops. Vine closes
-the underlying connection pool only after its last user has stopped.
+The connection opens or is reused when the component starts and closes after the
+application stops. A connection shared through one `ConnURL` stays open until the
+last component using it has stopped.
 
 ## Model Base Types
 
@@ -170,15 +128,7 @@ Use it for tables that do not need soft deletion.
 
 ## `Dao[M]`
 
-The generic DAO base type is:
-
-```go
-type Dao[M ModelConstraint] struct {
-    gormDB *gorm.DB
-}
-```
-
-Common methods include:
+A concrete DAO embeds `Dao[M]`. Common methods include:
 
 - `Query(...)`
 - `First(...)`

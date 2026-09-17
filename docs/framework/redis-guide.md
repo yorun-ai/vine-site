@@ -85,10 +85,10 @@ Cache and Locker prefixes are derived from their full Go types by default. Overr
 
 Locks have a TTL and refresh while held by default. `Lock.Context()` is canceled
 when ownership becomes invalid, so long-running work must stop on that context.
-A background refresh failure marks the lock broken; the cause is available
-through `context.Cause(lock.Context())`, and the refresh goroutine itself does
-not panic. A broken lock is no longer owned and `Unlock` panics, so don't use an
-unconditional `defer lock.Unlock()` around work that can outlive the lease.
+A background refresh failure marks the lock broken, and the cause is available
+through `context.Cause(lock.Context())`. A broken lock is no longer owned, and
+`Unlock` panics, so don't use an unconditional `defer lock.Unlock()` around work
+that can outlive the lease.
 `IsBroken()` is a one-time state observation, not a guarantee that a following
 `Unlock()` won't panic. Use `TryUnlock()` for an atomic state check plus
 token-checked release; it returns `false` when the lock is unavailable or

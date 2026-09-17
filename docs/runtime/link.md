@@ -35,14 +35,9 @@ flowchart LR
 - **Lease locks**: routes application lock operations to the lock backend that
   Hub advertises.
 
-Link is the sole owner of local application capability state. The Rpc, Web,
-event, task, and configuration modules derive their runtime indexes from Link
-rather than maintaining separate copies of application instance state.
-
-A Hub restart does not require restarting Link. When Hub advertises different
-watch, MQ, or lock endpoints, Link replaces those connections and re-subscribes
-its watchers; a heartbeat that reports Hub has forgotten an instance registers
-the local application instances again. See
+A Hub restart does not require restarting Link. Link reconnects, re-registers
+its local applications, and re-subscribes to configuration and discovery changes
+automatically. See
 [Hub Restart and Endpoint Changes](./hub.md#hub-restart-and-endpoint-changes).
 
 ## Starting Link
@@ -94,16 +89,15 @@ encrypt, and restrict the path itself.
 
 ### Rpc
 
-When an application makes an Rpc call, the request first enters Link's
-`rpcproxy`. The proxy selects the next current service registration using
-round-robin. If that registration belongs to a local application, Link invokes
+When an application makes an Rpc call, Link's Rpc proxy selects the next current
+service registration using round-robin. If that registration belongs to a local application, Link invokes
 its application endpoint directly; otherwise it forwards through the target Link.
 Locality changes the forwarding path, not selection priority. A failure after
 selection doesn't make that invocation automatically try another registration.
 
 ### Web
 
-`webproxy` indexes Web handlers only for applications owned by this Link. Portal
+Link indexes Web handlers only for the applications it owns. Portal
 owns the distributed Web endpoint snapshot and round-robin selection; it sends
 the request to the Link that owns the selected instance. That target Link
 verifies the local instance and handler, then invokes the application endpoint.
@@ -113,9 +107,8 @@ freshness, and failure boundaries.
 
 ### Event and Task
 
-The `event` and `task` modules create NATS consumers from the declarations of
-local instances. Link automatically updates the corresponding consumers and
-dispatch state when application capabilities change.
+Applications declare Event listeners and Task runners; Link manages the
+corresponding consumers.
 
 ## Inproc Mode
 

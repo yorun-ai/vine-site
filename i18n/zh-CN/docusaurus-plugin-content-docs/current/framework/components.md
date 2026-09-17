@@ -5,10 +5,8 @@ sidebar_label: 组件与模块
 
 # 组件与模块
 
-Component 和 Module 的作用是把应用拆成可以独立初始化、注入和停止的功能单元。`app.New`
-会创建 App 壳、构造并校验应用规格、捕获运行参数，但这时候还不会构造已声明的
-Component 与 Module。`Start` 阶段才真正创建并注入它们，然后执行启动 hook。优雅停止时，停机
-hook 按相反顺序执行。
+Component 和 Module 的作用是把应用拆成可以独立初始化、注入和停止的功能单元。Vine 在
+`Start` 阶段构造并注入它们，然后执行启动 hook；优雅停止时，停机 hook 按相反顺序执行。
 
 ## 能力总览
 

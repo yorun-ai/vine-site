@@ -77,22 +77,8 @@ handler may not be read until the first matching execution.
 
 ### Instant does not mutate an existing object
 
-An instant update changes Link's snapshot. It doesn't modify a Go pointer that
-was already injected:
-
-```mermaid
-sequenceDiagram
-  participant Hub
-  participant RuntimeLink as Link
-  participant Existing as Existing consumer
-  participant Next as Later execution
-  Hub-->>RuntimeLink: publish new instant value
-  Note over Existing: keeps its existing pointer
-  Next->>RuntimeLink: resolve configuration
-  RuntimeLink-->>Next: decode a new pointer from the latest snapshot
-```
-
-This has a direct DI consequence:
+An instant update doesn't modify a Go pointer that was already injected; a later
+execution resolves the newer value. This has a direct DI consequence:
 
 - A normal Rpc, Web, Event, or Task handler is created for an execution. A
   configuration it injects is resolved for that execution and can observe the
@@ -142,7 +128,7 @@ For an independently running Hub:
 ```bash
 vine hub serve \
   --db-sqlite-file ./hub.sqlite \
-  --seed-hub-data-file ./seed.yaml
+  --seed-data-file ./seed.yaml
 ```
 
 The seed is imported into Hub's database, which remains the source of truth
@@ -151,12 +137,10 @@ read-only.
 
 ## Deployment variables {#deployment-variables}
 
-Seed variables let an application expose a small deployment configuration without
-requiring operators to understand its internal domain configurations. The developer
-decides which seed fields reference variables and leaves the rest fixed; one
-variable can supply several configuration fields.
-
-Deployment variables are available in Vine v0.17.0.
+Seed variables let an application expose a small deployment configuration
+without requiring operators to understand the rest of the configuration. The
+developer decides which seed fields reference variables and leaves the rest
+fixed; one variable can supply several configuration fields.
 
 ### Expose selected settings
 
@@ -178,8 +162,8 @@ checkout:
   timeoutMs: 5000
 ```
 
-The filename is your choice. Supply it with `--seed-hub-vars-file ./vars.yaml`,
-`VINE_SEED_HUB_VARS_FILE`, or `standalone.Option.SeedHubVarsFile`.
+The filename is your choice. Supply it with `--seed-vars-file ./vars.yaml`,
+`VINE_SEED_VARS_FILE`, or `standalone.Option.SeedHubVarsFile`.
 Application code still receives `CheckoutConfig` with the resolved values; it
 does not need to read this file or interpret placeholders.
 
@@ -235,32 +219,19 @@ initialization step, not a live binding to the variable file.
 | Default no-db mode | Every start, into a fresh in-memory store | Edit `vars.yaml` and restart; Dashboard configuration is read-only |
 | SQLite or PostgreSQL | The first seed initialization, recorded in database metadata | Update configuration through Hub; later starts skip seed, source, and vars files entirely |
 
-Field source records retain `source`, `define`, and `override`, together with the
-original template, the variable values used, and whether defaults were selected.
-Dashboard shows these in configuration comments or field information tooltips.
-The optional seed source map adds origin information; it does not supply variable
-values. See [standalone packaging](../getting-started/deployment-modes.md#deployment-configuration)
+The Dashboard shows each field's origin, the last override, and the variable
+values used in configuration comments or field information tooltips. The optional
+seed source map adds origin information; it does not supply variable values. See [standalone packaging](../getting-started/deployment-modes.md#deployment-configuration)
 for distributing a binary with a deployment configuration file.
 
-## How a value reaches an execution
+## When a value is read
 
-```mermaid
-flowchart LR
-  Source["Hub database / seed"] --> Hub["Hub"]
-  Hub --> Redis["Runtime snapshot + change event"]
-  Redis --> Link["Link config reader"]
-  Link --> DI["Application DI factory"]
-  DI --> Object["Typed Go value"]
-```
+A configuration reaches an execution through dependency injection, so a consumer
+receives a generated Go value on first use. An `instant` configuration is decoded
+again for a later execution when Hub holds a newer value, while a pointer already
+injected into a long-lived object keeps the value it received.
 
-1. Hub stores the configured JSON and publishes the runtime representation.
-2. Link loads the value. For instant configuration, it also subscribes when the
-   value is first referenced.
-3. Vine's DI binding asks Link for the snapshot and decodes it into a new
-   generated Go value.
-4. The consumer receives that value through field or factory injection.
-
-Standalone follows the same steps through in-process connections.
+Standalone resolves the same way through in-process connections.
 
 ## Failure behavior
 

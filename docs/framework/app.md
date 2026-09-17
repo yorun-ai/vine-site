@@ -144,10 +144,11 @@ The `Option` accepted by the top-level `app.NewWithOption(...)` provides `LinkEn
 
 `app.NewBundled(...)` combines applications created by `app.New(...)` or
 `app.NewWithOption(...)` into one process lifecycle while they connect to an
-external Link, including the Link hosted by `vine dev`. It starts applications
-in declaration order and stops them in reverse order. The bundle does not start
-Hub, Portal, or Link, and every child retains its configured Link endpoint; use
-the same endpoint when the applications share one Link sidecar.
+external Link, including a Link run as its own service with `vine link serve`. It
+starts applications in declaration order and stops them in reverse order. The
+bundle does not start Hub, Portal, or Link, and every child retains its
+configured Link endpoint; use the same endpoint when the applications share one
+Link sidecar.
 
 ```go
 app.NewBundled(
@@ -160,7 +161,7 @@ app.NewBundled(
 
 - `linked.New(...)`: starts a Link in the same process, then starts the business application as an in-process application. `linked.Option` supports `HubEndpoint`, `IngressListen`, `MTLSCAFile`, `MTLSCertFile`, and `MTLSKeyFile`; the same values can be supplied through the corresponding flags and environment variables. The certificate identifies the embedded `vine.link` workload, not the business application.
 - `linked.NewBundled(...)`: lets multiple business applications share one in-process Link connected to an external Hub. A bundled linked application cannot also carry its own `linked.Option`.
-- `standalone.New(...)`: starts Hub, Portal, Link, and one business application in the same process. `standalone.Option` supports a seed YAML file, a SQLite file, a PostgreSQL URL, and a Dashboard URL.
+- `standalone.New(...)`: starts Hub, Portal, Link, and one business application in the same process. `standalone.Option` supports a seed YAML file, a SQLite file, a PostgreSQL URL, and the in-process Hub's Admin API and Dashboard address.
 - `standalone.NewBundled(...)`: bundles multiple standalone applications with one embedded Hub, Portal, and Link. A bundled standalone application cannot also carry its own `standalone.Option`.
 
 ## Flag model
@@ -412,41 +413,17 @@ In normal mode:
 
 - The application starts an HTTP server by default.
 - When `ListenAddr == ""`, it listens on a randomly assigned port.
-- The server uses h2c.
-
-The framework also supports in-process mode for communication between built-in applications. It isn't a public creation entry point in the top-level `app` package.
-
-In-process mode registers:
-
-- All Rpc routes.
-- All `/web/access/...` routes.
+- The server uses h2c. It serves HTTP/1.1 and unencrypted HTTP/2 on one address,
+  and a client reaches HTTP/2 by prior knowledge rather than the HTTP/1.1
+  `Upgrade: h2c` handshake.
 
 ## Startup and shutdown
 
-`Start()` runs approximately in this order:
-
-1. Initialize the Linker and configuration reader.
-2. Initialize the injector.
-3. Initialize components.
-4. Initialize modules.
-5. Initialize console, Servicer, Webber, Eventer, and Tasker capabilities.
-6. Run component `BeforeAppStart()` hooks.
-7. Run module `BeforeAppStart()` hooks.
-8. Start the HTTP or in-process server.
-9. Start the Servicer, Eventer, and Tasker.
-10. Register application capabilities with Link.
-11. Run component `AfterAppStart()` hooks.
-12. Run module `AfterAppStart()` hooks.
-
-`StopGracefully()` runs approximately in this order:
-
-1. Run module `BeforeAppStop()` hooks in reverse order.
-2. Run component `BeforeAppStop()` hooks in reverse order.
-3. Unregister the application.
-4. Stop the HTTP or in-process server.
-5. Cancel the runtime context.
-6. Run module `AfterAppStop()` hooks in reverse order.
-7. Run component `AfterAppStop()` hooks in reverse order.
+At startup, component and then module `BeforeAppStart()` hooks run before the
+application listens and registers, and the matching `AfterAppStart()` hooks run
+after it does. At shutdown, `BeforeAppStop()` hooks run in reverse order before
+the application unregisters and stops, and `AfterAppStop()` hooks run after.
+[Lifecycle](../runtime/application-lifecycle.md) covers each step.
 
 In `linked` mode, the outer application waits for the business application to complete `StopGracefully()` before stopping the in-process Link. This prevents Link's in-process handler from being removed before the business application unregisters.
 

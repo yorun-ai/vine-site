@@ -50,8 +50,8 @@ Hub 默认使用只读的 no-db 模式、内嵌 NATS 与内存锁。需要可写
 
 两项数据库配置不能同时设置。embedded 模式拒绝 `VINE_MQ_NATS_ENDPOINT`，
 nats 模式必须提供它。使用 SQLite 时，将持久化存储挂载到 `/data`。通过
-`VINE_SEED_HUB_DATA_FILE` 配置 seed 文件时，也需要将对应文件挂载进容器。
-`VINE_SEED_HUB_SOURCE_FILE` 和 `VINE_SEED_HUB_VARS_FILE` 引用的来源、变量文件
+`VINE_SEED_DATA_FILE` 配置 seed 文件时，也需要将对应文件挂载进容器。
+`VINE_SEED_SOURCE_FILE` 和 `VINE_SEED_VARS_FILE` 引用的来源、变量文件
 也需要挂载；这些变量均应填写容器内的文件路径。
 
 镜像接受以下环境变量，其中默认值一列是变量未设置时实际生效的取值：
@@ -59,7 +59,7 @@ nats 模式必须提供它。使用 SQLite 时，将持久化存储挂载到 `/d
 | 镜像 | 变量 | 生效默认值 | 用途 |
 | --- | --- | --- | --- |
 | Hub | `VINE_CONTROL_LISTEN` | `0.0.0.0:7071` | Link 与 Portal 使用的 Control API |
-| Hub | `VINE_ADMIN_LISTEN` | `0.0.0.0:7075` | Admin API 与 Dashboard Web |
+| Hub | `VINE_ADMIN_LISTEN` | `0.0.0.0:7099` | Admin API 与 Dashboard |
 | Hub | `VINE_WATCH_LISTEN` | `0.0.0.0:7072` | 配置与发现 watch 端点 |
 | Hub | `VINE_DB_SQLITE_FILE` | 空 | SQLite 数据库路径 |
 | Hub | `VINE_DB_POSTGRES_URL` | 空 | PostgreSQL 连接 URL |
@@ -67,10 +67,9 @@ nats 模式必须提供它。使用 SQLite 时，将持久化存储挂载到 `/d
 | Hub | `VINE_MQ_NATS_ENDPOINT` | 空 | 外部 NATS URL |
 | Hub | `VINE_LOCK_MODE` | `embedded` | 锁后端：`embedded`、`redis` 或 `disable` |
 | Hub | `VINE_LOCK_REDIS_ENDPOINT` | 空 | `VINE_LOCK_MODE=redis` 时使用的 Redis endpoint |
-| Hub | `VINE_SEED_HUB_DATA_FILE` | 空 | 启动 seed 文件 |
-| Hub | `VINE_SEED_HUB_SOURCE_FILE` | 空 | 可选的字段来源文件 |
-| Hub | `VINE_SEED_HUB_VARS_FILE` | 空 | 部署变量 YAML 字典 |
-| Hub | `VINE_DASHBOARD_URL` | 空 | 显式指定的 Dashboard 地址 |
+| Hub | `VINE_SEED_DATA_FILE` | 空 | 启动 seed 文件 |
+| Hub | `VINE_SEED_SOURCE_FILE` | 空 | 可选的字段来源文件 |
+| Hub | `VINE_SEED_VARS_FILE` | 空 | 部署变量 YAML 字典 |
 | Link | `VINE_HUB_ENDPOINT` | `http://hub:7071` | Hub Control API endpoint |
 | Link | `VINE_API_LISTEN` | `0.0.0.0:7079` | 面向应用的 Link API |
 | Link | `VINE_INGRESS_LISTEN` | `0.0.0.0:7082` | Link ingress endpoint |
@@ -79,8 +78,9 @@ nats 模式必须提供它。使用 SQLite 时，将持久化存储挂载到 `/d
 | 全部 | `VINE_MTLS_CERT_FILE` | 空 | 组件证书文件 |
 | 全部 | `VINE_MTLS_KEY_FILE` | 空 | 组件私钥文件 |
 
-三个 mTLS 变量必须全部省略或全部配置。flag 对应关系和详细服务语义参阅
-[CLI 参考](../getting-started/cli.md)。
+三个 mTLS 变量必须全部省略或全部配置。Hub Admin API 与 Dashboard 的 listener 无论
+后台 mTLS 如何配置都保持明文 HTTP，因此请直接访问并把它放在私有网络中。flag 对应关系
+和详细服务语义参阅 [CLI 参考](../getting-started/cli.md)。
 
 ## Kubernetes 快速部署
 
@@ -110,15 +110,16 @@ kubectl -n vine logs statefulset/hub
 - 单副本 Hub `StatefulSet`、headless Service，以及 SQLite 使用的 5 Gi
   `ReadWriteOnce` volume claim；
 - Link `Deployment` 和内部 API/ingress Service；
-- Portal `Deployment`，以及暴露 80、443 和默认 Dashboard 入口 7099 的
+- Portal `Deployment`，以及暴露 80 和 443 的
   `LoadBalancer` Service；
-- 每个组件的 startup、readiness 和 liveness TCP probe；
+- Hub Control API 与 Link API 上的 startup、readiness 和 liveness TCP probe，这两个
+  listener 始终存在。Portal 没有 probe，因为它服务于 Hub 发布的每个入口的访问地址，
+  不存在始终存在的端口；
 - 受限的 Pod/container 安全上下文：不挂载 service-account token、禁止提权、使用
   runtime-default seccomp profile，并将根文件系统设为只读。
 
 Link 和 Portal 使用 init container 等待 `hub:7071` 上的 Hub Control API。Hub Service
-采用 headless 模式，因为内嵌 NATS 会选用动态端口并经 `InfoService` 上报；只有直接解析
-到 Pod 才能保持该端口可达。使用 SQLite 时，Hub 应保持单副本。
+采用 headless 模式，让 Pod 可被直接解析，从而保持内嵌 NATS 的动态端口可达。使用 SQLite 时，Hub 应保持单副本。
 
 Portal 默认使用 `LoadBalancer` Service。集群没有云负载均衡器时，改为
 `ClusterIP`，通过 ingress controller 暴露 Portal 的 listener，或在开发时使用

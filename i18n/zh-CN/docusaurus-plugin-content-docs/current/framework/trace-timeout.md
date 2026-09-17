@@ -171,38 +171,7 @@ incoming trace
 
 如果客户端只传了 trace id，没有传 span，Portal 会补一个入口 span。这个 span 只是服务端调用树的 parent anchor，不一定能在客户端侧找到对应日志。
 
-## Vine 内部怎么派生 Span
-
-Vine 使用 `meta.Trace` 表示 trace context：
-
-```go
-type Trace interface {
-    Id() string
-    Span() string
-    ParentSpan() string
-    NewChildTrace() Trace
-}
-```
-
-跨进程 header 只传 `id` 和 `span`。接收方把 header 里的 `span` 当作 remote parent，然后在本地创建新的 child trace。
-
-普通 RPC 调用：
-
-```text
-当前 handler trace
-  -> rpc client trace
-      -> rpc server handler trace
-```
-
-Portal gateway：
-
-```text
-incoming trace
-  -> gateway trace
-      -> auth/check/forward trace
-```
-
-`ParentSpan()` 只存在于本地 trace 对象中，用于日志或后续 OTel 映射，不会写入 header。
+跨进程 header 只传 `id` 和 `span`；接收方把 header 中的 `span` 当作 remote parent，并在本地继续该链路。
 
 ## 与 OTel 的关系
 

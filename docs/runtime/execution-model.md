@@ -61,8 +61,7 @@ disposed.
 
 ## One injector per execution
 
-Each capability keeps a plain container describing its bindings. When work
-arrives, the container creates a new execution injector:
+Each call, request, delivery, or run gets a new execution injector:
 
 | Capability | Execution boundary | Seeded request state |
 | --- | --- | --- |

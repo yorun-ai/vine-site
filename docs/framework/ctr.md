@@ -72,11 +72,8 @@ The fields are:
 - `BindAppliers`: registers dependencies in the container's root injector.
 - `FilterTypes`: declares filter types, which DI creates during execution.
 
-The framework automatically adds:
-
-- `ExecutionScope` bindings for every filter.
-- An `ExecutionScope` binding for `*ctr.Context`.
-- A final built-in filter that invokes the target method.
+Every declared filter and `*ctr.Context` is available within an execution, and
+the target method runs after the filters return.
 
 ## Basic invocation
 

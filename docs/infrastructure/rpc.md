@@ -105,7 +105,7 @@ The supported options are:
 - `WithContext(...)` and `WithTimeout(...)` cannot be used together.
 - When `WithContext(...)` is omitted, the default request timeout is `30s`.
 
-`WithDestination(appName)` restricts routing to instances of that application. The name must not be empty; omit the option to keep unrestricted routing. If the application does not provide the service, the call returns `ServiceUnavailable` without falling back to another application. Upgrade Link before using it; older Link versions do not support the option.
+`WithDestination(appName)` restricts routing to instances of that application. The name must not be empty; omit the option to keep unrestricted routing. If the application does not provide the service, the call returns `ServiceUnavailable` without falling back to another application.
 
 `WithDestination` applies only to App-to-Link calls. Portal drops the `destination` field in `vrpc-options`, so the option has no effect on requests routed through Portal.
 
@@ -120,18 +120,6 @@ The default is `false`.
 
 ### `ServerOption`
 
-```go
-type Option struct {
-    App            meta.App
-    Logger         *logger.Logger
-    MuteVerboseLog bool
-    HandlerTypes   []reflect.Type
-    Executor       Executor
-}
-```
-
-`HandlerTypes` is a `[]reflect.Type`.
-
 Create a server like this:
 
 ```go
@@ -143,32 +131,19 @@ server := rpc.NewServer(rpc.ServerOption{
 
 ### Exposed Capabilities
 
-`Server` mainly provides:
-
-- `GetServiceInfos()`
-- `RpcHandler()`
-- `HTTPHandler()`
-
-`HTTPHandler()` returns a standard `http.Handler`.
+`Server` exposes `HTTPHandler()`, which returns a standard `http.Handler` for
+mounting the Rpc endpoint in a server you own.
 
 ## Executor
 
-```go
-type Executor interface {
-    Init(infoDict spec.ImplDict)
-    Execute(rpcContext rpc.Context, methodImpl spec.MethodImpl, arguments []any) (any, ex.Error)
-}
-```
-
-The framework includes two implementations.
+A server runs methods through an executor, and the framework provides two.
 
 ### `NewDefaultExecutor()`
 
-The default executor creates the implementation object through reflection and
-calls its method directly.
+The default executor calls the handler method directly.
 
-If a handler struct has exactly one field of type `spec.Context`, the default
-executor automatically injects the current Rpc context into it.
+If a handler struct has exactly one field of type `rpc.Context`, the current Rpc
+context is injected into it.
 
 ### `NewContainerExecutor(...)`
 
@@ -176,13 +151,9 @@ executor automatically injects the current Rpc context into it.
 rpc.NewContainerExecutor(filterTypes, bindAppliers)
 ```
 
-This executor integrates `core/ctr` and `core/di` and additionally injects these
-dependencies with `ExecutionScope`:
-
-- `spec.Context`
-- `spec.MethodInfo`
-
-Use it for server execution chains that need filters, DI, or context extensions.
+This executor integrates the DI container and filter chain. Use it for execution
+chains that need filters, DI, or context extensions; it makes the current
+`rpc.Context` and `rpc.MethodInfo` injectable within the execution.
 
 ## `rpc.Context`
 
@@ -208,121 +179,6 @@ It represents:
 - The current actor.
 - The client application for the current Rpc call.
 
-## Service Metadata
-
-### `ServiceSpec`
-
-`ServiceSpec` is the registration input, usually supplied by generated code:
-
-```go
-type ServiceSpec struct {
-    Type     ServiceSpecType
-    Name     string
-    SkelName string
-    Hash     string
-
-    ServerType        reflect.Type
-    DefaultServerType reflect.Type
-    ClientType        reflect.Type
-    ClientCtor        any
-
-    ERServerType        reflect.Type
-    WrapperERServerCtor any
-    DefaultERServerType reflect.Type
-    ERClientType        reflect.Type
-    ERClientCtor        any
-
-    Methods []*MethodSpec
-}
-```
-
-`Type` selects the registered halves and must be `client`, `server`, or `both`.
-
-### `MethodSpec`
-
-```go
-type MethodSpec struct {
-    Name     string
-    SkelName string
-
-    ArgumentsType               reflect.Type
-    CloneArguments              func(any) any
-    ResultType                  reflect.Type
-    CloneResult                 func(any) any
-    ArgumentsSensitive          bool
-    ResultSensitive             bool
-    ArgumentsContainsBinaryType bool
-    ResultContainsBinaryType    bool
-    MethodFuncs                 []any
-}
-```
-
-`CloneArguments` and `CloneResult` return value-isolated copies used for
-in-process Rpc; each is required when its corresponding type is set.
-`MethodFuncs` lists the implementation methods bound to the spec.
-
-### `ServiceInfo`
-
-After registration, service metadata is exposed as `ServiceInfo`:
-
-```go
-type ServiceInfo interface {
-    Name() string
-    SkelName() string
-    Hash() string
-    ServerType() reflect.Type
-    DefaultServerType() reflect.Type
-    ClientType() reflect.Type
-    ClientCtor() any
-    ERServerType() reflect.Type
-    WrapperERServerCtor() any
-    DefaultERServerType() reflect.Type
-    ERClientType() reflect.Type
-    ERClientCtor() any
-    Methods() []MethodInfo
-}
-```
-
-### `MethodInfo`
-
-```go
-type MethodInfo interface {
-    Name() string
-    SkelName() string
-
-    Service() ServiceInfo
-    FullURLPath() string
-
-    HasArguments() bool
-    NewArguments() any
-    ArgumentsType() reflect.Type
-    ArgumentsSensitive() bool
-    ArgumentsContainsBinaryType() bool
-    PositionArguments(arguments any) []any
-    CloneArguments(arguments any) any
-
-    HasResult() bool
-    NewResult() any
-    ResultType() reflect.Type
-    ResultSensitive() bool
-    ResultContainsBinaryType() bool
-    CloneResult(result any) any
-}
-```
-
-In particular:
-
-- `FullURLPath()` has the form `/{serviceSkelName}/{methodSkelName}`.
-- `PositionArguments(...)` expands an arguments struct into positional arguments.
-
-## Service Registration
-
-Register a service with:
-
-```go
-rpc.Register(serviceSpec)
-```
-
 ## Normal and ER Interfaces
 
 The framework supports two styles of service signature.
@@ -345,7 +201,6 @@ type UserServiceServerER interface {
 
 - Business errors from a normal server flow through the panic and recover path.
 - The final return value of an ER server is always `ex.Error`.
-- A normal server can be wrapped as an ER server through `WrapperERServerCtor`.
 
 ## When using the lower-level APIs
 

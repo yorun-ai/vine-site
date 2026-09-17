@@ -21,7 +21,6 @@ this boundary works.
 | Mode | Hub / Portal / Link | Business application | Recommended for |
 | --- | --- | --- | --- |
 | standalone | Same process | Same process | Quick starts, tests, and local monolith development |
-| `vine dev` | Same CLI process with in-process control traffic; Link API remains on the network | Independent process | Local debugging with an external application process |
 | linked | Hub and Portal are separate; Link runs with the application | Same process as Link | Local development, a small number of services, and simpler application deployment |
 | Separated deployment | Hub and Portal run separately; each Link is a sidecar process co-located with its application | Independent process on the Link sidecar host | Production, workload scaling, and failure testing |
 
@@ -100,7 +99,7 @@ Distribute the compiled binary and a `vars.yaml` containing the exposed deployme
 settings, then run:
 
 ```bash
-./hello --seed-hub-vars-file ./vars.yaml
+./hello --hub-seed-vars-file ./vars.yaml
 ```
 
 The seed data and source files are build inputs; they do not need to be shipped
@@ -113,8 +112,8 @@ seed and deployment dictionary on every start. Editing `vars.yaml` and restartin
 applies the new values. If SQLite or PostgreSQL is selected, seed variables only
 initialize the database once; later starts use the database configuration.
 
-You can instead keep the seed external with `--seed-hub-data-file` and the optional
-`--seed-hub-source-file`. If a source map is supplied, use embedded data with an
+You can instead keep the seed external with `--hub-seed-data-file` and the optional
+`--hub-seed-source-file`. If a source map is supplied, use embedded data with an
 embedded source map, or file data with a file source map; mixing them is rejected.
 The vars file is separate in either case. See
 [deployment variables](../framework/configuration.md#deployment-variables) for
@@ -125,45 +124,15 @@ schema declarations, substitution syntax, and defaults.
 - You only need one business binary, which makes this the best mode for the
   [first application tutorial](./tutorial-first-app.md).
 - `standalone.Option` configures SQLite/PostgreSQL or no-db mode, an inline or
-  file seed source, and the Dashboard URL.
-- Hub and Link skip heartbeat, TTL lease renewal, and the registry sweeper.
-  Registrations are removed explicitly when the application stops.
-- Hub and Link do not expose separate management ports. Portal can still listen
-  on business HTTP/HTTPS ports according to its entry rules.
+  file seed source, and the in-process Hub's Admin API and Dashboard address.
+- Hub and Link neither renew nor expire registrations. A registration is removed
+  explicitly when the application stops.
+- Hub and Link do not expose separate management ports, apart from the Hub Admin
+  API and Dashboard listener `--hub-admin-listen` / `Option.AdminListen` opens.
+  Portal can still listen on business HTTP/HTTPS ports according to its entry
+  rules.
 - This mode doesn't cover cross-process networking or independent service
   restarts.
-
-## Local external application development
-
-`vine dev` keeps the business application in its own process while hosting Hub,
-Portal, and Link together:
-
-```mermaid
-flowchart LR
-  subgraph Dev["vine dev process"]
-    Hub["Hub"] -->|"inproc"| Portal["Portal"]
-    Hub -->|"inproc"| Link["Link"]
-    Portal -->|"inproc ingress"| Link
-  end
-  Client["External client"] -->|"Network"| Portal
-  Link <-->|"Network"| App["Business App process"]
-```
-
-Start the runtime and application in separate terminals:
-
-```bash
-vine dev --seed-hub-data-file ./seed.yaml
-go -C ./src/server run ./cmd/myapp
-```
-
-An application created with `app.New` uses the default Link API at
-`http://127.0.0.1:7079`, so it needs no additional endpoint configuration.
-App registration, domain schemas, and application traffic cross the real
-App-to-Link network boundary. Internal Hub, Redis, NATS, and Link ingress use
-in-process transports to avoid extra ports and infrastructure failure noise.
-
-This topology is a development convenience, not a deployment topology. It does
-not exercise Hub leases, TTL expiry, or Link-to-Hub network recovery.
 
 ## Linked: separate Hub and application
 
@@ -198,10 +167,11 @@ linked.NewWithOption[*HelloApp](linked.Option{
 }).StartAndWait()
 ```
 
-`HubEndpoint` and `IngressListen` can also come from `VINE_HUB_ENDPOINT` and
-`VINE_INGRESS_LISTEN`. When the external Hub requires backend mTLS, configure the
-embedded Link's identity via `MTLSCAFile`, `MTLSCertFile`, and `MTLSKeyFile`,
-or the matching `VINE_MTLS_*` variables and `--mtls-*-file` flags.
+`HubEndpoint` and `IngressListen` can also come from `VINE_LINK_HUB_ENDPOINT`
+and `VINE_LINK_INGRESS_LISTEN`. When the external Hub requires backend mTLS,
+configure the embedded Link's identity via `MTLSCAFile`, `MTLSCertFile`, and
+`MTLSKeyFile`, or the matching `--link-mtls-*-file` flags and
+`VINE_LINK_MTLS_*` variables.
 
 This mode keeps the configuration, registration, and lease semantics of an
 independent Hub, but Link and the business application are still released and
@@ -243,8 +213,8 @@ vine link serve \
   --hub-endpoint http://127.0.0.1:7071
 ```
 
-The business application no longer uses `standalone.New` or `linked.New`. Create
-it directly instead:
+The business application connects to the Link API on its own, without an
+embedded Link:
 
 ```go title="main.go"
 app.NewWithOption[*HelloApp](app.Option{
@@ -277,7 +247,6 @@ application together with its Link sidecar.
 | Requirement | Recommended mode |
 | --- | --- |
 | Learn the framework or test a single application | standalone |
-| Debug an application in its own process with minimal local infrastructure | `vine dev` |
 | Debug multiple applications locally without maintaining a separate Link | linked |
 | Containerized deployment, multiple instances, independent releases, and realistic failure exercises | Separated deployment |
 

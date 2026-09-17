@@ -116,7 +116,7 @@ data LoginRequest {
 }
 ```
 
-`@sensitive` 能标记整个 data / config、event 的 `payload` block，以及 actor 的 `credential` / `info` block。对应生成类型会实现 `skel.Sensitive` interface 的 `SkelSensitive()` marker method，不增加数据字段，也不改变 JSON / CBOR；`core/redact` 会把该类型的值整体替换为 `<redacted>`。event 和 auth 容器本身不能标记。标记整个 RPC method input / output 或 resource check input 时，skelc 会写入 `MethodSpec`，对应 payload 日志同样整体遮蔽；标记整个 task trigger input 时，则会写入 Task `TriggerSpec`，供处理 Task 参数的代码识别。
+`@sensitive` 能标记整个 data / config、event 的 `payload` block，以及 actor 的 `credential` / `info` block。对应生成类型会实现 `skel.Sensitive` interface 的 `SkelSensitive()` marker method，不增加数据字段，也不改变 JSON / CBOR；`core/redact` 会把该类型的值整体替换为 `<redacted>`。event 和 auth 容器本身不能标记。标记整个 RPC method input / output、resource check input 或 task trigger input 时，对应 payload 日志会整体遮蔽。
 
 `core/redact` 不依赖 RPC、Event 或 Task 的具体架构，也能直接处理普通 Go 值：
 

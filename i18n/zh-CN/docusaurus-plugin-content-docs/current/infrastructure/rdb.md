@@ -36,16 +36,7 @@ type Option struct {
 
 ### `DatabaseSpec`
 
-数据库组件接口是：
-
-```go
-type DatabaseSpec interface {
-    InitOption(option *Option)
-    InitDao(add TypeAdder)
-}
-```
-
-业务组件通过嵌入 `rdb.Database` 获得该契约的默认实现。
+业务组件通过嵌入 `rdb.Database` 并按需实现 `InitOption` 与 `InitDao` 完成配置。
 
 ### `Database`
 
@@ -76,15 +67,6 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 }
 ```
 
-## 初始化流程
-
-应用启动时按以下顺序接入数据库：
-
-1. app 创建用户组件 `*ConfigDatabase`
-2. 调用 `InitOption(...)` 和 `InitDao(...)`
-3. 打开或复用数据库连接
-4. 为已声明的 DAO 注册依赖注入工厂
-
 ## 连接行为
 
 ### 连接串解析
@@ -101,36 +83,15 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 - 相同 `ConnURL` 会复用同一个连接
 - 连接池参数以第一次打开该 URL 时为准
-- 内部通过引用计数决定何时关闭
 
 ### 连接池默认值
 
-连接池设置包括：
-
-- `SetMaxOpenConns(...)`
-- `SetMaxIdleConns(...)`
-- `SetConnMaxIdleTime(...)`
-- `SetConnMaxLifetime(...)`
-
-默认策略：
-
-- `MaxOpenConn` 默认 `10`
-- `MaxIdleConns` 约为 `30%`
-- 空闲连接最长 `1h`
-- 总生命周期最长 `8h`
-
-## DI 语义
-
-Vine 将用户声明的数据库组件作为单例提供给应用，并通过 factory 创建每个 DAO。DAO factory 会取得：
-
-- `context.Context`
-- `*logger.Logger`
-
-随后把 `gorm.DB.WithContext(...)` 注入 DAO，因此请求 context 与结构化 logger 会跟随数据库操作。
+`MaxOpenConn` 默认 `10`；需要调整连接池大小时在 `Option` 上设置它。
 
 ## 生命周期
 
-数据库连接在组件启动时打开或复用，在应用停止后释放该 `ConnURL` 的共享引用。最后一个使用者停止后，Vine 才关闭底层连接池。
+连接在组件启动时打开或复用，在应用停止后关闭。通过同一个 `ConnURL` 共享的连接会一直保持，
+直到最后一个使用它的组件停止。
 
 ## 模型基类
 
@@ -161,15 +122,7 @@ type DeletableModel struct {
 
 ## `Dao[M]`
 
-泛型 DAO 基类：
-
-```go
-type Dao[M ModelConstraint] struct {
-    gormDB *gorm.DB
-}
-```
-
-常用方法：
+具体 DAO 通过嵌入 `Dao[M]` 使用。常用方法：
 
 - `Query(...)`
 - `First(...)`

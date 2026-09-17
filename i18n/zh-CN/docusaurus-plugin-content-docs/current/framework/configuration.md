@@ -71,21 +71,7 @@ Vine 会去除配置字符串字段的首尾 Unicode 空白，包括可空字符
 
 ### Instant 不会修改已有对象
 
-instant 更新会改变 Link 中的快照，但已经注入的 Go 指针不会变化：
-
-```mermaid
-sequenceDiagram
-  participant Hub
-  participant RuntimeLink as Link
-  participant Existing as 已有 consumer
-  participant Next as 后续 execution
-  Hub-->>RuntimeLink: 发布新的 instant 值
-  Note over Existing: 继续保留已有指针
-  Next->>RuntimeLink: 解析配置
-  RuntimeLink-->>Next: 从最新快照解码新指针
-```
-
-这会影响 DI 的行为：
+instant 更新不会修改已经注入的 Go 指针，后续 execution 会解析到更新的值。这会影响 DI 的行为：
 
 - 普通 RPC、Web、Event 或 Task Handler 为一次 execution 创建。它注入的配置也在
   该 execution 中解析，所以能看到最新 instant 快照。
@@ -128,7 +114,7 @@ standalone.NewWithOption[*CheckoutApp](standalone.Option{
 ```bash
 vine hub serve \
   --db-sqlite-file ./hub.sqlite \
-  --seed-hub-data-file ./seed.yaml
+  --seed-data-file ./seed.yaml
 ```
 
 seed 会被导入 Hub 数据库，导入后数据库仍然是 source of truth；不指定数据库时，
@@ -136,10 +122,8 @@ Hub 把 seed 保留在内存中并只读提供。
 
 ## 部署变量 {#deployment-variables}
 
-Seed 变量让应用只向部署者暴露少量配置，而不要求他们理解内部的 domain 配置结构。
+Seed 变量让应用只向部署者暴露少量配置，而不要求他们理解其余配置结构。
 开发者决定哪些 seed 字段引用变量，其余字段保留固定值；同一个变量可以供多个配置字段使用。
-
-Vine v0.17.0 提供部署变量功能。
 
 ### 暴露指定配置项
 
@@ -160,8 +144,8 @@ checkout:
   timeoutMs: 5000
 ```
 
-文件名可以自行选择，通过 `--seed-hub-vars-file ./vars.yaml`、
-`VINE_SEED_HUB_VARS_FILE` 或 `standalone.Option.SeedHubVarsFile` 指定。
+文件名可以自行选择，通过 `--seed-vars-file ./vars.yaml`、
+`VINE_SEED_VARS_FILE` 或 `standalone.Option.SeedHubVarsFile` 指定。
 应用代码仍然取得替换后的 `CheckoutConfig`，无需自行读取字典或解析占位符。
 
 ### 定义变量结构
@@ -209,28 +193,17 @@ Hub 先解析 seed，再保存最终配置。这是初始化步骤，不会建�
 | 默认 no-db 模式 | 每次启动时加载到新的内存数据库 | 修改 `vars.yaml` 后重启；Dashboard 配置只读 |
 | SQLite 或 PostgreSQL | 首次 seed 初始化，完成状态记录在数据库 metadata 中 | 通过 Hub 更新配置；后续启动完全跳过 seed、source、vars 文件 |
 
-字段来源记录保留 `source`、`define`、`override`，以及原始模板、实际使用的变量值和
-是否采用默认值。Dashboard 通过配置注释或字段信息浮层展示这些内容。
-可选的 seed source 文件补充来源信息，不提供变量值。
+Dashboard 通过配置注释或字段信息浮层展示每个字段的来源、最近一次覆盖以及实际使用的变量
+值。可选的 seed source 文件补充来源信息，不提供变量值。
 二进制与部署配置文件的交付方式见[单机应用打包](../getting-started/deployment-modes.md#deployment-configuration)。
 
-## 配置值如何到达 execution
+## 配置值何时被读取
 
-```mermaid
-flowchart LR
-  Source["Hub 数据库 / seed"] --> Hub["Hub"]
-  Hub --> Redis["运行时快照 + 变更事件"]
-  Redis --> Link["Link 配置 reader"]
-  Link --> DI["应用 DI factory"]
-  DI --> Object["类型化 Go 值"]
-```
+配置通过依赖注入到达 execution，因此 consumer 在第一次使用时拿到的是生成后的 Go 值。
+当 Hub 持有的值更新后，`instant` 配置会在之后的 execution 中重新解码；而已经注入到长生命周期
+对象中的指针仍保留它当初拿到的值。
 
-1. Hub 保存配置 JSON，并发布运行时表示。
-2. Link 加载该值；instant 配置在第一次被引用时还会建立订阅。
-3. Vine 的 DI binding 向 Link 获取快照，并解码出新的生成 Go 值。
-4. consumer 通过字段或 factory 注入取得该值。
-
-standalone 通过进程内连接执行同样步骤。
+standalone 通过进程内连接以同样的方式解析。
 
 ## 失败语义
 

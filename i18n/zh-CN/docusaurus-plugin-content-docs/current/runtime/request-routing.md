@@ -35,7 +35,7 @@ sequenceDiagram
   participant Hub as Hub
   participant Peers as 其他 Link / Portal
 
-  App->>App: 构建 DI、component、module 与 handler
+  App->>App: 构造应用
   App->>App: 执行 BeforeAppStart
   App->>App: 启动 App server
   App->>RuntimeLink: 注册身份与能力
@@ -166,15 +166,12 @@ sequenceDiagram
 ## Standalone 与进程内路由
 
 Standalone 会保留注册、快照、代理、轮询、元数据和值隔离边界，调用仍经过
-Link 的路由逻辑。Method spec 通过生成的 clone hook 对进程内 Rpc 的参数和结果进行
-结构化克隆；带参数或返回值的方法必须提供对应的 hook。调用方与 Handler 的改动不会
-跨过 Rpc 边界。
+Link 的路由逻辑；调用方或 Handler 对参数与结果的改动不会跨过 Rpc 边界。
 
 进程内 Rpc 只保证值隔离；JSON 或 CBOR 编解码、传输规范化、自定义
-marshal/unmarshal 方法与 codec 错误都不在它的契约范围内，行为可能随生成的
-spec 而异。Vine 的保证只覆盖由 skelc 管理的生成 package，不包括加入其中的
+marshal/unmarshal 方法与 codec 错误都不在它的契约范围内。Vine 的保证只覆盖由 skelc 管理的生成 package，不包括加入其中的
 手写文件；package 所有权规则见 [Skel Go 生成](https://skel.yorun.ai/docs/generation/go)。
-需要测试应用 Rpc 的 wire 边界时，使用 `vine dev` 或分离部署。
+需要测试应用 Rpc 的 wire 边界时，使用分离部署。
 
 它有意不复现所有分布式故障：
 
@@ -190,8 +187,8 @@ spec 而异。Vine 的保证只覆盖由 skelc 管理的生成 package，不包�
 等待 Handler 结束，这与网络超时对调用方可见的行为一致；它并不能证明 Handler
 已经停止。
 
-快速集成测试用 standalone；需要覆盖 Rpc wire 边界时用 `vine dev` 或完全分离
-的进程；验证存活、租约、网络、TLS 与重启行为时，则使用真实的进程边界。
+快速集成测试用 standalone；需要覆盖 Rpc wire 边界时用完全分离的进程；验证存活、
+租约、网络、TLS 与重启行为时，则使用真实的进程边界。
 
 ## 把实例标记为就绪之前
 
