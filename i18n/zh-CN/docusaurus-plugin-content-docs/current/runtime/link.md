@@ -96,8 +96,8 @@ Link，目标 Link 再校验本地实例与 Handler，并调用应用 endpoint�
 开放 ingress、向 Hub 注册并继续向 Hub 发送心跳。进程内 App 与 Link
 生命周期绑定，因此独立的应用 healthcheck 会被禁用。
 
-外部 Hub 要求后台 mTLS 时，可通过 `linked.Option.MTLSCAFile`、`MTLSCertFile`、
-`MTLSKeyFile` 配置进程内 Link，也可使用共享的 `--mtls-*-file` 参数和
+外部 Hub 要求后台 mTLS 时，可通过 `linked.Option.LinkMTLSCAFile`、`LinkMTLSCertFile`、
+`LinkMTLSKeyFile` 配置进程内 Link，也可使用共享的 `--mtls-*-file` 参数和
 `VINE_MTLS_*_FILE` 环境变量。该证书代表内嵌的 `vine.link` workload。
 
 standalone 才会把 Hub、Portal、Link 和应用全部放入同一进程，并使用进程内 Redis 与 endpoint；这种模式不执行心跳。要验证租约和网络故障，可使用 linked 或完全分开部署。

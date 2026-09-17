@@ -114,12 +114,12 @@ For standalone mode:
 
 ```go title="main.go"
 standalone.NewWithOption[*CheckoutApp](standalone.Option{
-    SQLiteFile:      "./hub.sqlite",
-    SeedHubDataFile: "./seed.yaml",
+    HubDBSQLiteFile: "./hub.sqlite",
+    HubSeedDataFile: "./seed.yaml",
 }).StartAndWait()
 ```
 
-`SQLiteFile` here is **Hub's database**. It doesn't configure a business
+`HubDBSQLiteFile` here is **Hub's database**. It doesn't configure a business
 `infra/rdb` component. If the application also owns a relational database,
 declare that database separately.
 
@@ -163,7 +163,7 @@ checkout:
 ```
 
 The filename is your choice. Supply it with `--seed-vars-file ./vars.yaml`,
-`VINE_SEED_VARS_FILE`, or `standalone.Option.SeedHubVarsFile`.
+`VINE_SEED_VARS_FILE`, or `standalone.Option.HubSeedVarsFile`.
 Application code still receives `CheckoutConfig` with the resolved values; it
 does not need to read this file or interpret placeholders.
 

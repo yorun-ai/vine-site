@@ -21,10 +21,13 @@ func (*CheckoutApp) Name() string {
 }
 ```
 
-The name must match `^[a-z]+(?:\.[a-z]+)*$`, for example
-`demo.checkout`. Different App specifications in one process need different
-names. Replicas of one logical application use the same name; among other
-things, that makes them compete as one Event consumer group.
+The name must match `^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)*$`, for example
+`demo.checkout` or `user2`. Different App specifications in one process need
+different names. Replicas of one logical application use the same name; among
+other things, that makes them compete as one Event consumer group.
+
+Vine builds each instance identity from this name and the version the build
+links. See [Context & Identity](./meta.md#build-identity).
 
 ## What an application can declare
 
@@ -45,12 +48,12 @@ Declare only the capabilities the application needs. Vine creates endpoints from
 ```go title="main.go"
 // Single-process development
 standalone.NewWithOption[*CheckoutApp](standalone.Option{
-    SQLiteFile: "./vine.sqlite",
+    HubDBSQLiteFile: "./vine.sqlite",
 }).StartAndWait()
 
 // Connect to an external Hub with Link in the application process
 linked.NewWithOption[*CheckoutApp](linked.Option{
-    HubEndpoint: "http://127.0.0.1:7071",
+    LinkHubEndpoint: "http://127.0.0.1:7071",
 }).StartAndWait()
 
 // Connect to a standalone Link

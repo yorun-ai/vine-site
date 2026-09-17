@@ -32,7 +32,7 @@ flowchart TB
 1. 应用传入的 flags，并在需要时创建默认 `RunFlag`。
 2. 构造应用 specification，完成字段注入。
 3. 如果 specification 实现了 DI 初始化约定，则调用其 `DIInit()`。
-4. 校验应用名并分配应用身份。
+4. 校验应用名，并用该名称与构建链接的版本生成实例身份。
 5. 从 `RunFlag.Context` 派生根 context；如果它是 `nil`，则使用 `context.Background()`。
 6. 捕获之后服务器要使用的监听地址。
 
