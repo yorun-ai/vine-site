@@ -19,7 +19,7 @@ Application-side capabilities are declared by the App and enabled as needed:
 | Module | Organizes domain services, background work, and lifecycle resources | `InitModules`, `app.BaseModule` |
 | Config | Obtains `eternal` or `instant` configuration | [Application Configuration](./configuration.md) |
 | Rpc | Provides and calls type-safe services | [Using Rpc](./rpc-guide.md) |
-| Web | Registers HTTP routes, static assets, and reverse proxies | [Web](./web.md) |
+| Web | Registers HTTP routes, static assets, and a development-server proxy | [Web](./web.md) |
 | Event | Publishes facts and notifies multiple consumers asynchronously | [Events and Tasks](./event-task.md) |
 | Task | Triggers specific work or schedules it with Cron | [Events and Tasks](./event-task.md) |
 | RDB | Connects to PostgreSQL or SQLite and injects DAOs | [Relational Database](./rdb-guide.md) |

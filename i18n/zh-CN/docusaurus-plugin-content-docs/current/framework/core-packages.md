@@ -46,7 +46,7 @@ standalone.NewWithOption[*CheckoutApp](standalone.Option{
 | --- | --- | --- |
 | 配置 | [`core/conf`](https://pkg.go.dev/go.yorun.ai/vine/core/conf) | 注入 Module 或 execution 的生成配置类型 |
 | RPC | [`core/rpc`](https://pkg.go.dev/go.yorun.ai/vine/core/rpc) | 生成的服务 client 与 server 实现 |
-| Web | [`core/web`](https://pkg.go.dev/go.yorun.ai/vine/core/web) | 生成的 Web Handler、router、assets server 或 reverse proxy |
+| Web | [`core/web`](https://pkg.go.dev/go.yorun.ai/vine/core/web) | 生成的 Web Handler、router、assets server 或开发服务器代理 |
 | Event | [`core/event`](https://pkg.go.dev/go.yorun.ai/vine/core/event) | 生成的 emitter 与 Listener |
 | Task | [`core/task`](https://pkg.go.dev/go.yorun.ai/vine/core/task) | 生成的 launcher 与 Runner |
 | Skel 运行时类型 | [`core/skel`](https://pkg.go.dev/go.yorun.ai/vine/core/skel) | 生成的 scalar/schema 辅助类型与 `MinSkelcVersion()` |

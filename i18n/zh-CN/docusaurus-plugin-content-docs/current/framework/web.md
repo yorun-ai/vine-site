@@ -5,7 +5,7 @@ sidebar_label: Web 应用
 
 # Web 应用
 
-Web 能力用于为应用注册 HTTP 路由、静态资源或反向代理入口。`.skel` 负责声明 Web 名称和允许访问的 Actor，Go handler 负责具体路由。
+Web 能力用于为应用注册 HTTP 路由、静态资源或开发服务器代理。`.skel` 负责声明 Web 名称和允许访问的 Actor，Go handler 负责具体路由。
 
 ## 声明入口
 
@@ -95,6 +95,27 @@ func (h *UserPortal) Routes(router *web.Router) {
 
 `AssetsServer.Routes` 既处理挂载路径之下的所有路径，也处理挂载根路径本身，因此访问挂载根会返回 index，而不是重定向到应用内部保留的路径；`*path` 参数表示挂载路径之后的部分，未声明挂载路径的 Web 则从根路径提供服务。
 
-转发已有后端改用 `web.NewReverseProxy`。
+### 开发服务器
+
+开发构建可以让 Web 直接由前端自己的开发服务器提供内容，而不使用内嵌资源。在 handler 中按值内嵌 `web.DevProxyServer`，指向开发服务器写入的状态文件，并把 `Routes` 委托给它：
+
+```go title="dev.go"
+type UserPortal struct {
+    skeled.DefaultUserPortalWebServer
+    web.DevProxyServer
+}
+
+func (h *UserPortal) DIInit() {
+    h.DevProxyServer.SetStateFile("./dev-server.json")
+}
+
+func (h *UserPortal) Routes(router *web.Router) {
+    h.DevProxyServer.Routes(router)
+}
+```
+
+状态文件以 JSON 记录开发服务器监听的 `host` 与 `port`；`host` 为空表示应用所在的机器。文件路径可自行选择，启动前端的进程必须写入同一个文件。文件最多每秒重新读取一次，因此前端更换端口重启后，无需重启应用即可跟随。状态文件读取失败时继续使用已经跟随的开发服务器；开发服务器未响应的请求返回 `502`，因为 Web 自身没有内容可提供。Web 收到的路径会保持客户端发送时的转义形式转发给开发服务器。
+
+如果目标不是开发服务器，直接注册一个自行转发请求的路由。
 
 Portal 配置见 [Portal](../runtime/portal.md)，Actor 与 Web 语法见 [Skel 语法](https://skel.yorun.ai/docs/syntax)。
