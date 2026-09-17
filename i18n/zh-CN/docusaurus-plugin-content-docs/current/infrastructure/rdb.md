@@ -78,12 +78,8 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 ## 初始化流程
 
-应用启动时按以下顺序接入数据库：
-
-1. app 创建用户组件 `*ConfigDatabase`
-2. 调用 `InitOption(...)` 和 `InitDao(...)`
-3. 打开或复用数据库连接
-4. 为已声明的 DAO 注册依赖注入工厂
+启动时，Vine 会在你的组件上调用 `InitOption(...)` 和 `InitDao(...)`，打开或复用连接，并让
+已声明的 DAO 可被注入。
 
 ## 连接行为
 
@@ -101,7 +97,6 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 - 相同 `ConnURL` 会复用同一个连接
 - 连接池参数以第一次打开该 URL 时为准
-- 内部通过引用计数决定何时关闭
 
 ### 连接池默认值
 
@@ -121,12 +116,8 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 ## DI 语义
 
-Vine 将用户声明的数据库组件作为单例提供给应用，并通过 factory 创建每个 DAO。DAO factory 会取得：
-
-- `context.Context`
-- `*logger.Logger`
-
-随后把 `gorm.DB.WithContext(...)` 注入 DAO，因此请求 context 与结构化 logger 会跟随数据库操作。
+数据库组件是单例，每个 DAO 在创建时都会附带请求 context 与结构化 logger，因此二者会跟随
+数据库操作。
 
 ## 生命周期
 
@@ -161,15 +152,7 @@ type DeletableModel struct {
 
 ## `Dao[M]`
 
-泛型 DAO 基类：
-
-```go
-type Dao[M ModelConstraint] struct {
-    gormDB *gorm.DB
-}
-```
-
-常用方法：
+具体 DAO 通过嵌入 `Dao[M]` 使用，不直接访问其存储句柄。常用方法：
 
 - `Query(...)`
 - `First(...)`

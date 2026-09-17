@@ -138,19 +138,17 @@ Use the module path declared by your project, the same value required by
 `src/server/go.mod`. See [Project Structure](./filetree.md) for the generated
 layout.
 
-A Hub backed by SQLite or PostgreSQL must already be on Vine v0.15.7 or later.
-Vine no longer migrates older databases at startup, so start an older database
-with Vine v0.15.7 to complete its migration before upgrading.
+A Hub backed by SQLite or PostgreSQL requires a database at the Vine v0.15.7
+schema level or later.
 
-Upgrade Hub before Portal. A Portal that runs against an older Hub keeps serving
-external traffic, but retries its registration on every heartbeat and logs a
-warning until Hub provides that service. Portal also reads the path prefixes Hub
-resolves for Web sites that declare a mount path, so confirm that Hub publishes
-those fields before upgrading Portal.
+An application that sets its own version must use a full semantic version, such as
+`1.2.3`, with an optional leading `v`. An incomplete version such as `1.2` is
+rejected when the application is created.
 
-An application that sets its own version must use a full semantic version, such
-as `1.2.3`, with an optional leading `v`. Earlier releases accepted an incomplete
-version such as `1.2`; replace it with a complete version before upgrading.
+Generated Go packages are produced by skelc v0.21.0 or later and depend on Vine
+v0.20.2 or later. Regenerating them together keeps the generated
+schemas and handler shapes aligned with the installed Vine. See [Go generation](https://skel.yorun.ai/docs/generation/go)
+for what the generator produces and how application code copies a generated bean.
 
 Before promoting the result, complete the
 [Production Readiness Checklist](../operations/production-readiness.md). Skel language

@@ -40,10 +40,6 @@ type Option struct {
 - Plain addresses are also supported:
   - `127.0.0.1:6379`
 
-`redis` first calls `go-redis`'s `ParseURL(...)`. If that fails, it falls back to
-plain-address mode. The client always uses the Redis RESP2 protocol and disables
-identity reporting.
-
 ### `RedisSpec`
 
 The Redis component interface is:
@@ -99,19 +95,14 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 ## Initialization Flow
 
-During startup, the application integrates Redis in this order:
-
-1. Creates the user component `*CacheRedis`.
-2. Calls `InitOption(...)`, `InitLockers(...)`, and `InitCaches(...)`.
-3. Opens the Redis client and provides `Cmdable` to the user component.
-4. Registers dependency-injection factories for the declared Lockers and Caches.
+At startup Vine calls `InitOption(...)`, `InitLockers(...)`, and `InitCaches(...)`
+on your component, opens the client, and makes the declared Lockers and Caches
+injectable.
 
 ## DI Semantics
 
-Vine provides the user-declared Redis component to the application as a singleton
-and creates Lockers and Caches through factories. Each factory automatically
-receives the current `context.Context`; business code only needs to declare an
-injected field.
+Declare an injected field for the Cache or Locker a business object uses; the
+current context is bound for you.
 
 To execute Redis commands directly in business code, inject your own Redis
 component:
@@ -287,12 +278,6 @@ func (s *UserService) RebuildUser(userID string) {
 
 ```
 
-In this example, the actual Redis key is:
-
-```text
-vine:lock:user:<userID>
-```
-
 ## Lock
 
 ### `Locker.Lock(...)`
@@ -311,38 +296,6 @@ Return values:
 Redis infrastructure errors in synchronous `Lock(...)` and `Unlock()` calls
 panic rather than being returned. Lock contention is not an infrastructure
 error, so it remains the `false` return case.
-
-Actual Redis keys follow this pattern:
-
-- The global prefix is always `vine:lock:`.
-- The remaining key is always `<KeyPrefix()> + ":" + key`.
-
-For example:
-
-```go
-lock, ok := userLocker.Lock("1")
-if !ok {
-    return
-}
-```
-
-If this locker uses `KeyPrefix() == "user"`, the corresponding Redis key is:
-
-```text
-vine:lock:user:1
-```
-
-If you pass an empty key:
-
-```go
-lock, ok := userLocker.Lock("")
-```
-
-The final Redis key is:
-
-```text
-vine:lock:user:
-```
 
 ### Default Lock
 
@@ -380,34 +333,12 @@ contains the ownership, lease, or Redis refresh failure that caused the
 cancellation. A successful manual `Unlock()` cancels the context with the
 ordinary `context.Canceled` cause.
 
-### Refresh Policy
+### Renewal
 
-The default refresh policy:
-
-- Normal refresh interval: `10s`.
-- Retry interval after a failure: `3s`.
-- Maximum retry count: `7`.
-- Maximum duration of one refresh command: `2s`.
-
-When a normal refresh tick occurs:
-
-1. Vine attempts a refresh immediately.
-2. A Redis result of `0` proves that the token is no longer the owner, so Vine
-   breaks the lock immediately without retrying.
-3. Transport errors are retried every `3s`, but only as long as the command and
-   its next retry stay within the conservative local lease deadline.
-4. Vine breaks the lock when the retry cap or lease deadline is reached,
-   whichever comes first.
-
-Refresh runs in a background goroutine. It never panics from that goroutine.
-After ownership loss or an exhausted refresh budget, it records the failure as
-the lock context's cancellation cause, marks the lock broken, and cancels the
-context.
-
-The local deadline reserves 10% of the Redis TTL, capped at one second. Each
-refresh command uses the earlier of its two-second timeout and that local
-deadline, so a command and its retry budget can never extend beyond the lease
-Vine still considers valid.
+A held lock renews itself for as long as you keep it, so the lease does not
+expire under a long-running critical section. When renewal can no longer reach
+Redis, or Redis reports that another holder owns the lock, Vine marks the lock
+broken and cancels `Lock.Context()`.
 
 ### Broken State
 
@@ -436,12 +367,12 @@ when lock loss should stay a fail-fast boundary.
 
 ### `Lock.TryUnlock()`
 
-`TryUnlock()` combines the local state check and release attempt under the
-lock's mutex. Its token comparison and delete also run atomically in Redis:
+`TryUnlock()` performs the state check and the token-checked release atomically,
+with these outcomes:
 
-- `true`: this token owned the Redis key and deleted it.
-- `false`: the lock was never acquired, was already released or broken, or the
-  Redis key is no longer owned by this token.
+- `true`: this token owned the lock and released it.
+- `false`: the lock was never acquired, was already released or broken, or is no
+  longer owned by this token.
 - Panic: Redis could not execute the release command.
 
 An ownership-mismatch result marks the lock broken and cancels its context with
@@ -536,24 +467,11 @@ cache := cacheRedis.NewCacheByType(reflect.TypeFor[*UserCache](), ctx).(*UserCac
 
 ### Key Rules
 
-Actual Redis keys have this form:
+`KeyPrefix()` follows the same rules as for `Locker`:
 
-```text
-vine:cache:<keyPrefix>:<key>
-```
-
-For example:
-
-```text
-vine:cache:user:1
-```
-
-The default `KeyPrefix()` rules match those for `Locker`:
-
-- By default, every cache type gets a unique prefix derived from its fully
-  qualified type name.
-- To let multiple cache types share the same Redis keys, explicitly override
-  `KeyPrefix()` and return the same value from each type.
+- By default, every cache type gets a unique prefix.
+- To let multiple cache types share the same entries, override `KeyPrefix()` and
+  return the same value from each type.
 
 ## Cache and lock rules
 

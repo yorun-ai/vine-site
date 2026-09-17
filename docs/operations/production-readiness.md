@@ -52,8 +52,10 @@ exact revisions used by a deployment.
 
 Vine can require deployment-provided mTLS identities for Hub, Link, and Portal.
 When all three `--mtls-*-file` flags are configured on each process, the Hub
-Control and Admin APIs, embedded Redis and NATS, Link ingress, and component
-proxy clients use mTLS. Certificates identify components through the exact
+Control API, embedded Redis and NATS, Link ingress, and component
+proxy clients use mTLS; the Hub Admin API listener stays cleartext HTTP because
+the Dashboard it serves is reached from an operator's browser. Certificates
+identify components through the exact
 X.509-SVID URI SANs `spiffe://<trust-domain>/vine/daemon/vine.hub`,
 `spiffe://<trust-domain>/vine/daemon/vine.link`, and
 `spiffe://<trust-domain>/vine/daemon/vine.portal`. Every component in one deployment must
@@ -86,12 +88,12 @@ Inventory every listener:
 | --- | --- | --- | --- |
 | Hub Control API | `127.0.0.1:7071` | Link and Portal | Enable backend mTLS and bind to a reachable private address |
 | Hub Redis | `127.0.0.1:7072` | Link and Portal | Enable backend mTLS; never publish it as a general Redis service |
-| Hub Admin API and Web | `127.0.0.1:7075` | Portal | Enable backend mTLS and keep it separate from component traffic |
+| Hub Admin API and Dashboard | `127.0.0.1:7099` | An operator's browser | Serves cleartext HTTP whatever the backend mTLS configuration is; keep it on loopback or a private network and restrict who can reach it |
 | Link API | `127.0.0.1:7079` | Business applications owned by the Link | Prefer loopback; a non-loopback listener warns and requires deployment-provided protection for its unauthenticated h2c traffic |
 | Link ingress | `0.0.0.0:0` | Hub debug tools, Portal, and remote Link instances | Enable backend mTLS; set a fixed reachable address when network policy requires stable ports |
 | Business application HTTP | `127.0.0.1:0` | Its Link sidecar | Keep the application and Link on the same host and within the same deployment trust boundary |
 | Embedded NATS in normal Hub mode | Random TCP port | Hub internal publishers and Link instances | Enable backend mTLS; use an external NATS endpoint when operations require a fixed endpoint |
-| Portal entries | Dashboard defaults to `http://:7099/`, or `https://:7099/` with mTLS; other entries are defined by Hub Portal rules | External clients | Expose only intended listeners and replace temporary self-signed certificates before production use |
+| Portal entries | The scheme, host, and port each entry declares | External clients | Expose only intended listeners and replace temporary self-signed certificates before production use |
 
 - [ ] Permit only the caller sets shown in the table.
 - [ ] Provision one CA and distinct `vine.hub`, `vine.link`, and `vine.portal`
@@ -100,6 +102,8 @@ Inventory every listener:
   together on Hub, every Link, and every Portal.
 - [ ] Use `--ingress-listen` to avoid an unpredictable Link ingress port when a
   firewall needs an explicit rule.
+- [ ] When a standalone process serves the Admin API, bind `--hub-admin-listen` to
+  loopback or protect it, because that listener carries no authentication.
 - [ ] Prefer co-locating every application with its Link sidecar on the same
   host and within the same deployment trust boundary. If an unusual topology
   uses a non-loopback Link API, explicitly protect and restrict that
@@ -130,7 +134,7 @@ locks can start Hub with PostgreSQL and external NATS:
 vine hub serve \
   --control-listen 10.0.1.10:7071 \
   --watch-listen 10.0.1.10:7072 \
-  --admin-listen 10.0.1.10:7075 \
+  --admin-listen 127.0.0.1:7099 \
   --mtls-ca-file /run/vine/ca.pem \
   --mtls-cert-file /run/vine/hub.pem \
   --mtls-key-file /run/vine/hub-key.pem \
@@ -144,8 +148,7 @@ vine hub serve \
 The Hub database is the source of truth for imported configuration, Portal rules,
 and certificates. Omitting the database options selects the read-only `--no-db`
 mode, which is not suitable for production. Hub publishes runtime snapshots and
-changes through its Redis distribution layer; Redis is not a replacement for the
-database.
+changes through its Redis is not a replacement for the database.
 
 :::warning Event and Task durability
 
@@ -189,21 +192,21 @@ storage and verified recovery behavior part of the deployment.
 
 ## Validate registration and failure semantics
 
-| Mode | TTL and registry sweeper | Link heartbeat | Portal registration | Local application health check |
+| Mode | Lease expiry | Link heartbeat | Portal registration | Local application health check |
 | --- | --- | --- | --- | --- |
 | Separated application and Link | Enabled | Enabled | Enabled | Enabled |
 | Linked application with in-process Link and network Hub | Enabled | Enabled | Enabled | Disabled; application and Link share one process |
 | Standalone with inproc Hub | Disabled | Disabled | Once, without a heartbeat | Disabled |
 
 With a normal network Hub, registrations carry leases. Link renews them through
-heartbeat, and Hub's registry sweeper unregisters expired application instances
-and publishes deletion events. A separately running Link also checks the
+heartbeat, and Hub removes an instance whose lease expires and publishes the
+deletion. A separately running Link also checks the
 applications it owns. Linked mode keeps network leases and heartbeat, but skips
 the separate local application health check because Link and the application
 share one process.
 
 In standalone/inproc mode, registration stays until explicit unregister. There is
-no heartbeat, lease-expiry sweep, or local application health check, so a passing
+no heartbeat, no lease expiry, and no local application health check, so a passing
 standalone test doesn't validate distributed liveness.
 
 In the current source, a separately running Link checks each application every 5

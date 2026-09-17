@@ -188,11 +188,8 @@ supervisor.
 ## Standalone and in-process routing
 
 Standalone keeps the registration, snapshot, proxy, round-robin, metadata, and
-value-isolation boundaries. Calls still pass through Link's routing logic.
-Method specs structurally clone in-process Rpc arguments and results via the
-generated clone hooks, and every method with arguments or results carries the
-matching hook. Mutations made by the caller or handler cannot cross the Rpc
-boundary.
+value-isolation boundaries. Calls still pass through Link's routing logic, and a
+mutation made by the caller or the handler cannot cross the Rpc boundary.
 
 In-process Rpc guarantees value isolation only. JSON or CBOR encoding,
 transport normalization, custom marshal/unmarshal methods, and codec failures
@@ -200,7 +197,7 @@ are outside its contract and may vary with the generated spec. Vine's guarantee
 covers skelc-managed generated packages, not handwritten files added to them. See
 [Skel Go generation](https://skel.yorun.ai/docs/generation/go) for the package
 ownership rules. When a test must exercise the application Rpc wire boundary,
-use `vine dev` or a separated deployment.
+use a separated deployment.
 
 What it intentionally does not reproduce:
 
@@ -216,9 +213,9 @@ In-process timeout or cancellation also returns without waiting for a handler
 that ignores its context to finish, matching the caller-visible behavior of a
 network timeout. It doesn't prove that such a handler has stopped.
 
-Use standalone for fast integration tests, `vine dev` or fully separated
-processes for Rpc wire tests, and real process boundaries for liveness, lease,
-network, TLS, and restart exercises.
+Use standalone for fast integration tests, fully separated processes for Rpc
+wire tests, and real process boundaries for liveness, lease, network, TLS, and
+restart exercises.
 
 ## Before marking an instance ready
 

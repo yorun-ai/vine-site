@@ -53,7 +53,7 @@ application := app.New[*DemoApp](
 )
 ```
 
-自定义 flags 也遵循同一规则：如果后续初始化依赖某个构造参数，应在应用 specification 的 `DIInit()` 中校验或归一化它。构造完成后，请把 flags 当作不可变输入。后续依赖容器中的对象拿到的是副本；修改某个注入的 flag 并不是进程级配置机制。
+自定义 flags 也遵循同一规则：如果后续初始化依赖某个构造参数，应在应用 specification 的 `DIInit()` 中校验或归一化它。构造完成后，请把 flags 当作不可变输入，不要通过修改注入的 flag 来重新配置进程。
 
 同一个应用类型和同一个应用名在一个进程中都只能构造一次，即使应用已经停止也一样。应用也是一次性的：不能启动两次，也不能在停止后重新启动。
 
@@ -72,9 +72,9 @@ Vine 首先连接 Link，取得应用所需的运行信息，然后创建：
 - 已声明的 Module。
 - RPC、Web、Event、Task 服务及其 execution containers。
 
-已声明的 Component 和 Module 实例都是应用生命周期单例。依赖图构造时，会完成它们的字段注入并调用 `DIInit()`。框架组件 minder 也会在这里初始化其 Component。例如，RDB Component 可以在生命周期 hooks 开始之前打开数据库。
+已声明的 Component 和 Module 实例都是应用生命周期单例。依赖图构造时，会完成它们的字段注入并调用 `DIInit()`。被托管的 Component 也会在这里初始化，因此 RDB Component 可以在生命周期 hooks 开始之前打开数据库。
 
-`BindCommon(...)`、Component `Bind(...)` 和 Module `Bind(...)` 是依赖声明，不是生命周期回调。Vine 可能把它们应用到多个容器，因此它们应当是确定性的，且不包含运行时副作用。
+`BindCommon(...)`、Component `Bind(...)` 和 Module `Bind(...)` 是依赖声明，不是生命周期回调，因此它们应当是确定性的，且不包含运行时副作用。
 
 #### 应用级回调
 

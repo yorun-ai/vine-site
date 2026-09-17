@@ -127,8 +127,7 @@ realm := actor.Realm()
 identifier := actor.Identifier()
 ```
 
-这两个方法从 Vine v0.15.1 起可用。声明标识符需要使用支持 `@identifier` 的 skelc，
-并重新生成契约。未声明标记的 Actor 返回空标识符；absent、anonymous、authenticating
+声明标识符需要使用支持 `@identifier` 的 skelc，并重新生成契约。未声明标记的 Actor 返回空标识符；absent、anonymous、authenticating
 状态的 realm 和 identifier 均为空字符串。重命名 actor 或其 domain 会改变 realm。
 
 ### `Context`

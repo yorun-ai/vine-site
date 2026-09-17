@@ -114,7 +114,9 @@ flowchart LR
 - **HelloApp** 是业务应用；后续按需加入 component、module 以及
   Rpc、Web、Event、Task 能力。
 
-standalone 中 Hub 和 Link 的管理连接使用 inproc transport，不额外开放管理端口；Portal 仍可根据入口规则监听业务 HTTP/HTTPS 端口。该模式不模拟 heartbeat、TTL 过期或网络断连，需要验证这些行为时改用 linked 模式。
+standalone 中 Hub 和 Link 的管理连接使用 inproc transport，除
+`--hub-admin-listen` 打开的 Hub Admin API 与 Dashboard 监听外不额外开放管理端口；Portal
+仍可根据入口规则监听业务 HTTP/HTTPS 端口。该模式不模拟 heartbeat、TTL 过期或网络断连，需要验证这些行为时改用 linked 模式。
 
 ## 连接已有 Hub
 
@@ -140,7 +142,7 @@ func main() {
 
 此时业务应用与一个 Link 在同一进程。Link 会连接独立 Hub，并注册你之后声明
 的应用能力。`HubEndpoint` 与 `IngressListen` 也能分别由
-`VINE_HUB_ENDPOINT` 和 `VINE_INGRESS_LISTEN` 提供。
+`VINE_LINK_HUB_ENDPOINT` 和 `VINE_LINK_INGRESS_LISTEN` 提供。
 
 如需把 Link 与业务应用拆为独立进程，则使用 `app.New` 启动业务应用，并通过 `--link-endpoint` 或 `VINE_LINK_ENDPOINT` 指定已有 Link 的 API endpoint。
 

@@ -83,12 +83,8 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 ## Initialization Flow
 
-During startup, the application integrates the database in this order:
-
-1. Creates the user component `*ConfigDatabase`.
-2. Calls `InitOption(...)` and `InitDao(...)`.
-3. Opens or reuses a database connection.
-4. Registers dependency-injection factories for the declared DAOs.
+At startup Vine calls `InitOption(...)` and `InitDao(...)` on your component,
+opens or reuses the connection, and makes the declared DAOs injectable.
 
 ## Connection Behavior
 
@@ -106,7 +102,6 @@ The underlying rules:
 
 - Components with the same `ConnURL` reuse one connection.
 - The first component to open that URL determines its pool settings.
-- An internal reference count determines when the connection is closed.
 
 ### Connection-Pool Defaults
 
@@ -126,14 +121,8 @@ The default policy:
 
 ## DI Semantics
 
-Vine provides the user-declared database component to the application as a
-singleton and creates each DAO through a factory. The DAO factory receives:
-
-- `context.Context`
-- `*logger.Logger`
-
-It then injects `gorm.DB.WithContext(...)` into the DAO, so request context and
-the structured logger follow database operations.
+The database component is a singleton, and each DAO is created with the request
+context and the structured logger attached, so both follow database operations.
 
 ## Lifecycle
 
@@ -170,14 +159,7 @@ Use it for tables that do not need soft deletion.
 
 ## `Dao[M]`
 
-The generic DAO base type is:
-
-```go
-type Dao[M ModelConstraint] struct {
-    gormDB *gorm.DB
-}
-```
-
+A concrete DAO embeds `Dao[M]`; its storage handle is not accessed directly.
 Common methods include:
 
 - `Query(...)`

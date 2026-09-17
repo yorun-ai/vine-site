@@ -130,8 +130,6 @@ code := ex.NotFound
 kind := code.Type() // ApplicationError
 ```
 
-`Type` is derived from `Code` and does not need to be stored separately.
-
 ### `Category()`
 
 ```go
@@ -257,7 +255,7 @@ internalErr := ex.NewInternal()
 
 ## Error-object behavior
 
-### `Type()` is derived from `Code`
+### `Type()`
 
 ```go
 err := ex.New(ex.NotFound, "missing user")

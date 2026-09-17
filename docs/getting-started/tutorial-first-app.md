@@ -130,10 +130,11 @@ flowchart LR
   Event, or Task capabilities get added here as the application grows.
 
 In standalone mode, the management connections between Hub and Link use the
-inproc transport and don't open additional management ports. Portal can still
-listen on business HTTP/HTTPS ports according to its entry rules. This mode does
-not simulate heartbeat, TTL expiration, or network disconnection. Switch to
-linked mode when you need to validate these behaviors.
+inproc transport and don't open additional management ports, except the Hub Admin
+API and Dashboard listener `--hub-admin-listen` opens. Portal can still listen on
+business HTTP/HTTPS ports according to its entry rules. This mode does not
+simulate heartbeat, TTL expiration, or network disconnection. Switch to linked
+mode when you need to validate these behaviors.
 
 ## Connect to an Existing Hub
 
@@ -159,8 +160,8 @@ func main() {
 
 The business application and a Link now run in the same process. Link connects to
 the independent Hub and registers any application capabilities you declare.
-`HubEndpoint` and `IngressListen` can also come from `VINE_HUB_ENDPOINT` and
-`VINE_INGRESS_LISTEN`, respectively.
+`HubEndpoint` and `IngressListen` can also come from `VINE_LINK_HUB_ENDPOINT`
+and `VINE_LINK_INGRESS_LISTEN`, respectively.
 
 To run Link and the business application in separate processes, start the
 business application with `app.New` and use `--link-endpoint` or

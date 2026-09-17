@@ -44,14 +44,9 @@ reports a Portal instance as serving until 30 seconds pass without a heartbeat,
 so a terminated Portal disappears from the list on its own. The Hub Dashboard
 shows registered Portal instances alongside application instances.
 
-Hub keeps these records in memory, so a restarted Hub begins with none. Every
-Portal registers again on its next heartbeat. Standalone Portal shares Hub's
-process and cannot outlive it, so it registers once without a heartbeat.
-
-A Portal may run against an older Hub that has no Portal registry service. It
-keeps serving, retries the registration on each heartbeat, and logs a warning.
-When upgrading a running deployment, upgrade Hub first: a Portal upgraded before
-Hub still works, but reports that warning until Hub catches up.
+A restarted Hub reports no Portal instances until each Portal registers again on
+its next heartbeat. Standalone Portal shares Hub's process and cannot outlive it,
+so it registers once without a heartbeat.
 
 ## Starting Portal
 
@@ -83,8 +78,7 @@ Link. These backend identity files are never served directly by browser-facing
 HTTPS listeners. When mTLS is enabled and no configured certificate matches an
 SNI host, Portal generates a separate, short-lived self-signed Web certificate
 in memory. Exact and wildcard certificates from Hub always take precedence.
-Temporary certificates are bounded in an in-memory cache, are not written to
-Hub, and disappear when Portal stops. They encrypt bootstrap traffic but are not
+Temporary certificates are not persisted and disappear when Portal stops. They encrypt bootstrap traffic but are not
 browser-trusted; configure a public certificate before production use.
 
 ## How Configuration Takes Effect
@@ -92,8 +86,8 @@ browser-trusted; configure a public certificate before production use.
 Portal can load most gateway changes without restarting. It watches the following
 data in Hub Redis:
 
-- `portal:rule:*`: determines the scheme, port, and site that receives a request.
-- `portal:site:*`: defines Rpc or Web sites and their routing rules.
+- Rule changes: determine the scheme, port, and site that receives a request.
+- Site changes: define Rpc or Web sites and their routing rules.
 - Endpoint registrations: determine which Link instances can receive a request.
 - Actor, service, and resource schemas: determine Rpc authentication and
   authorization admission.
@@ -121,15 +115,10 @@ Unknown field names and malformed entries are rejected. Skel requires at least
 one non-nullable credential field, so a valid request always supplies at least
 one non-empty value.
 
-Upgrade Portal to Vine v0.15.2 or later before sending requests that omit
-optional credentials. Regenerate actor schemas with skelc v0.17.1 or later
-to use `string?` credential fields.
-
 ## Inproc Mode
 
-Portal can run in the same process as a standalone runtime. Its module boundaries
-and Redis subscription semantics remain the same, but both the Hub Redis
-connection and target Link endpoint may be in-process connections.
+Portal can run in the same process as a standalone runtime, with the Hub Redis
+connection and the target Link endpoint as in-process connections.
 
 This mode can verify routing, schema subscriptions, admission, and gateway
 forwarding, but it can't simulate independent process crashes, external network
@@ -142,24 +131,74 @@ conditions.
 - [Link](./link.md): hosts target application ingress and endpoint registrations.
 - [Rpc](../infrastructure/rpc.md): the Rpc abstraction used inside applications.
 
+## Portal entries
+
+An entry is the access Portal serves: its scheme, host, and port. Every rule
+belongs to one entry, and the entry owns that access, so changing an entry
+updates every rule it routes at once. The Dashboard lists entries beside sites
+and rules, and the rule editor selects one when it creates a rule.
+
+Seed YAML names entries in a `portalEntries` section, and rules in the same
+document reference them by `entryName`:
+
+```yaml
+portalEntries:
+  - name: web
+    scheme: https
+    host: api.example.com
+    port: 8443
+
+portalRules:
+  - name: internal-api
+    entryName: web
+    matchPathPrefix: /api
+    routeType: SITE
+    routeSiteName: application-web
+```
+
+A seed may instead declare the access on each rule with `matchScheme`,
+`matchHost`, and `matchPort`. Hub creates the entry each rule needs. The two styles cannot be mixed: every rule in one document either
+names an entry or declares an access, and a rule may reference only an entry that
+the same document declares. Hub derives the name `scheme:port`, or
+`scheme:host:port` when a host is set, for an entry it creates on its own. An
+entry may route no rule yet, which keeps it available while you add the rules
+that use it.
+
+## Enabling and disabling configuration
+
+Portal sites, entries, rules, and certificates carry an enable switch that the
+Dashboard edits. A seed declares only what it turns off:
+
+```yaml
+portalRules:
+  - name: legacy-api
+    disabled: true
+    matchPathPrefix: /legacy
+    routeType: SITE
+    routeSiteName: application-web
+```
+
+Everything is enabled when the seed omits the field, and an existing database
+keeps its configuration enabled. A disabled rule is not served, and neither are
+the rules of a disabled entry or the SITE rules of a disabled site. Redirect rules are not
+SITE rules, so they stay published when their site is disabled. A disabled
+certificate is not served.
+
 ## Entry path mapping
 
 When the Web contract behind a Web site declares a mount path, Portal uses that
 path for both matching and forwarding, so the prefixes configured on the SITE
 rules that target the site have no effect while the mount path exists:
 
-- The rule editor shows both path fields with the Web path, disables editing, and
-  identifies the Web as their source.
+- The rule editor shows the Web path and reports that the Web fixes both paths.
 - Seed rules may omit both prefixes.
 - A mount path of `/` serves from the root.
 - The stored prefixes are kept, and apply again if the Web stops declaring a
   mount path.
 - Site and contract changes refresh the effective paths without restarting Portal.
 
-Built-in Dashboard access rules and redirect rules are unchanged.
-
-During a rolling upgrade, upgrade Hub first and confirm that it publishes the
-resolved rule prefixes before upgrading Portal.
+Redirect rules are unchanged: they keep their configured pattern and take no part
+in mount-path resolution.
 
 The following mapping options apply when the target Web has no mount path, or
 when the target site is RpcGW.
@@ -209,20 +248,17 @@ take effect without restarting Portal. Omitting `routePathPrefix`
 from an API update leaves it unchanged; sending an empty string clears it.
 Seed YAML is a complete rule value: omitting the field means empty.
 
-Hub no longer migrates databases older than Vine v0.15.7. Start such a database
-with Vine v0.15.7 so its migration completes, then upgrade to the current
-release.
-
 ## Rule validation
 
-The following requirements apply to the Admin API, startup seed YAML, and
-Dashboard imports. User configuration cannot replace built-in Dashboard rules.
+The following requirements apply to the Admin API and startup seed YAML.
 
-Rules require a name, `matchScheme` of `http` or `https`, and `matchPort` of
-`0` (the protocol default) or `1–65535`. `matchHost` may be empty or a hostname/IP,
-without a URL, port, or wildcard. A nonempty `matchPathPrefix` must start with `/`
-and cannot contain query/fragment delimiters, backslashes, whitespace, control
-characters, or dot segments.
+An entry requires a `scheme` of `http` or `https` and a `port` of `0` (the
+protocol default) or `1–65535`; its `host` may be empty or a hostname or IP
+address, without a URL, port, or wildcard. An entry created for a rule that
+declares access is named from that access. A rule requires a name, and its
+`matchPathPrefix`, when set, must start with `/` and cannot contain query or
+fragment delimiters, backslashes, whitespace, control characters, or dot
+segments. A rule created through the Admin API names its entry with `entryName`.
 
 `SITE` requires `routeSiteName` and rejects `routeRedirectionPattern`.
 `PERMANENT_REDIRECT` and `TEMPORARY_REDIRECT` require `routeRedirectionPattern`
@@ -231,6 +267,18 @@ are `{scheme}`, `{host}`, `{uri}`, `{path}`, `{query}`, `{method}`, and `{remote
 unrecognized placeholders or unmatched braces are rejected.
 Saving a rule does not check whether its target site exists. Configure the
 target site before it needs to handle requests.
+
+## Rule conflicts
+
+Two rules conflict when they belong to the same entry and resolve to the same
+match path, because Portal cannot order them. The rule whose name sorts first
+serves the request; the other takes over as soon as the first stops serving it.
+The Dashboard marks both rules and shows the request they match, and the Admin API
+reports every pair through `listConflicts`.
+
+Resolve a conflict by disabling one rule, creating the rule under a different
+entry, or changing the mount path of its site, which changes the path its rules
+resolve to.
 
 ## Certificate information
 
@@ -244,7 +292,3 @@ An `api service` is a client entry point reached through Portal. Only API servic
 are exposed to clients; plain backend services are not. Backend authentication,
 permission, and resource-check services keep running behind Portal and are not
 client entry points.
-
-Deploying contracts with explicit API services requires Vine v0.15.4 or later and
-skelc v0.18.0 or later. Upgrade Hub, Link, Portal, and your application's Vine
-dependencies first. Existing generated contracts remain supported.

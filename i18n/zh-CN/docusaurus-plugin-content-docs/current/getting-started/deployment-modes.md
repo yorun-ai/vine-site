@@ -19,7 +19,6 @@ Vine 为开发和生产提供不同的运行拓扑，而且不需要为生产环
 | 模式 | Hub / Portal / Link | 业务应用 | 适用场景 |
 | --- | --- | --- | --- |
 | standalone | 同一进程 | 同一进程 | 快速开始、测试、本地单体开发 |
-| `vine dev` | 同一 CLI 进程，内部控制流量走 inproc；Link API 保留网络入口 | 独立进程 | 使用外部应用进程进行本地调试 |
 | linked | Hub、Portal 独立；Link 与应用同进程 | 与 Link 同进程 | 本地开发、少量服务、简化应用部署 |
 | 分开部署 | Hub、Portal 独立；每个 Link 作为 sidecar 进程与其应用同主机部署 | 位于 Link sidecar 主机上的独立进程 | 生产环境、workload 扩缩容、故障验证 |
 
@@ -85,7 +84,7 @@ func main() {
 交付编译后的二进制和包含部署参数的 `vars.yaml`，启动时执行：
 
 ```bash
-./hello --seed-hub-vars-file ./vars.yaml
+./hello --hub-seed-vars-file ./vars.yaml
 ```
 
 Seed data 和 source 文件是构建输入，运行时无需随二进制分发。
@@ -96,48 +95,18 @@ Seed data 和 source 文件是构建输入，运行时无需随二进制分发�
 修改 `vars.yaml` 后重启即可生效。如果选择 SQLite 或 PostgreSQL，seed 变量只在
 首次初始化数据库时生效，后续启动以数据库中的配置为准。
 
-也可以将 seed 保留为外部文件，通过 `--seed-hub-data-file` 和可选的
-`--seed-hub-source-file` 提供。如果提供 source，必须与 data 一起嵌入或一起通过文件
+也可以将 seed 保留为外部文件，通过 `--hub-seed-data-file` 和可选的
+`--hub-seed-source-file` 提供。如果提供 source，必须与 data 一起嵌入或一起通过文件
 传入，不能混用。两种方式下 vars 都单独通过文件提供。结构定义、替换语法和默认值规则见
 [部署变量](../framework/configuration.md#deployment-variables)。
 
 ### 特点与限制
 
 - 只需启动一个业务 binary，最适合 [第一个应用教程](./tutorial-first-app.md)。
-- 使用 `standalone.Option` 配置 SQLite / PostgreSQL 或 no-db 模式、内联或文件 seed 来源，以及 Dashboard URL。
+- 使用 `standalone.Option` 配置 SQLite / PostgreSQL 或 no-db 模式、内联或文件 seed 来源，以及进程内 Hub 的 Admin API / Dashboard 监听地址。
 - Hub 与 Link 不启动 heartbeat、TTL 续租和 registry sweeper；应用停止时靠显式注销清理注册。
-- Hub 和 Link 不开放独立管理端口；Portal 仍可按入口规则监听业务 HTTP/HTTPS 端口。
+- 除 `--hub-admin-listen` / `Option.AdminListen` 打开的 Hub Admin API 与 Dashboard 监听外，Hub 和 Link 不开放独立管理端口；Portal 仍可按入口规则监听业务 HTTP/HTTPS 端口。
 - 跨进程网络、服务单独重启等场景不在覆盖范围内。
-
-## 本地调试外部应用
-
-`vine dev` 让业务应用保留独立进程，同时在一个进程中托管 Hub、Portal 和 Link：
-
-```mermaid
-flowchart LR
-  subgraph Dev["vine dev 进程"]
-    Hub["Hub"] -->|"inproc"| Portal["Portal"]
-    Hub -->|"inproc"| Link["Link"]
-    Portal -->|"inproc ingress"| Link
-  end
-  Client["外部客户端"] -->|"网络"| Portal
-  Link <-->|"网络"| App["业务 App 进程"]
-```
-
-在两个终端中分别启动运行时和应用：
-
-```bash
-vine dev --seed-hub-data-file ./seed.yaml
-go -C ./src/server run ./cmd/myapp
-```
-
-`app.New` 默认连接 `http://127.0.0.1:7079` 的 Link API，因此不需要额外配置
-endpoint。应用注册、domain schemas 和业务流量都会经过真实的 App 到 Link 网络
-边界；Hub、Redis、NATS 和 Link ingress 的内部流量则使用进程内 transport，避免
-额外端口和基础设施故障噪音。
-
-这个拓扑是开发快捷方式，不是部署拓扑；它不覆盖 Hub 租约、TTL 过期或 Link 到
-Hub 的网络恢复。
 
 ## Linked：Hub 与应用分开
 
@@ -171,10 +140,10 @@ linked.NewWithOption[*HelloApp](linked.Option{
 }).StartAndWait()
 ```
 
-`HubEndpoint` 和 `IngressListen` 也可以通过 `VINE_HUB_ENDPOINT`、`VINE_INGRESS_LISTEN`
-设置。外部 Hub 启用后台 mTLS 时，可通过 `MTLSCAFile`、`MTLSCertFile`、
-`MTLSKeyFile` 配置内嵌 Link 的身份，或使用对应的 `VINE_MTLS_*` 环境变量和
-`--mtls-*-file` 命令行参数。
+`HubEndpoint` 和 `IngressListen` 也可以通过 `VINE_LINK_HUB_ENDPOINT`、
+`VINE_LINK_INGRESS_LISTEN` 设置。外部 Hub 启用后台 mTLS 时，可通过 `MTLSCAFile`、`MTLSCertFile`、
+`MTLSKeyFile` 配置内嵌 Link 的身份，或使用对应的 `VINE_LINK_MTLS_*` 环境变量和
+`--link-mtls-*-file` 命令行参数。
 
 这种模式保留了独立 Hub 的配置、注册和租约语义，但 Link 与业务应用仍同时发布、同时停止。它适合不想额外维护 Link sidecar 的开发和部署环境。
 
@@ -210,7 +179,7 @@ vine link serve \
   --hub-endpoint http://127.0.0.1:7071
 ```
 
-业务应用不再用 `standalone.New` 或 `linked.New`，而是直接创建：
+业务应用自行连接 Link API，进程内不嵌入 Link：
 
 ```go title="main.go"
 app.NewWithOption[*HelloApp](app.Option{
@@ -239,7 +208,6 @@ Hub 与 Portal 需要独立扩缩容，或需要故障隔离和完整分布式�
 | 需求 | 推荐模式 |
 | --- | --- |
 | 学习框架或编写单应用测试 | standalone |
-| 让应用独立进程运行，同时最小化本地基础设施 | `vine dev` |
 | 本地调试多个应用、但不想单独维护 Link | linked |
 | 容器化部署、多实例、独立发布与真实故障演练 | 分开部署 |
 

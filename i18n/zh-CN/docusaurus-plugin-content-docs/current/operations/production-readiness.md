@@ -47,8 +47,9 @@ skelc version
 :::warning 后台 mTLS 边界
 
 Vine 可以为 Hub、Link 与 Portal 强制使用部署提供的 mTLS 身份。在每个进程上同时
-配置三个 `--mtls-*-file` 参数后，Hub Control API、Admin API、内嵌 Redis 与
-NATS、Link ingress，以及组件代理 client 都会使用 mTLS。证书通过精确的
+配置三个 `--mtls-*-file` 参数后，Hub Control API、内嵌 Redis 与
+NATS、Link ingress，以及组件代理 client 都会使用 mTLS；Hub Admin API 的 listener
+保持明文 HTTP，因为它承载的 Dashboard 由操作者的浏览器访问。证书通过精确的
 X.509-SVID URI SAN `spiffe://<trust-domain>/vine/daemon/vine.hub`、
 `spiffe://<trust-domain>/vine/daemon/vine.link`、
 `spiffe://<trust-domain>/vine/daemon/vine.portal` 标识组件；同一部署的所有组件必须使用相同
@@ -75,12 +76,12 @@ Redis 还要求 ACL 用户名与 client 证书身份一致。外部 PostgreSQL �
 | --- | --- | --- | --- |
 | Hub Control API | `127.0.0.1:7071` | Link 与 Portal | 启用后台 mTLS，只绑定到可达的私有地址 |
 | Hub Redis | `127.0.0.1:7072` | Link 与 Portal | 启用后台 mTLS；不要把它发布为通用 Redis 服务 |
-| Hub Admin API 与 Web | `127.0.0.1:7075` | Portal | 启用后台 mTLS，并与组件流量隔离 |
+| Hub Admin API 与 Dashboard | `127.0.0.1:7099` | 操作者的浏览器 | 无论后台 mTLS 如何配置都使用明文 HTTP；让它只监听 loopback 或位于私有网络，并限制可访问范围 |
 | Link API | `127.0.0.1:7079` | Link 管理的业务应用 | 优先使用 loopback；非 loopback listener 会告警，且未认证 h2c 流量必须由部署侧保护 |
 | Link ingress | `0.0.0.0:0` | Hub 调试工具、Portal 和远端 Link 实例 | 启用后台 mTLS；网络策略要求固定端口时设置固定地址 |
 | 业务应用 HTTP | `127.0.0.1:0` | 它对应的 Link sidecar | 让应用与 Link 位于同一主机和部署信任边界内 |
 | 普通 Hub 模式的内嵌 NATS | 随机 TCP 端口 | Hub 内部 publisher 与 Link 实例 | 启用后台 mTLS；运维需要固定 endpoint 时使用外部 NATS |
-| Portal entry | Dashboard 默认 `http://:7099/`，启用 mTLS 时默认 `https://:7099/`；其他入口由 Hub 中的 Portal rule 定义 | 外部客户端 | 只暴露预期的 listener，并在生产使用前替换临时自签证书 |
+| Portal 入口 | 各入口声明的 scheme、host 和 port | 外部客户端 | 只暴露预期的 listener，并在生产使用前替换临时自签证书 |
 
 - [ ] 只允许表格中列出的调用方集合。
 - [ ] 准备一个 CA，以及分别标识 `vine.hub`、`vine.link`、`vine.portal` 且同时
@@ -92,6 +93,8 @@ Redis 还要求 ACL 用户名与 client 证书身份一致。外部 PostgreSQL �
 - [ ] 优先将每个应用与其 Link sidecar 部署在同一主机和部署信任边界内。特殊拓扑
   使用非 loopback Link API 时，必须明确保护并限制这条未认证 h2c 路径。
 - [ ] 将 Hub Redis 访问权视为应用配置和 TLS 私钥材料的访问权。
+- [ ] 由 standalone 进程提供 Admin API 时，把 `--hub-admin-listen` 绑定到 loopback 或
+  加以保护，因为该 listener 不携带任何认证。
 - [ ] 确认外部流量通过 Portal 进入，而不是绕过网关路由和准入。
 
 ## 配置 Hub 持久化、消息系统与锁
@@ -113,7 +116,7 @@ Redis 启动 Hub：
 vine hub serve \
   --control-listen 10.0.1.10:7071 \
   --watch-listen 10.0.1.10:7072 \
-  --admin-listen 10.0.1.10:7075 \
+  --admin-listen 127.0.0.1:7099 \
   --mtls-ca-file /run/vine/ca.pem \
   --mtls-cert-file /run/vine/hub.pem \
   --mtls-key-file /run/vine/hub-key.pem \
@@ -125,8 +128,7 @@ vine hub serve \
 ```
 
 Hub 数据库是导入配置、Portal rule 和证书的事实来源。不指定数据库参数会进入只读的
-`--no-db` 模式，不适合生产环境。Hub 通过 Redis 分发层发布 runtime 快照和变更；
-Redis 不能替代数据库。
+`--no-db` 模式，不适合生产环境。Redis 不能替代数据库。
 
 :::warning Event 与 Task 的持久性
 
@@ -167,16 +169,15 @@ nats --server "$VINE_MQ_NATS_ENDPOINT" stream add VINE_TASKS \
 
 ## 验证注册与故障语义
 
-| 模式 | TTL 与 registry sweeper | Link 心跳 | Portal 注册 | 本地应用健康检查 |
+| 模式 | 租约过期 | Link 心跳 | Portal 注册 | 本地应用健康检查 |
 | --- | --- | --- | --- | --- |
 | 应用与 Link 分开运行 | 启用 | 启用 | 启用 | 启用 |
 | 应用与 Link 同进程、Hub 走网络的 linked | 启用 | 启用 | 启用 | 禁用；应用与 Link 共享一个进程 |
 | 使用 inproc Hub 的 standalone | 禁用 | 禁用 | 注册一次，不发送心跳 | 禁用 |
 
-使用普通网络 Hub 时，注册信息带有租约。Link 通过心跳续期，Hub 的
-registry sweeper 会注销过期的应用实例并发布删除事件。独立运行的 Link
-还会检查它管理的应用。Linked 模式保留网络租约和心跳，但由于 Link
-和应用共享一个进程，不需要单独执行本地应用健康检查。
+使用普通网络 Hub 时，注册信息带有租约。Link 通过心跳续期；租约过期的实例会被移除并
+发布删除事件。独立运行的 Link 还会检查它管理的应用。Linked 模式保留网络租约和心跳，
+但由于 Link 和应用共享一个进程，不需要单独执行本地应用健康检查。
 
 standalone/inproc 模式下，注册信息会保留到显式 unregister。此时没有
 心跳、租约过期扫描或本地应用健康检查，因此 standalone 测试通过并

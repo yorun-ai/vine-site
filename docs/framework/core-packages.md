@@ -104,6 +104,7 @@ The `util/*` packages are public, framework-independent helpers:
 
 | Package | Purpose |
 | --- | --- |
+| [`util/vbean`](https://pkg.go.dev/go.yorun.ai/vine/util/vbean) | Deep-clone a generated data bean so its reference fields are isolated from the source |
 | [`util/vcode`](https://pkg.go.dev/go.yorun.ai/vine/util/vcode) | JSON, CBOR, YAML, compression, and Base58 helpers |
 | [`util/vfile`](https://pkg.go.dev/go.yorun.ai/vine/util/vfile) | File path, read, and write helpers |
 | [`util/vmap`](https://pkg.go.dev/go.yorun.ai/vine/util/vmap) | Map collection, search, stream, and concurrent-map helpers |

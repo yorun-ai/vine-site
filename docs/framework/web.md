@@ -69,6 +69,44 @@ flowchart LR
   Client["Client"] --> Portal["Portal site and access control"] --> Link["Link Web proxy"] --> Handler["Application Web handler"]
 ```
 
-Standalone mode uses the same matching and forwarding behavior, but its endpoint is an in-process connection. Use `web.NewAssetsServer` to serve static assets, or `web.NewReverseProxy` to forward to an existing backend.
+A handler reads the path from its own mount onward, so a request for
+`/console/orders` reaches a Web that declares `mount /console` as
+`/console/orders`, and the routes you register resolve against that same path.
+
+Standalone mode uses the same matching and forwarding behavior, but its endpoint is an in-process connection.
+
+### Static assets
+
+Embed `web.AssetsServer` by value in the Web handler, set its accessor in
+`DIInit`, and delegate `Routes` to `AssetsServer.Routes`:
+
+```go title="assets.go"
+//go:embed dist
+var assetsFS embed.FS
+
+type UserPortal struct {
+    skeled.DefaultUserPortalWebServer
+    web.AssetsServer
+}
+
+func (h *UserPortal) DIInit() {
+    h.AssetsServer.SetAccessor(web.NewEmbedAssetsAccessor(assetsFS, "dist"))
+}
+
+func (h *UserPortal) Routes(router *web.Router) {
+    h.AssetsServer.Routes(router)
+}
+```
+
+Embed the server anonymously and by value: `Serve` must belong to the registered
+handler type, and a named field or a pointer embedding panics when the handler is
+registered. The accessor arrives through `DIInit`.
+
+`AssetsServer.Routes` answers the mount root as well as every path below it, so a
+request for the mount itself serves the index rather than redirecting to the path
+the application keeps inside. The `*path` parameter holds the part below the mount,
+and a Web without a mount path serves from the root.
+
+Use `web.NewReverseProxy` to forward to an existing backend instead.
 
 See [Portal](../runtime/portal.md) for Portal configuration and [Skel Syntax](https://skel.yorun.ai/docs/syntax) for Actor and Web syntax.

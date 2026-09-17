@@ -32,8 +32,8 @@ flowchart LR
   to.
 - **Component control API**: provides discovery and registration services used
   by Link and Portal.
-- **Admin entry point**: provides Dashboard Rpc and Web handlers on a separate
-  listener. External Dashboard access is controlled by Portal configuration.
+- **Admin entry point**: serves the Dashboard and the Admin API on its own
+  listener, which the operator reaches directly rather than through Portal.
 
 Hub is not on the business request path. Portal handles external requests, while
 Link discovers and forwards calls between applications.
@@ -53,17 +53,14 @@ The default listen addresses are:
 | --- | --- | --- |
 | Hub Control API | `127.0.0.1:7071` | Allows Link and Portal to discover Hub infrastructure and maintain registrations. |
 | Hub Redis | `127.0.0.1:7072` | Provides runtime snapshot reads and subscriptions. |
-| Hub Admin API and Web | `127.0.0.1:7075` | Serves Dashboard management Rpc and the embedded Dashboard Web application. |
+| Hub Admin API and Dashboard | `127.0.0.1:7099` | Serves Dashboard management Rpc and the embedded Dashboard application. |
 
 Use `--control-listen`, `--watch-listen`, and `--admin-listen` to override these
 listeners. The watch listener carries the Redis-compatible traffic that Link and
 Portal read and subscribe to.
 
-The listener boundary is also expressed in Hub's Skel contracts. Link and
-Portal use the `vine.hub.control` domain, which contains `InfoService`,
-`RegistryService`, `LockService`, and `PortalRegistryService`. Dashboard clients
-use the separate `vine.hub.admin` domain for management Rpc services and
-`DashboardWeb`.
+The admin domain declares no actor and no Web, because the admin listener
+resolves no actor, and a Portal site that names one is refused.
 
 ## Backend mTLS
 
@@ -85,15 +82,11 @@ and client authentication. Link and Portal use `/vine/daemon/vine.link` and
 `/vine/daemon/vine.portal` in the same
 trust domain. Vine verifies the complete X.509-SVID and compares the URI
 exactly; DNS SANs do not grant a component role. When configured, Hub requires
-mTLS on its Control and Admin APIs, embedded Redis, and embedded NATS. Redis
+mTLS on its Control API, embedded Redis, and embedded NATS. Redis
 also binds the authenticated SPIFFE identity to the matching Redis ACL user.
-Embedded NATS accepts Hub's internal Scheduler and Admin Debug publishers as
-`spiffe://<trust-domain>/vine/daemon/vine.hub`, and Link clients as
-`spiffe://<trust-domain>/vine/daemon/vine.link`; Portal is not allowed to connect.
-
-When `--dashboard-url` is omitted, enabling backend mTLS also changes the
-Dashboard Portal entry default to `https://:7099/`. Customized Dashboard access
-is preserved.
+Embedded NATS accepts the Hub and Link identities and rejects Portal.
+The Admin API serves cleartext HTTP on its own listener, because the Dashboard it
+carries is reached from an operator's browser, which holds no mesh certificate.
 
 The equivalent environment variables are `VINE_MTLS_CA_FILE`,
 `VINE_MTLS_CERT_FILE`, and `VINE_MTLS_KEY_FILE`.
@@ -134,13 +127,14 @@ Provide at most one of `--db-sqlite-file` and `--db-postgres-url`. When neither
 database option is set, Hub defaults to `--no-db`: it loads the seed source into memory
 and configuration stays read-only.
 
-Use `--seed-hub-data-file ./seed.yaml` to import initial configuration, Portal sites,
-rules, and certificates at startup. With a database, the database remains the
+Use `--seed-data-file ./seed.yaml` to import initial configuration, Portal entries,
+sites, rules, and certificates at startup. With a database, the database remains the
 source of truth after the import.
 
 `appConfigs[].value` accepts a YAML mapping, including nested maps and lists.
 Use the same field names as JSON, and write enum keys and values as their enum
-names. This format works for both startup seeding and Dashboard imports.
+names. This format applies to startup seeding; later edits happen on the entity
+pages, which write one value at a time.
 
 ```yaml
 appConfigs:
@@ -158,14 +152,14 @@ itself a JSON string. Date and timestamp text is preserved verbatim, including
 its UTC offset and fractional seconds, and quoted strings and mapping keys keep
 their original spelling.
 
-Seed files and Dashboard YAML input reject YAML anchors (`&`), aliases (`*`),
+Seed files reject YAML anchors (`&`), aliases (`*`),
 merge keys (`<<`), complex or null mapping keys, non-finite numbers, and custom
 YAML tags; expand these values explicitly instead. Numbers must use ordinary
 decimal notation: leading zeros such as `012`, digit separators, non-decimal
 bases, and scientific notation are rejected.
 
-All items in an import file must meet the configuration requirements, including
-items not selected in the Dashboard. A database error during import may leave
+Every item in a seed file must meet the configuration requirements, including
+items the Dashboard does not show. A database error during seeding may leave
 some items saved; check the current configuration before retrying. See
 [Portal](./portal.md#rule-validation) for rule requirements.
 
@@ -231,10 +225,8 @@ Redis component and manages that endpoint itself.
 
 ## Registration and Leases
 
-In normal process mode, Link writes application and Rpc service registrations
-with a TTL and renews their leases through heartbeats. When Hub's registry
-sweeper finds an expired lease, it actively unregisters the instance and
-publishes a deletion event.
+A registration expires when its instance stops heartbeating, and Hub then
+removes it.
 
 If Link or a business application exits unexpectedly, Portal and other Link
 instances remove the corresponding endpoint after its registration expires
@@ -242,20 +234,9 @@ instead of continuing to forward requests to a dead instance.
 
 ## Hub Restart and Endpoint Changes
 
-Hub keeps registrations, watches, and Portal instance records in memory, so a
-restarted Hub starts from an empty view of the cluster. Link and Portal recover
-on their own instead of requiring a restart:
-
-- Link re-reads Hub information when an instance heartbeat reports that Hub no
-  longer knows the instance, and registers the local application instances again.
-- Portal re-reads Hub information on a timer, so a restarted Hub that advertises
-  different endpoints is followed without operator action.
-- A changed watch, MQ, or lock endpoint replaces only the affected connection. An
-  unchanged endpoint keeps the existing connection, so a restart that keeps the
-  same addresses does not interrupt active subscriptions.
-- Watchers re-subscribe on the new watch endpoint and reconcile their snapshot,
-  so keys that changed while the endpoint was stale are reported like any other
-  change.
+Hub keeps registration and watch state in memory, so a restarted Hub starts
+empty. Link and Portal reconnect, re-register, and re-subscribe on their own, and
+a restart that keeps the same addresses does not interrupt active subscriptions.
 
 Hub's control API endpoint stays configuration: Link and Portal connect to the
 `--hub-endpoint` they were started with, and changing the Hub API address
@@ -267,16 +248,16 @@ Hub can run as an internal component of a single-process runtime. In this mode,
 the Hub API uses the `inproc` transport, Redis only provides in-process
 connections, and no external listen ports are opened.
 
-Inproc mode does not use TTLs, heartbeats, or the registry sweeper. A
-registration remains until the application explicitly unregisters it. This mode
+Inproc mode has no lease expiry, so a registration remains until the
+application unregisters it. This mode
 fits local debugging, integration tests, and standalone applications, but doesn't
 test distributed failure behavior such as network partitions or lease
 expiration.
 
 ## Seed variables and field sources
 
-Vine v0.17.0 adds `--seed-hub-vars-file` and `--seed-hub-source-file` to Hub and
-`vine dev`. Supply a YAML variable dictionary alongside the seed template:
+Hub resolves the seed template against a variables file, with an optional field
+source map. Supply a YAML variable dictionary alongside the seed template:
 
 ```yaml
 # seed.yaml
@@ -326,16 +307,14 @@ and pass `Option.SeedHubData` and `Option.SeedHubSource`, plus
 file inputs cannot be mixed: an embedded template requires an embedded source
 map, and a file template requires a file source map. Variables are always
 supplied through a file. For file inputs the environment variables are
-`VINE_SEED_HUB_DATA_FILE`, `VINE_SEED_HUB_SOURCE_FILE`, and
-`VINE_SEED_HUB_VARS_FILE`.
+`VINE_SEED_DATA_FILE`, `VINE_SEED_SOURCE_FILE`, and `VINE_SEED_VARS_FILE` when
+Hub runs as its own service, and `VINE_HUB_SEED_DATA_FILE`,
+`VINE_HUB_SEED_SOURCE_FILE`, and `VINE_HUB_SEED_VARS_FILE` when a standalone
+application hosts the Hub.
 
-Hub stores sources with each configuration object, independently of template
-array ordering. The Dashboard's **Field sources** action shows definitions, last
-overrides, original templates, resolved variable values, and default usage.
-Explicit edits mark affected sources as `hub` and remove their old variable
-dependencies. Whole-object imports without sources clear the old source map.
-Source metadata stays in Hub and is not sent to Link or Portal. No-db mode keeps
-the same metadata in memory.
+The Dashboard's **Field sources** action shows definitions, last overrides,
+original templates, resolved variable values, and default usage. Editing a field
+removes the variable dependencies of that field.
 
 ## Related Documentation
 

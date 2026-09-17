@@ -100,8 +100,7 @@ skelc gen go \
 ```
 
 生成目录包含数据模型、schema 和 service 代码。如果服务实现位于生成 package
-之外，必须嵌入 `DefaultGreetingServiceServer`：生成接口带有 package-private
-seal method，其他 package 无法从零实现。调用方使用生成的 client。再次生成会
+之外，必须嵌入 `DefaultGreetingServiceServer`：其他 package 无法从零实现该生成接口。调用方使用生成的 client。再次生成会
 覆盖这些文件，因此契约变更应写进 `.skel`，不要直接改生成的 Go 代码。
 
 ```mermaid

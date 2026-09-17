@@ -27,7 +27,6 @@ flowchart LR
 - **异步消息派发**：消费 NATS 消息，投递给本地声明的 Event Listener 和 Task Runner。
 - **租约锁**：将应用的锁操作转发到 Hub 通告的锁后端。
 
-Link 是本地应用能力的唯一 owner。RPC、Web、Event、Task 与配置 Module 只从它派生各自的运行时索引，不直接维护另一份应用实例状态。
 
 Hub 重启不需要重启 Link。当 Hub 通告的 watch、MQ、lock 端点变化时，Link 重建这些连接并重新订阅 watcher；心跳发现 Hub 已忘记某个实例时，会重新注册本地应用实例。详见 [Hub 重启与端点变化](./hub.md#hub-重启与端点变化)。
 
@@ -74,14 +73,14 @@ server 身份。它的精确 X.509-SVID 是
 
 ### RPC
 
-应用发起 RPC 调用时，请求先进入 Link 的 `rpcproxy`。proxy 对当前 service
-registration 执行轮询（round-robin），选择下一条注册。注册属于本地应用时，Link 直接调用其
-应用 endpoint；否则经目标 Link 转发。本地性只改变转发路径，不构成选择优先级。完成
+应用发起 RPC 调用时，Link 的 RPC proxy 对当前 service registration 执行轮询
+（round-robin），选择下一条注册。注册属于本地应用时，Link 直接调用其应用 endpoint；否则经
+目标 Link 转发。本地性只改变转发路径，不构成选择优先级。完成
 选择后发生的失败，也不会让该次调用自动改试另一条注册。
 
 ### Web
 
-`webproxy` 只索引当前 Link 所拥有应用的 Web Handler。分布式 Web endpoint
+Link 只索引自己所拥有应用的 Web Handler。分布式 Web endpoint
 快照和轮询选择由 Portal 负责；Portal 把请求发送给选中实例所属的
 Link，目标 Link 再校验本地实例与 Handler，并调用应用 endpoint。Link 不会从
 自己的 discovery index 中选择远端 Web 目标。Portal 选择、发现新鲜度与失败
@@ -89,7 +88,7 @@ Link，目标 Link 再校验本地实例与 Handler，并调用应用 endpoint�
 
 ### Event 与 Task
 
-`event` 和 `task` 根据本地实例声明建立 NATS 消费；应用能力变更时，Link 自动更新相应消费与派发状态。
+Link 根据已注册的 Listener 与 Runner 创建并更新 Event、Task 消费，应用代码无需自行创建。
 
 ## Inproc 模式
 

@@ -5,10 +5,9 @@ sidebar_label: Vine CLI
 
 # Vine CLI
 
-The `vine` command starts a local development runtime or individual Hub, Link,
-and Portal services, and shows the build version.
+The `vine` command starts the individual Hub, Link, and Portal services and
+shows the build version.
 
-- `dev`: Start a local runtime for business applications running in separate processes.
 - `hub` / `link` / `portal`: Start the Vine runtime infrastructure services.
 - `version`: Print the CLI version.
 
@@ -43,63 +42,6 @@ vine version
 For a released application, replace `main` with the same reviewed commit or tag
 used by the application module. See [Version Compatibility](./compatibility.md)
 before upgrading.
-
-## dev
-
-`dev` starts Hub, Portal, and Link in one CLI process for local application
-development:
-
-```bash
-vine dev --seed-hub-data-file ./seed.yaml
-```
-
-Hub RPC, Redis, NATS, Portal-to-Hub, Link-to-Hub, and Portal-to-Link traffic use
-in-process transports. Link still listens on `127.0.0.1:7079`, so a business
-application in another process can use the normal network boundary:
-
-```go title="main.go"
-app.New[*HelloApp]().StartAndWait()
-```
-
-The default Link endpoint used by `app.New` is already
-`http://127.0.0.1:7079`. Use `--link-api-listen` together with
-`VINE_LINK_ENDPOINT` or `app.Option.LinkEndpoint` when another address is
-required.
-
-Without a database option, `dev` uses the default `--no-db` mode: it loads the
-seed file into memory and configuration stays read-only. Supply a database file
-to keep Hub state between runs and keep it writable, and a seed file to
-initialize application configuration or Portal routes:
-
-```bash
-vine dev \
-  --db-sqlite-file ./hub-dev.sqlite \
-  --seed-hub-data-file ./seed.yaml \
-  --dashboard-url http://:7099/
-```
-
-Available options:
-
-- `--link-api-listen`: Link API address for external applications; defaults to
-  `127.0.0.1:7079`.
-- `--no-db`: use no persistent database, which is the default when neither
-  database option is set; it requires `--seed-hub-data-file` and keeps
-  configuration read-only.
-- `--db-sqlite-file` / `--db-postgres-url`: optional persistent Hub storage.
-- `--seed-hub-data-file`: Hub seed data; required in the default `--no-db` mode.
-- `--seed-hub-source-file`: optional seed field source map.
-- `--seed-hub-vars-file`: deployment variable YAML dictionary.
-- `--dashboard-url`: Hub Dashboard Portal entry; defaults to `http://:7099/`, or
-  `https://:7099/` when backend mTLS is enabled.
-
-The corresponding environment variables are `VINE_API_LISTEN`, `VINE_NO_DB`,
-`VINE_DB_SQLITE_FILE`, `VINE_DB_POSTGRES_URL`, `VINE_SEED_HUB_DATA_FILE`,
-`VINE_SEED_HUB_SOURCE_FILE`, `VINE_SEED_HUB_VARS_FILE`, and
-`VINE_DASHBOARD_URL`. Press `Ctrl+C` to stop Link, Portal, and Hub gracefully.
-
-`dev` preserves the App-to-Link and Link-to-App network boundary but does not
-simulate network failures, leases, or TTL expiry inside the local Vine runtime.
-Use the individual service commands for deployment and infrastructure testing.
 
 ## hub
 
@@ -160,40 +102,32 @@ Specify listen addresses:
 vine hub serve \
   --control-listen 127.0.0.1:7071 \
   --watch-listen 127.0.0.1:7072 \
-  --admin-listen 127.0.0.1:7075 \
+  --admin-listen 127.0.0.1:7099 \
   --db-sqlite-file ./hub.sqlite
 ```
 
 The Hub Control API defaults to `127.0.0.1:7071`, the watch listener to
-`127.0.0.1:7072`, and the Admin API and Web listener to `127.0.0.1:7075`.
+`127.0.0.1:7072`, and the Admin API and Dashboard listener to `127.0.0.1:7099`.
 
 Initialize data from a seed YAML file:
 
 ```bash
 vine hub serve \
   --db-sqlite-file ./hub.sqlite \
-  --seed-hub-data-file ./seed.yaml
+  --seed-data-file ./seed.yaml
 ```
 
-Use `--seed-hub-source-file` for field origins and `--seed-hub-vars-file`
-for a deployment variable dictionary. SQLite and PostgreSQL read these files only
+Use `--seed-source-file` for field origins and `--seed-vars-file` for a
+deployment variable dictionary. SQLite and PostgreSQL read these files only
 during initial seeding; no-db mode reads them on every start. See
 [deployment variables](../framework/configuration.md#deployment-variables).
 
-Specify the Hub Dashboard URL:
-
-```bash
-vine hub serve \
-  --dashboard-url http://:7099/ \
-  --db-sqlite-file ./hub.sqlite
-```
-
-`--dashboard-url` defaults to `http://:7099/`, or `https://:7099/` when backend
-mTLS is enabled. It configures the Portal entry rule for the Hub Dashboard. You
-can supply a host, port, and path, such as
-`https://hub.example.com:8443/admin`. The mTLS HTTPS default uses Portal's
-temporary self-signed Web certificate until a matching public certificate is
-configured, so browsers will report it as untrusted during bootstrap.
+The admin listener serves the Dashboard and answers the Admin API on
+`/api/invoke`, so a browser reaches both on one origin. The Dashboard belongs to
+this listener alone: Hub publishes no Portal entry, site, or rule for it, and it
+needs no URL of its own. The listener stays cleartext HTTP even when backend mTLS
+is configured, because an operator's browser holds no mesh certificate; keep it
+on loopback or on a trusted network.
 
 Configure the lock backend:
 
@@ -219,10 +153,9 @@ These settings are also available as environment variables:
 - `VINE_LOCK_REDIS_ENDPOINT`
 - `VINE_MQ_NATS_ENDPOINT`
 - `VINE_MQ_MODE`
-- `VINE_SEED_HUB_DATA_FILE`
-- `VINE_SEED_HUB_SOURCE_FILE`
-- `VINE_SEED_HUB_VARS_FILE`
-- `VINE_DASHBOARD_URL`
+- `VINE_SEED_DATA_FILE`
+- `VINE_SEED_SOURCE_FILE`
+- `VINE_SEED_VARS_FILE`
 - `VINE_DB_SQLITE_FILE`
 - `VINE_DB_POSTGRES_URL`
 
@@ -252,9 +185,11 @@ authentication. DNS SANs are not used for component authorization. The
 corresponding environment variables are `VINE_MTLS_CA_FILE`,
 `VINE_MTLS_CERT_FILE`, and `VINE_MTLS_KEY_FILE`.
 
-Programs using `app/linked` accept the same flags and environment variables.
-They can also configure the embedded Link directly through
-`linked.Option.MTLSCAFile`, `MTLSCertFile`, and `MTLSKeyFile`.
+Programs using `app/linked` configure the embedded Link through flags that name
+it: `--link-mtls-ca-file`, `--link-mtls-cert-file`, and `--link-mtls-key-file`,
+or `VINE_LINK_MTLS_CA_FILE`, `VINE_LINK_MTLS_CERT_FILE`, and
+`VINE_LINK_MTLS_KEY_FILE`. They can also set `linked.Option.MTLSCAFile`,
+`MTLSCertFile`, and `MTLSKeyFile` directly.
 
 When Link or Portal enables mTLS, `--hub-endpoint` must use `https://`. Backend
 service registrations are also required to use HTTPS, preventing a component
@@ -312,12 +247,17 @@ Environment variables:
 
 ## Common workflow
 
-### Debug an external application locally
+### Run an external application against local runtime services
 
 ```bash
-vine dev --seed-hub-data-file ./seed.yaml
+vine hub serve --seed-data-file ./seed.yaml
+vine link serve --hub-endpoint http://127.0.0.1:7071
 go -C ./src/server run ./cmd/myapp
 ```
+
+An application created with `app.New` reaches the default Link API at
+`http://127.0.0.1:7079`; use `VINE_LINK_ENDPOINT` or
+`app.Option.LinkEndpoint` when Link listens elsewhere.
 
 ### Start runtime services separately
 

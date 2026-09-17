@@ -102,7 +102,7 @@ result, err := client.InvokeAs[string](methodInfo, arguments, options...)
 - `WithContext(...)` 与 `WithTimeout(...)` 不可同时使用
 - 不传 `WithContext(...)` 时，默认请求超时是 `30s`
 
-`WithDestination(appName)` 只在指定应用的实例中选择服务提供者，名称必须非空；不传该选项时保持原有路由。目标应用不提供该服务时返回 `ServiceUnavailable`，不会回退到其他应用。使用前需先升级 Link；旧版 Link 不支持该选项。
+`WithDestination(appName)` 只在指定应用的实例中选择服务提供者，名称必须非空；不传该选项时保持原有路由。目标应用不提供该服务时返回 `ServiceUnavailable`，不会回退到其他应用。
 
 `WithDestination` 只作用于 App 到 Link 的调用。Portal 会丢弃 `vrpc-options` 中的 `destination` 字段，因此该选项对经 Portal 路由的请求无效。
 
@@ -141,30 +141,18 @@ server := rpc.NewServer(rpc.ServerOption{
 
 ### 暴露能力
 
-`Server` 提供：
-
-- `GetServiceInfos()`
-- `RpcHandler()`
-- `HTTPHandler()`
-
-`HTTPHandler()` 返回标准 `http.Handler`。
+`Server` 提供 `HTTPHandler()`，它返回标准 `http.Handler`，可用于把 Rpc endpoint 挂载到你自己
+的 server 上。
 
 ## Executor
 
-```go
-type Executor interface {
-    Init(infoDict spec.ImplDict)
-    Execute(rpcContext rpc.Context, methodImpl spec.MethodImpl, arguments []any) (any, ex.Error)
-}
-```
-
-框架内置两种实现。
+server 通过 executor 执行方法，框架内置两种实现。
 
 ### `NewDefaultExecutor()`
 
-直接反射创建实现对象并调用方法。
+默认 executor 直接调用 handler 方法。
 
-如果 handler struct 中有且只有一个 `spec.Context` 类型字段，默认 executor 会自动把当前 Rpc 上下文注入进去。
+如果 handler struct 中有且只有一个 `rpc.Context` 类型字段，当前 Rpc 上下文会注入其中。
 
 ### `NewContainerExecutor(...)`
 
@@ -172,12 +160,8 @@ type Executor interface {
 rpc.NewContainerExecutor(filterTypes, bindAppliers)
 ```
 
-它会接入 `core/ctr` 与 `core/di`，并额外把这些依赖以 `ExecutionScope` 注入：
-
-- `spec.Context`
-- `spec.MethodInfo`
-
-适合需要 filter、DI、上下文扩展的服务端执行链。
+该 executor 接入 DI 容器与 filter 链。需要 filter、DI 或上下文扩展的执行链使用它；它让当前
+`rpc.Context` 与 `rpc.MethodInfo` 可在执行期间注入。
 
 ## `rpc.Context`
 
@@ -203,119 +187,10 @@ rpcCtx := rpc.NewContext(ctx, trace, clientApp, initiator, actor)
 - 当前 actor
 - 本次 Rpc 调用的 client app
 
-## 服务元信息
-
-### `ServiceSpec`
-
-`ServiceSpec` 是注册输入结构，常由生成代码提供：
-
-```go
-type ServiceSpec struct {
-    Type     ServiceSpecType
-    Name     string
-    SkelName string
-    Hash     string
-
-    ServerType        reflect.Type
-    DefaultServerType reflect.Type
-    ClientType        reflect.Type
-    ClientCtor        any
-
-    ERServerType        reflect.Type
-    WrapperERServerCtor any
-    DefaultERServerType reflect.Type
-    ERClientType        reflect.Type
-    ERClientCtor        any
-
-    Methods []*MethodSpec
-}
-```
-
-`Type` 决定注册服务端、客户端还是两者，取值必须是 `client`、`server` 或 `both`。
-
-### `MethodSpec`
-
-```go
-type MethodSpec struct {
-    Name     string
-    SkelName string
-
-    ArgumentsType               reflect.Type
-    CloneArguments              func(any) any
-    ResultType                  reflect.Type
-    CloneResult                 func(any) any
-    ArgumentsSensitive          bool
-    ResultSensitive             bool
-    ArgumentsContainsBinaryType bool
-    ResultContainsBinaryType    bool
-    MethodFuncs                 []any
-}
-```
-
-`CloneArguments` 和 `CloneResult` 返回用于 in-process Rpc 的值隔离副本；设置了对应的
-类型时，二者均为必需。`MethodFuncs` 列出绑定到该 spec 的实现方法。
-
-### `ServiceInfo`
-
-注册完成后，对外暴露的是 `ServiceInfo`：
-
-```go
-type ServiceInfo interface {
-    Name() string
-    SkelName() string
-    Hash() string
-    ServerType() reflect.Type
-    DefaultServerType() reflect.Type
-    ClientType() reflect.Type
-    ClientCtor() any
-    ERServerType() reflect.Type
-    WrapperERServerCtor() any
-    DefaultERServerType() reflect.Type
-    ERClientType() reflect.Type
-    ERClientCtor() any
-    Methods() []MethodInfo
-}
-```
-
-### `MethodInfo`
-
-```go
-type MethodInfo interface {
-    Name() string
-    SkelName() string
-
-    Service() ServiceInfo
-    FullURLPath() string
-
-    HasArguments() bool
-    NewArguments() any
-    ArgumentsType() reflect.Type
-    ArgumentsSensitive() bool
-    ArgumentsContainsBinaryType() bool
-    PositionArguments(arguments any) []any
-    CloneArguments(arguments any) any
-
-    HasResult() bool
-    NewResult() any
-    ResultType() reflect.Type
-    ResultSensitive() bool
-    ResultContainsBinaryType() bool
-    CloneResult(result any) any
-}
-```
-
-关键字段：
-
-- `FullURLPath()` 格式是 `/{serviceSkelName}/{methodSkelName}`
-- `PositionArguments(...)` 把 arguments struct 展成位置参数
-
 ## 服务注册
 
-注册入口：
-
-```go
-rpc.Register(serviceSpec)
-```
+生成代码在 package 被导入时构建服务注册，并自动调用 `rpc.Register`。服务在 `.skel` 中
+声明；其参数与结果的敏感性和二进制处理都跟随字段声明，无需手写任何注册内容。
 
 ## 普通接口与 ER 接口
 
@@ -341,7 +216,6 @@ type UserServiceServerER interface {
 
 - 普通 server 的业务错误通常通过 panic / recover 链路处理
 - ER server 的最后一个返回值固定是 `ex.Error`
-- 普通 server 可以通过 `WrapperERServerCtor` 包成 ER server
 
 ## 使用底层 API 时
 
