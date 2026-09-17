@@ -17,7 +17,7 @@ Component 和 Module 的作用是把应用拆成可以独立初始化、注入�
 | Module | 组织领域服务、后台工作和生命周期资源 | `InitModules`、`app.BaseModule` |
 | Config | 获取 eternal 或 instant 类型配置 | [应用配置](./configuration.md) |
 | RPC | 提供和调用类型安全服务 | [使用 RPC](./rpc-guide.md) |
-| Web | 注册 HTTP route、静态资源和反向代理 | [Web](./web.md) |
+| Web | 注册 HTTP route、静态资源和开发服务器代理 | [Web](./web.md) |
 | Event | 发布事实并异步通知多个消费者 | [Event 与 Task](./event-task.md) |
 | Task | 触发指定工作或按 Cron 调度 | [Event 与 Task](./event-task.md) |
 | RDB | 连接 PostgreSQL / SQLite 并注入 DAO | [关系型数据库](./rdb-guide.md) |

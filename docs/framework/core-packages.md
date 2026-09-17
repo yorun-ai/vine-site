@@ -51,7 +51,7 @@ lower-level servers or transports in `main`.
 | --- | --- | --- |
 | Configuration | [`core/conf`](https://pkg.go.dev/go.yorun.ai/vine/core/conf) | Generated config types injected into modules or executions |
 | Rpc | [`core/rpc`](https://pkg.go.dev/go.yorun.ai/vine/core/rpc) | Generated service clients and server implementations |
-| Web | [`core/web`](https://pkg.go.dev/go.yorun.ai/vine/core/web) | Generated Web handler, router, assets server, or reverse proxy |
+| Web | [`core/web`](https://pkg.go.dev/go.yorun.ai/vine/core/web) | Generated Web handler, router, assets server, or development-server proxy |
 | Event | [`core/event`](https://pkg.go.dev/go.yorun.ai/vine/core/event) | Generated emitter and listener |
 | Task | [`core/task`](https://pkg.go.dev/go.yorun.ai/vine/core/task) | Generated launcher and runner |
 | Skel runtime types | [`core/skel`](https://pkg.go.dev/go.yorun.ai/vine/core/skel) | Generated scalar/schema helpers and `MinSkelcVersion()` |

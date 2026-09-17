@@ -5,7 +5,7 @@ sidebar_label: Web Apps
 
 # Web Apps
 
-The Web capability registers HTTP routes, static assets, or reverse-proxy endpoints for an application. `.skel` declares the Web name and Actors allowed to access it, while Go handlers define the actual routes.
+The Web capability registers HTTP routes, static assets, or a development-server proxy for an application. `.skel` declares the Web name and Actors allowed to access it, while Go handlers define the actual routes.
 
 ## Declare an entry point
 
@@ -107,6 +107,38 @@ request for the mount itself serves the index rather than redirecting to the pat
 the application keeps inside. The `*path` parameter holds the part below the mount,
 and a Web without a mount path serves from the root.
 
-Use `web.NewReverseProxy` to forward to an existing backend instead.
+### Development server
+
+A development build can serve the Web from the frontend's own development server
+instead of embedded assets. Embed `web.DevProxyServer` by value in the handler,
+point it at the state file the development server writes, and delegate `Routes`:
+
+```go title="dev.go"
+type UserPortal struct {
+    skeled.DefaultUserPortalWebServer
+    web.DevProxyServer
+}
+
+func (h *UserPortal) DIInit() {
+    h.DevProxyServer.SetStateFile("./dev-server.json")
+}
+
+func (h *UserPortal) Routes(router *web.Router) {
+    h.DevProxyServer.Routes(router)
+}
+```
+
+The state file carries the `host` and `port` the development server listens on,
+as JSON; an empty host means the machine the application runs on. The path is your
+choice, and the process that starts the frontend must write the same file. The
+file is re-read at most once a second, so a frontend that restarts on another port
+is followed without restarting the application. A state file that cannot be read
+keeps the development server already followed, and a request the development
+server does not answer is reported as `502`, because the Web has no content of its
+own to serve. The path the Web received reaches the development server with the
+escaping the client sent.
+
+For a backend that is not a development server, register a route that forwards the
+request itself.
 
 See [Portal](../runtime/portal.md) for Portal configuration and [Skel Syntax](https://skel.yorun.ai/docs/syntax) for Actor and Web syntax.
