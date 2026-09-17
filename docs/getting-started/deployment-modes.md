@@ -125,8 +125,8 @@ schema declarations, substitution syntax, and defaults.
   [first application tutorial](./tutorial-first-app.md).
 - `standalone.Option` configures SQLite/PostgreSQL or no-db mode, an inline or
   file seed source, and the in-process Hub's Admin API and Dashboard address.
-- Hub and Link skip heartbeat, TTL lease renewal, and the registry sweeper.
-  Registrations are removed explicitly when the application stops.
+- Hub and Link neither renew nor expire registrations. A registration is removed
+  explicitly when the application stops.
 - Hub and Link do not expose separate management ports, apart from the Hub Admin
   API and Dashboard listener `--hub-admin-listen` / `Option.AdminListen` opens.
   Portal can still listen on business HTTP/HTTPS ports according to its entry

@@ -38,17 +38,8 @@ type Option struct {
 
 ### `DatabaseSpec`
 
-The database component interface is:
-
-```go
-type DatabaseSpec interface {
-    InitOption(option *Option)
-    InitDao(add TypeAdder)
-}
-```
-
-A business component receives the default implementation of this contract by
-embedding `rdb.Database`.
+A business component embeds `rdb.Database` and overrides `InitOption` and
+`InitDao` as needed.
 
 ### `Database`
 
@@ -81,11 +72,6 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 }
 ```
 
-## Initialization Flow
-
-At startup Vine calls `InitOption(...)` and `InitDao(...)` on your component,
-opens or reuses the connection, and makes the declared DAOs injectable.
-
 ## Connection Behavior
 
 ### Connection String Parsing
@@ -105,30 +91,13 @@ The underlying rules:
 
 ### Connection-Pool Defaults
 
-Connection-pool settings include:
-
-- `SetMaxOpenConns(...)`
-- `SetMaxIdleConns(...)`
-- `SetConnMaxIdleTime(...)`
-- `SetConnMaxLifetime(...)`
-
-The default policy:
-
-- `MaxOpenConn` defaults to `10`.
-- `MaxIdleConns` is approximately `30%` of the maximum.
-- The maximum idle time is `1h`.
-- The maximum total connection lifetime is `8h`.
-
-## DI Semantics
-
-The database component is a singleton, and each DAO is created with the request
-context and the structured logger attached, so both follow database operations.
+`MaxOpenConn` defaults to `10`; set it on `Option` to change the pool size.
 
 ## Lifecycle
 
-The database connection is opened or reused when the component starts. Its shared
-reference for the `ConnURL` is released after the application stops. Vine closes
-the underlying connection pool only after its last user has stopped.
+The connection opens or is reused when the component starts and closes after the
+application stops. A connection shared through one `ConnURL` stays open until the
+last component using it has stopped.
 
 ## Model Base Types
 
@@ -159,8 +128,7 @@ Use it for tables that do not need soft deletion.
 
 ## `Dao[M]`
 
-A concrete DAO embeds `Dao[M]`; its storage handle is not accessed directly.
-Common methods include:
+A concrete DAO embeds `Dao[M]`. Common methods include:
 
 - `Query(...)`
 - `First(...)`

@@ -120,18 +120,6 @@ The default is `false`.
 
 ### `ServerOption`
 
-```go
-type Option struct {
-    App            meta.App
-    Logger         *logger.Logger
-    MuteVerboseLog bool
-    HandlerTypes   []reflect.Type
-    Executor       Executor
-}
-```
-
-`HandlerTypes` is a `[]reflect.Type`.
-
 Create a server like this:
 
 ```go
@@ -190,13 +178,6 @@ It represents:
 - The current initiator.
 - The current actor.
 - The client application for the current Rpc call.
-
-## Service Registration
-
-Generated code builds the service registration when the package is imported and
-calls `rpc.Register` for you. A service is described in `.skel`; the sensitivity
-and binary handling of its arguments and results follow the field declarations,
-so nothing about the registration is written by hand.
 
 ## Normal and ER Interfaces
 

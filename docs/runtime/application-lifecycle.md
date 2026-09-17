@@ -80,13 +80,8 @@ It has four conceptual phases.
 
 ### 1. Connect and assemble
 
-Vine first connects to Link and obtains the runtime information needed by the
-application. It then creates:
-
-- The application dependency graph.
-- Declared components.
-- Declared modules.
-- Rpc, Web, Event, and Task servers and their execution containers.
+Vine connects to Link and assembles the application dependency graph, including
+the declared components and modules.
 
 Declared component and module instances are application-lifetime singletons.
 Their injected fields and `DIInit()` methods run while the graph is being
@@ -121,8 +116,8 @@ func (*DemoApp) InitHooks(add *app.HookAdder) {
 }
 ```
 
-Callback parameters are resolved through DI after module initialization and
-retained for later invocation, including shutdown callbacks. They can receive
+Callback parameters are resolved through DI and remain available to every
+callback, including shutdown callbacks. They can receive
 components, modules, clients, and common dependencies. Startup callbacks run in
 registration order; shutdown callbacks run in reverse registration order. All
 callbacks run synchronously and must be non-variadic. Only `BeforeAppStart` may

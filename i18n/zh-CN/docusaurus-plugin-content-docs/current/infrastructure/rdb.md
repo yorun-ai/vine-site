@@ -36,16 +36,7 @@ type Option struct {
 
 ### `DatabaseSpec`
 
-数据库组件接口是：
-
-```go
-type DatabaseSpec interface {
-    InitOption(option *Option)
-    InitDao(add TypeAdder)
-}
-```
-
-业务组件通过嵌入 `rdb.Database` 获得该契约的默认实现。
+业务组件通过嵌入 `rdb.Database` 并按需实现 `InitOption` 与 `InitDao` 完成配置。
 
 ### `Database`
 
@@ -76,11 +67,6 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 }
 ```
 
-## 初始化流程
-
-启动时，Vine 会在你的组件上调用 `InitOption(...)` 和 `InitDao(...)`，打开或复用连接，并让
-已声明的 DAO 可被注入。
-
 ## 连接行为
 
 ### 连接串解析
@@ -100,28 +86,12 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 ### 连接池默认值
 
-连接池设置包括：
-
-- `SetMaxOpenConns(...)`
-- `SetMaxIdleConns(...)`
-- `SetConnMaxIdleTime(...)`
-- `SetConnMaxLifetime(...)`
-
-默认策略：
-
-- `MaxOpenConn` 默认 `10`
-- `MaxIdleConns` 约为 `30%`
-- 空闲连接最长 `1h`
-- 总生命周期最长 `8h`
-
-## DI 语义
-
-数据库组件是单例，每个 DAO 在创建时都会附带请求 context 与结构化 logger，因此二者会跟随
-数据库操作。
+`MaxOpenConn` 默认 `10`；需要调整连接池大小时在 `Option` 上设置它。
 
 ## 生命周期
 
-数据库连接在组件启动时打开或复用，在应用停止后释放该 `ConnURL` 的共享引用。最后一个使用者停止后，Vine 才关闭底层连接池。
+连接在组件启动时打开或复用，在应用停止后关闭。通过同一个 `ConnURL` 共享的连接会一直保持，
+直到最后一个使用它的组件停止。
 
 ## 模型基类
 
@@ -152,7 +122,7 @@ type DeletableModel struct {
 
 ## `Dao[M]`
 
-具体 DAO 通过嵌入 `Dao[M]` 使用，不直接访问其存储句柄。常用方法：
+具体 DAO 通过嵌入 `Dao[M]` 使用。常用方法：
 
 - `Query(...)`
 - `First(...)`

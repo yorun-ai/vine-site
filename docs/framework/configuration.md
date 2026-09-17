@@ -77,22 +77,8 @@ handler may not be read until the first matching execution.
 
 ### Instant does not mutate an existing object
 
-An instant update changes Link's snapshot. It doesn't modify a Go pointer that
-was already injected:
-
-```mermaid
-sequenceDiagram
-  participant Hub
-  participant RuntimeLink as Link
-  participant Existing as Existing consumer
-  participant Next as Later execution
-  Hub-->>RuntimeLink: publish new instant value
-  Note over Existing: keeps its existing pointer
-  Next->>RuntimeLink: resolve configuration
-  RuntimeLink-->>Next: decode a new pointer from the latest snapshot
-```
-
-This has a direct DI consequence:
+An instant update doesn't modify a Go pointer that was already injected; a later
+execution resolves the newer value. This has a direct DI consequence:
 
 - A normal Rpc, Web, Event, or Task handler is created for an execution. A
   configuration it injects is resolved for that execution and can observe the
@@ -151,10 +137,10 @@ read-only.
 
 ## Deployment variables {#deployment-variables}
 
-Seed variables let an application expose a small deployment configuration without
-requiring operators to understand its internal domain configurations. The developer
-decides which seed fields reference variables and leaves the rest fixed; one
-variable can supply several configuration fields.
+Seed variables let an application expose a small deployment configuration
+without requiring operators to understand the rest of the configuration. The
+developer decides which seed fields reference variables and leaves the rest
+fixed; one variable can supply several configuration fields.
 
 ### Expose selected settings
 

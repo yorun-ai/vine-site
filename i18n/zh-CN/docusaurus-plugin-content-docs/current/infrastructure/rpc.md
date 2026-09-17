@@ -116,20 +116,6 @@ result, err := client.InvokeAs[string](methodInfo, arguments, options...)
 
 ### `ServerOption`
 
-```go
-type Option struct {
-    App            meta.App
-    Logger         *logger.Logger
-    MuteVerboseLog bool
-    HandlerTypes   []reflect.Type
-    Executor       Executor
-}
-```
-
-注意：
-
-- `HandlerTypes` 是 `[]reflect.Type`
-
 创建方式：
 
 ```go
@@ -186,11 +172,6 @@ rpcCtx := rpc.NewContext(ctx, trace, clientApp, initiator, actor)
 - 当前 initiator
 - 当前 actor
 - 本次 Rpc 调用的 client app
-
-## 服务注册
-
-生成代码在 package 被导入时构建服务注册，并自动调用 `rpc.Register`。服务在 `.skel` 中
-声明；其参数与结果的敏感性和二进制处理都跟随字段声明，无需手写任何注册内容。
 
 ## 普通接口与 ER 接口
 

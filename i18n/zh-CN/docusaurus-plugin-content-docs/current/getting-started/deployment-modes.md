@@ -104,7 +104,7 @@ Seed data 和 source 文件是构建输入，运行时无需随二进制分发�
 
 - 只需启动一个业务 binary，最适合 [第一个应用教程](./tutorial-first-app.md)。
 - 使用 `standalone.Option` 配置 SQLite / PostgreSQL 或 no-db 模式、内联或文件 seed 来源，以及进程内 Hub 的 Admin API / Dashboard 监听地址。
-- Hub 与 Link 不启动 heartbeat、TTL 续租和 registry sweeper；应用停止时靠显式注销清理注册。
+- Hub 与 Link 既不续租也不使注册过期；注册在应用停止时被显式移除。
 - 除 `--hub-admin-listen` / `Option.AdminListen` 打开的 Hub Admin API 与 Dashboard 监听外，Hub 和 Link 不开放独立管理端口；Portal 仍可按入口规则监听业务 HTTP/HTTPS 端口。
 - 跨进程网络、服务单独重启等场景不在覆盖范围内。
 

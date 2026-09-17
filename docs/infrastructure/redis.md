@@ -42,24 +42,8 @@ type Option struct {
 
 ### `RedisSpec`
 
-The Redis component interface is:
-
-```go
-type RedisSpec interface {
-    InitOption(option *Option)
-    InitLockers(add TypeAdder)
-    InitCaches(add TypeAdder)
-}
-```
-
-Its methods serve these roles:
-
-- `InitOption(...)`: initializes Redis connection options.
-- `InitLockers(...)`: declares injectable locker types for this Redis component.
-- `InitCaches(...)`: declares injectable cache types for this Redis component.
-
-A business component receives the default implementation of this contract by
-embedding `redis.Redis`.
+A business component embeds `redis.Redis` and implements `InitOption`,
+`InitLockers`, and `InitCaches` as shown below.
 
 ### `Redis`
 
@@ -93,16 +77,9 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 }
 ```
 
-## Initialization Flow
-
-At startup Vine calls `InitOption(...)`, `InitLockers(...)`, and `InitCaches(...)`
-on your component, opens the client, and makes the declared Lockers and Caches
-injectable.
-
 ## DI Semantics
 
-Declare an injected field for the Cache or Locker a business object uses; the
-current context is bound for you.
+Declare an injected field for the Cache or Locker a business object uses.
 
 To execute Redis commands directly in business code, inject your own Redis
 component:

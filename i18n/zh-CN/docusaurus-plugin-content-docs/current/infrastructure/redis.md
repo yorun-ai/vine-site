@@ -41,23 +41,8 @@ type Option struct {
 
 ### `RedisSpec`
 
-Redis 组件接口是：
-
-```go
-type RedisSpec interface {
-    InitOption(option *Option)
-    InitLockers(add TypeAdder)
-    InitCaches(add TypeAdder)
-}
-```
-
-具体来说：
-
-- `InitOption(...)` 初始化 Redis 连接参数
-- `InitLockers(...)` 声明这个 Redis 组件下可注入的 locker 类型
-- `InitCaches(...)` 声明这个 Redis 组件下可注入的 cache 类型
-
-业务组件通过嵌入 `redis.Redis` 获得该契约的默认实现。
+业务组件通过嵌入 `redis.Redis`，并按下方示例实现 `InitOption`、`InitLockers` 和
+`InitCaches`。
 
 ### `Redis`
 
@@ -89,14 +74,9 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 }
 ```
 
-## 初始化流程
-
-启动时，Vine 会在你的组件上调用 `InitOption(...)`、`InitLockers(...)` 和
-`InitCaches(...)`，打开 client，并让已声明的 Locker 与 Cache 可被注入。
-
 ## DI 语义
 
-业务对象只需声明注入字段，当前 context 会自动绑定。
+业务对象只需声明注入字段。
 
 业务侧要直接操作 Redis，注入自己定义的 Redis 组件即可：
 

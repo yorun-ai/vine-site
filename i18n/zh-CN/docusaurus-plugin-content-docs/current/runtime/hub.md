@@ -48,8 +48,7 @@ vine hub serve \
 可用 `--control-listen`、`--watch-listen` 和 `--admin-listen` 修改这些 listener。
 watch listener 承载 Link 与 Portal 读取和订阅的流量，该 listener 兼容 Redis 协议。
 
-admin 域不声明 actor 和 Web，因为 admin listener 不解析 actor，命名其中之一的 Portal
-站点会被拒绝。
+Portal 站点不能以 admin listener 为目标。
 
 ## 后台 mTLS
 

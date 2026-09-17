@@ -59,8 +59,7 @@ Use `--control-listen`, `--watch-listen`, and `--admin-listen` to override these
 listeners. The watch listener carries the Redis-compatible traffic that Link and
 Portal read and subscribe to.
 
-The admin domain declares no actor and no Web, because the admin listener
-resolves no actor, and a Portal site that names one is refused.
+A Portal site cannot target the admin listener.
 
 ## Backend mTLS
 

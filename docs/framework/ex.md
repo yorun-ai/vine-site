@@ -241,7 +241,7 @@ err := ex.New(
 This preserves these behaviors:
 
 - `errors.Is(...)` can still identify the wrapped error.
-- `causeError` is not serialized across processes.
+- The wrapped cause is not serialized across processes.
 
 ### Success and fallback errors
 

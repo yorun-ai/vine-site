@@ -71,21 +71,7 @@ Vine 会去除配置字符串字段的首尾 Unicode 空白，包括可空字符
 
 ### Instant 不会修改已有对象
 
-instant 更新会改变 Link 中的快照，但已经注入的 Go 指针不会变化：
-
-```mermaid
-sequenceDiagram
-  participant Hub
-  participant RuntimeLink as Link
-  participant Existing as 已有 consumer
-  participant Next as 后续 execution
-  Hub-->>RuntimeLink: 发布新的 instant 值
-  Note over Existing: 继续保留已有指针
-  Next->>RuntimeLink: 解析配置
-  RuntimeLink-->>Next: 从最新快照解码新指针
-```
-
-这会影响 DI 的行为：
+instant 更新不会修改已经注入的 Go 指针，后续 execution 会解析到更新的值。这会影响 DI 的行为：
 
 - 普通 RPC、Web、Event 或 Task Handler 为一次 execution 创建。它注入的配置也在
   该 execution 中解析，所以能看到最新 instant 快照。
@@ -136,7 +122,7 @@ Hub 把 seed 保留在内存中并只读提供。
 
 ## 部署变量 {#deployment-variables}
 
-Seed 变量让应用只向部署者暴露少量配置，而不要求他们理解内部的 domain 配置结构。
+Seed 变量让应用只向部署者暴露少量配置，而不要求他们理解其余配置结构。
 开发者决定哪些 seed 字段引用变量，其余字段保留固定值；同一个变量可以供多个配置字段使用。
 
 ### 暴露指定配置项

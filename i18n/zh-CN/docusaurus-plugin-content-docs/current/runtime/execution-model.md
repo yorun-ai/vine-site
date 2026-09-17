@@ -49,7 +49,7 @@ flowchart TB
 
 ## 每次 execution 一个 injector
 
-每项能力都持有一个描述其 bindings 的 plain container。工作到达时，container 会创建新的 execution injector：
+每次调用、请求、投递或运行都会获得一个新的 execution injector：
 
 | 能力 | Execution 边界 | Seed 的请求状态 |
 | --- | --- | --- |
