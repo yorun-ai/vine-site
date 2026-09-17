@@ -65,7 +65,7 @@ func (*HelloApp) InitModules(add app.TypeAdder) {
 
 func main() {
 	standalone.NewWithOption[*HelloApp](standalone.Option{
-		SQLiteFile: "./vine.sqlite",
+		HubDBSQLiteFile: "./vine.sqlite",
 	}).StartAndWait()
 }
 ```
@@ -73,8 +73,8 @@ func main() {
 这里有三处值得留意：
 
 1. 嵌入 `app.Application` 获得应用规格的默认实现。
-2. `Name()` 返回逻辑应用名。它必须由一个或多个以点号分隔的小写字母段组成，例如
-   `demo.hello`。同一应用的多个 replica 共用该名称，并通过不同 instance ID 区分；
+2. `Name()` 返回逻辑应用名。它必须由以点号分隔的片段组成，片段以字母开头、可含小写字母和数字，例如
+   `demo.hello`、`demo2`。同一应用的多个 replica 共用该名称，并通过不同 instance ID 区分；
    同一进程中的两个不同应用不可使用相同名称。
 3. `HelloModule` 跟随应用生命周期，在 `AfterAppStart()` 中输出日志。
 
@@ -134,14 +134,14 @@ vine hub serve \
 ```go title="main.go"
 func main() {
 	linked.NewWithOption[*HelloApp](linked.Option{
-		HubEndpoint:   "http://127.0.0.1:7071",
-		IngressListen: "127.0.0.1:7082",
+		LinkHubEndpoint:   "http://127.0.0.1:7071",
+		LinkIngressListen: "127.0.0.1:7082",
 	}).StartAndWait()
 }
 ```
 
 此时业务应用与一个 Link 在同一进程。Link 会连接独立 Hub，并注册你之后声明
-的应用能力。`HubEndpoint` 与 `IngressListen` 也能分别由
+的应用能力。`LinkHubEndpoint` 与 `LinkIngressListen` 也能分别由
 `VINE_LINK_HUB_ENDPOINT` 和 `VINE_LINK_INGRESS_LISTEN` 提供。
 
 如需把 Link 与业务应用拆为独立进程，则使用 `app.New` 启动业务应用，并通过 `--link-endpoint` 或 `VINE_LINK_ENDPOINT` 指定已有 Link 的 API endpoint。

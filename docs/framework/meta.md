@@ -39,11 +39,62 @@ appInfo, err := meta.NewApp(
 
 Constraints:
 
-- `name` must be a dot-separated lowercase name, such as `demo.service`.
+- `name` uses lowercase letters and digits in dot-separated segments that start
+  with a letter, such as `demo.service` or `user2`.
 - `version` must be a full semantic version, such as `1.2.3` or `0.0.0-dev`. A
   leading `v` from the Go module form is accepted; an incomplete version such as
   `1.2` or `01.2.3` is rejected.
-- `instanceId` must be a valid UUID.
+- `instanceId` must be a valid UUID. Vine generates a UUID v7 for each
+  application instance; `meta.MustNewAppWithRandomId(name, version)` creates an
+  identity that way.
+
+### `CurrentApp`
+
+`CurrentApp` identifies the application instance that owns the component graph it
+is injected into. It carries the same fields as `App`:
+
+```go
+type CurrentApp interface {
+    Name() string
+    Version() string
+    InstanceId() string
+}
+```
+
+A component or module that needs the application it belongs to injects it:
+
+```go
+type GreetingModule struct {
+    app.BaseModule
+    CurrentApp meta.CurrentApp `inject:""`
+}
+```
+
+Use `App` for an identity that describes another application, such as a caller,
+initiator, or registered peer.
+
+### Build identity
+
+An application reports the version its build links. The executable name, version,
+commit, builder, and build time come from `go.yorun.ai/vine/buildinfo`:
+
+```bash
+go build -ldflags "\
+  -X go.yorun.ai/vine/buildinfo.ldVersion=1.2.3 \
+  -X go.yorun.ai/vine/buildinfo.ldGitCommit=$(git rev-parse --short HEAD)" \
+  ./cmd/demo
+```
+
+An executable name uses lowercase letters and digits in dot-separated segments,
+with dashes allowed between them, such as `user.service`, `user-service`, or
+`demo.worker-2`. The version is a full semantic version that may carry the Go
+module `v` prefix. `buildinfo.IsValidName` and `buildinfo.IsValidVersion` apply
+these rules for build tooling, and a build that links an unusable name or version
+fails while the process starts. A build that links no version reports `0.0.0`.
+
+`buildinfo.Name`, `Version`, `GitCommit`, `BuiltBy`, and `BuiltTime` read the
+linked values. A commit, builder, or build time that a build does not link is
+empty, and `Inspect` prints it as `NotAvailable` alongside the Go toolchain.
 
 ### `Trace`
 

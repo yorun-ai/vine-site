@@ -82,8 +82,9 @@ type ApplicationSpec interface {
 Its methods are:
 
 - `Name()`: returns the application name. It must match
-  `^[a-z]+(?:\.[a-z]+)*$`: one or more lowercase-letter segments separated by
-  dots, such as `demo.checkout`.
+  `^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)*$`: dot-separated segments that start with
+  a letter and continue with lowercase letters or digits, such as `demo.checkout`
+  or `user2`.
 - `InitComponents(...)`: declares component types.
 - `InitModules(...)`: declares module types.
 - `InitHooks(...)`: registers application lifecycle callbacks.
@@ -159,7 +160,7 @@ app.NewBundled(
 
 ### Runtime-mode constructors
 
-- `linked.New(...)`: starts a Link in the same process, then starts the business application as an in-process application. `linked.Option` supports `HubEndpoint`, `IngressListen`, `MTLSCAFile`, `MTLSCertFile`, and `MTLSKeyFile`; the same values can be supplied through the corresponding flags and environment variables. The certificate identifies the embedded `vine.link` workload, not the business application.
+- `linked.New(...)`: starts a Link in the same process, then starts the business application as an in-process application. `linked.Option` supports `LinkHubEndpoint`, `LinkIngressListen`, `LinkMTLSCAFile`, `LinkMTLSCertFile`, and `LinkMTLSKeyFile`; the same values can be supplied through the corresponding flags and environment variables. The certificate identifies the embedded `vine.link` workload, not the business application.
 - `linked.NewBundled(...)`: lets multiple business applications share one in-process Link connected to an external Hub. A bundled linked application cannot also carry its own `linked.Option`.
 - `standalone.New(...)`: starts Hub, Portal, Link, and one business application in the same process. `standalone.Option` supports a seed YAML file, a SQLite file, a PostgreSQL URL, and the in-process Hub's Admin API and Dashboard address.
 - `standalone.NewBundled(...)`: bundles multiple standalone applications with one embedded Hub, Portal, and Link. A bundled standalone application cannot also carry its own `standalone.Option`.
@@ -245,6 +246,41 @@ app.New[*DemoApp](
     app.With(&DemoFlag{Region: "cn"}),
 )
 ```
+
+### Ignored and renamed flags
+
+A program that embeds a standalone or linked application can take over the flags
+the runtime declares:
+
+- `IgnoredFlags` accepts a parameter but never applies it. The flag and its
+  environment variable still parse, so the command line and the environment keep
+  working, but their values stay out of the runtime. Set the matching `Option`
+  field when the program needs to supply the value from code.
+- `RenamedFlags` maps a declared flag name to the name the binary registers it
+  under. The declared name and its environment variable are dropped, and the new
+  name carries the environment variable derived from it. A flag cannot be both
+  renamed and ignored.
+
+Name the flags with the constants each package exports: `standalone.FlagHub*` and
+`standalone.EnvHub*` for the in-process Hub parameters, and `linked.Flag*` and
+`linked.Env*` for the in-process Link parameters.
+
+```go
+linked.NewWithOption[*DemoApp](linked.Option{
+    IgnoredFlags: []string{linked.FlagHubEndpoint},
+    RenamedFlags: map[string]string{
+        linked.FlagMTLSKeyFile: "worker-mtls-key-file",
+    },
+}).StartAndWait()
+```
+
+Arguments the binary does not declare are dropped before parsing, so a launcher
+can add its own flags, such as the `-test.*` flags that `go test` passes, without
+silencing `VINE_*` variables or skipping the `version` and `help` arguments. A
+renamed name uses lowercase letters and digits with dashes between them, so its
+derived environment variable is one a shell can set. A declaration that names no
+declared flag, reuses a name another flag registers, or takes over `--log-level`
+or `--log-rule` is rejected during startup.
 
 ## Components and modules
 

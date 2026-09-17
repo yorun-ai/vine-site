@@ -33,8 +33,8 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 Vine opens the database and constructs DAOs; it doesn't call GORM
 `AutoMigrate` or create application tables. Run reviewed migrations as an
 explicit deployment step before instances begin serving. The
-`standalone.Option.SQLiteFile` belongs to Hub and is unrelated to this business
-database.
+`standalone.Option.HubDBSQLiteFile` belongs to Hub and is unrelated to this
+business database.
 
 :::
 

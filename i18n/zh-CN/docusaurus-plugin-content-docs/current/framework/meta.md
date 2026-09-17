@@ -39,10 +39,49 @@ appInfo, err := meta.NewApp(
 
 约束：
 
-- `name` 必须是点分小写名，例如 `demo.service`
+- `name` 由点号分隔的片段组成，片段以字母开头，可包含小写字母和数字，例如 `demo.service`、`user2`
 - `version` 必须是完整的 semver，例如 `1.2.3` 或 `0.0.0-dev`。允许 Go module 形式的
   `v` 前缀；`1.2`、`01.2.3` 之类不完整的版本会被拒绝
-- `instanceId` 必须是合法 UUID
+- `instanceId` 必须是合法 UUID。Vine 会为每个应用实例生成 UUID v7，
+  `meta.MustNewAppWithRandomId(name, version)` 即按此方式创建身份
+
+### `CurrentApp`
+
+`CurrentApp` 标识它所注入的组件图所属的那个应用实例，字段与 `App` 相同：
+
+```go
+type CurrentApp interface {
+    Name() string
+    Version() string
+    InstanceId() string
+}
+```
+
+需要拿到自身所属应用的 Component 或 Module 可以注入它：
+
+```go
+type GreetingModule struct {
+    app.BaseModule
+    CurrentApp meta.CurrentApp `inject:""`
+}
+```
+
+描述其他应用的身份（调用方、发起方、已注册的 peer 等）仍使用 `App`。
+
+### 构建身份
+
+应用对外报告的版本来自构建时链接进二进制的值。可执行文件名称、版本、commit、构建者和构建时间都来自 `go.yorun.ai/vine/buildinfo`：
+
+```bash
+go build -ldflags "\
+  -X go.yorun.ai/vine/buildinfo.ldVersion=1.2.3 \
+  -X go.yorun.ai/vine/buildinfo.ldGitCommit=$(git rev-parse --short HEAD)" \
+  ./cmd/demo
+```
+
+可执行文件名称由点号分隔的片段组成，片段内为小写字母和数字，片段之间可以带短横线，例如 `user.service`、`user-service`、`demo.worker-2`。版本必须是完整的 semver，可带 Go module 形式的 `v` 前缀。构建工具可用 `buildinfo.IsValidName` 与 `buildinfo.IsValidVersion` 做同样的校验；链接了不可用的名称或版本时，进程启动阶段就会失败。未链接版本时报告 `0.0.0`。
+
+`buildinfo.Name`、`Version`、`GitCommit`、`BuiltBy`、`BuiltTime` 读取这些链接值。构建未链接的 commit、构建者或构建时间返回空字符串，`Inspect` 会将其显示为 `NotAvailable`，并同时输出 Go 工具链信息。
 
 ### `Trace`
 

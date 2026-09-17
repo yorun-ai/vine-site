@@ -34,7 +34,8 @@ Calling an application constructor immediately:
 2. Constructs the application specification and performs its field injection.
 3. Calls `DIInit()` on the specification when it implements the DI initialization
    convention.
-4. Validates the application name and assigns the application identity.
+4. Validates the application name and builds the instance identity from that name
+   and the version the build links.
 5. Derives the root context from `RunFlag.Context`, or from
    `context.Background()` when it is `nil`.
 6. Captures the listen address that the eventual server will use.

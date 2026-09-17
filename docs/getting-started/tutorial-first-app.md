@@ -69,7 +69,7 @@ func (*HelloApp) InitModules(add app.TypeAdder) {
 
 func main() {
 	standalone.NewWithOption[*HelloApp](standalone.Option{
-		SQLiteFile: "./vine.sqlite",
+		HubDBSQLiteFile: "./vine.sqlite",
 	}).StartAndWait()
 }
 ```
@@ -78,8 +78,9 @@ Three pieces matter here:
 
 1. Embed `app.Application` to get the default implementation of the application
    specification.
-2. `Name()` returns the logical application name. It must use one or more
-   lowercase-letter segments separated by dots, like `demo.hello`. Replicas of
+2. `Name()` returns the logical application name. It must use dot-separated
+   segments that start with a letter and continue with lowercase letters or
+   digits, like `demo.hello` or `demo2`. Replicas of
    the same application share this name but have different instance IDs; two
    different applications in one process cannot use the same name.
 3. `HelloModule` follows the application lifecycle and logs from
@@ -152,16 +153,16 @@ Then import `go.yorun.ai/vine/app/linked` and replace `main` with:
 ```go title="main.go"
 func main() {
 	linked.NewWithOption[*HelloApp](linked.Option{
-		HubEndpoint:   "http://127.0.0.1:7071",
-		IngressListen: "127.0.0.1:7082",
+		LinkHubEndpoint:   "http://127.0.0.1:7071",
+		LinkIngressListen: "127.0.0.1:7082",
 	}).StartAndWait()
 }
 ```
 
 The business application and a Link now run in the same process. Link connects to
 the independent Hub and registers any application capabilities you declare.
-`HubEndpoint` and `IngressListen` can also come from `VINE_LINK_HUB_ENDPOINT`
-and `VINE_LINK_INGRESS_LISTEN`, respectively.
+`LinkHubEndpoint` and `LinkIngressListen` can also come from
+`VINE_LINK_HUB_ENDPOINT` and `VINE_LINK_INGRESS_LISTEN`, respectively.
 
 To run Link and the business application in separate processes, start the
 business application with `app.New` and use `--link-endpoint` or

@@ -39,21 +39,21 @@ flowchart LR
 
 ```go title="main.go"
 standalone.NewWithOption[*HelloApp](standalone.Option{
-	SQLiteFile: "./vine.sqlite",
+	HubDBSQLiteFile: "./vine.sqlite",
 }).StartAndWait()
 ```
 
 启动顺序为 Hub → Portal → Link → 业务应用；停止时按相反顺序执行。Hub 使用进程内 Redis，Link 与 Portal 使用 inproc endpoint，因此不需要提前启动任何 runtime 服务。
 
-要将 seed 配置嵌入应用，可以通过 `standalone.Option.SeedHubData` 传入 YAML 文本，例如由 `go:embed` 填充的字符串：
+要将 seed 配置嵌入应用，可以通过 `standalone.Option.HubSeedData` 传入 YAML 文本，例如由 `go:embed` 填充的字符串：
 
 ```go
 standalone.NewWithOption[*HelloApp](standalone.Option{
-    SeedHubData: "{}",
+    HubSeedData: "{}",
 }).StartAndWait()
 ```
 
-`SeedHubData` 与 `SeedHubDataFile` 互斥，也不能同时通过 CLI 或环境变量指定 seed 文件。不指定数据库时，必须提供其中一种 seed 来源，配置只读；空配置使用 `{}`。内联 YAML 与 seed 文件使用完全相同的校验与导入流程，使用持久化数据库时也一样。该入口只能通过代码设置，不提供 CLI 参数或环境变量。
+`HubSeedData` 与 `HubSeedDataFile` 互斥，也不能同时通过 CLI 或环境变量指定 seed 文件。不指定数据库时，必须提供其中一种 seed 来源，配置只读；空配置使用 `{}`。内联 YAML 与 seed 文件使用完全相同的校验与导入流程，使用持久化数据库时也一样。该入口只能通过代码设置，不提供 CLI 参数或环境变量。
 
 ### 交付单机应用配置文件 {#deployment-configuration}
 
@@ -72,8 +72,8 @@ var seedHubSource string
 
 func main() {
     standalone.NewWithOption[*HelloApp](standalone.Option{
-        SeedHubData:   seedHubData,
-        SeedHubSource: seedHubSource,
+        HubSeedData:   seedHubData,
+        HubSeedSource: seedHubSource,
     }).StartAndWait()
 }
 ```
@@ -105,7 +105,7 @@ Seed data 和 source 文件是构建输入，运行时无需随二进制分发�
 - 只需启动一个业务 binary，最适合 [第一个应用教程](./tutorial-first-app.md)。
 - 使用 `standalone.Option` 配置 SQLite / PostgreSQL 或 no-db 模式、内联或文件 seed 来源，以及进程内 Hub 的 Admin API / Dashboard 监听地址。
 - Hub 与 Link 既不续租也不使注册过期；注册在应用停止时被显式移除。
-- 除 `--hub-admin-listen` / `Option.AdminListen` 打开的 Hub Admin API 与 Dashboard 监听外，Hub 和 Link 不开放独立管理端口；Portal 仍可按入口规则监听业务 HTTP/HTTPS 端口。
+- 除 `--hub-admin-listen` / `Option.HubAdminListen` 打开的 Hub Admin API 与 Dashboard 监听外，Hub 和 Link 不开放独立管理端口；Portal 仍可按入口规则监听业务 HTTP/HTTPS 端口。
 - 跨进程网络、服务单独重启等场景不在覆盖范围内。
 
 ## Linked：Hub 与应用分开
@@ -135,14 +135,14 @@ vine portal serve \
 
 ```go title="main.go"
 linked.NewWithOption[*HelloApp](linked.Option{
-	HubEndpoint:   "http://127.0.0.1:7071",
-	IngressListen: "127.0.0.1:7082",
+	LinkHubEndpoint:   "http://127.0.0.1:7071",
+	LinkIngressListen: "127.0.0.1:7082",
 }).StartAndWait()
 ```
 
-`HubEndpoint` 和 `IngressListen` 也可以通过 `VINE_LINK_HUB_ENDPOINT`、
-`VINE_LINK_INGRESS_LISTEN` 设置。外部 Hub 启用后台 mTLS 时，可通过 `MTLSCAFile`、`MTLSCertFile`、
-`MTLSKeyFile` 配置内嵌 Link 的身份，或使用对应的 `VINE_LINK_MTLS_*` 环境变量和
+`LinkHubEndpoint` 和 `LinkIngressListen` 也可以通过 `VINE_LINK_HUB_ENDPOINT`、
+`VINE_LINK_INGRESS_LISTEN` 设置。外部 Hub 启用后台 mTLS 时，可通过 `LinkMTLSCAFile`、`LinkMTLSCertFile`、
+`LinkMTLSKeyFile` 配置内嵌 Link 的身份，或使用对应的 `VINE_LINK_MTLS_*` 环境变量和
 `--link-mtls-*-file` 命令行参数。
 
 这种模式保留了独立 Hub 的配置、注册和租约语义，但 Link 与业务应用仍同时发布、同时停止。它适合不想额外维护 Link sidecar 的开发和部署环境。

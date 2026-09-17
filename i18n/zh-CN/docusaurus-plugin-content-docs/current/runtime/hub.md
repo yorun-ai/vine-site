@@ -249,9 +249,9 @@ fields:
 摘要不匹配或字段路径不存在会导致启动失败。来源文件不包含具体文件路径、行列或变量值。
 
 standalone 应用可以通过 Go `embed` 嵌入模板和来源映射，并传入
-`Option.SeedHubData`、`Option.SeedHubSource`，部署变量字典通过
-`Option.SeedHubVarsFile` 指定。也可以使用 `Option.SeedHubDataFile` 和可选的
-`Option.SeedHubSourceFile`。嵌入与文件模式不能混用：嵌入模板必须搭配嵌入来源映射，
+`Option.HubSeedData`、`Option.HubSeedSource`，部署变量字典通过
+`Option.HubSeedVarsFile` 指定。也可以使用 `Option.HubSeedDataFile` 和可选的
+`Option.HubSeedSourceFile`。嵌入与文件模式不能混用：嵌入模板必须搭配嵌入来源映射，
 文件模板必须搭配文件来源映射。变量在两种模式下都只能通过文件传入；文件模式对应的
 Hub 作为独立服务运行时，环境变量为 `VINE_SEED_DATA_FILE`、`VINE_SEED_SOURCE_FILE`
 和 `VINE_SEED_VARS_FILE`；由 standalone 应用托管 Hub 时，对应为

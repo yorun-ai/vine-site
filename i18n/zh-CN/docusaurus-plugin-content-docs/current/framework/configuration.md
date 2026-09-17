@@ -101,12 +101,12 @@ standalone 模式：
 
 ```go title="main.go"
 standalone.NewWithOption[*CheckoutApp](standalone.Option{
-    SQLiteFile:      "./hub.sqlite",
-    SeedHubDataFile: "./seed.yaml",
+    HubDBSQLiteFile: "./hub.sqlite",
+    HubSeedDataFile: "./seed.yaml",
 }).StartAndWait()
 ```
 
-注意，这里的 `SQLiteFile` 是 **Hub 自己的数据库**，不会配置业务 `infra/rdb` Component。
+注意，这里的 `HubDBSQLiteFile` 是 **Hub 自己的数据库**，不会配置业务 `infra/rdb` Component。
 如果应用本身还有关系型数据库，需要另外声明。
 
 独立运行 Hub 时：
@@ -145,7 +145,7 @@ checkout:
 ```
 
 文件名可以自行选择，通过 `--seed-vars-file ./vars.yaml`、
-`VINE_SEED_VARS_FILE` 或 `standalone.Option.SeedHubVarsFile` 指定。
+`VINE_SEED_VARS_FILE` 或 `standalone.Option.HubSeedVarsFile` 指定。
 应用代码仍然取得替换后的 `CheckoutConfig`，无需自行读取字典或解析占位符。
 
 ### 定义变量结构

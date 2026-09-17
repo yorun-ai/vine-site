@@ -131,8 +131,9 @@ go -C ./src/server test ./...
 `--go-module` 请填写项目实际声明的 module path，与 `src/server/go.mod` 中的取值一致。
 生成产物的目录结构见[项目结构](./filetree.md)。
 
-自行设置版本号的应用必须使用完整的 semver，例如 `1.2.3`，可带 `v` 前缀；`1.2` 这类
-不完整的写法在创建应用时即被拒绝。
+应用对外报告的版本来自构建时链接进二进制的值，通过 `go.yorun.ai/vine/buildinfo` 读取。它必须是完整的 semver，
+例如 `1.2.3`，可带 `v` 前缀；链接了不可用的名称或版本时，进程启动阶段就会失败。链接项见
+[上下文与身份](../framework/meta.md#构建身份)。
 
 生成的 Go 包由 skelc v0.21.0 或更高版本产生，并依赖 Vine v0.20.2 或更高版本。与 runtime
 一起重新生成，可以让生成的 schema 与 handler 形态与所安装的 Vine 保持一致。生成器的产物以及应用代码复制生成 bean 的方式，见

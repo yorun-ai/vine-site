@@ -80,8 +80,8 @@ type ApplicationSpec interface {
 
 字段含义：
 
-- `Name()`：应用名，必须匹配 `^[a-z]+(?:\.[a-z]+)*$`，即由点号分隔的一个或
-  多个纯小写字母段，例如 `demo.checkout`
+- `Name()`：应用名，必须匹配 `^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)*$`，即以字母开头、
+  可含小写字母与数字的点分片段，例如 `demo.checkout`、`user2`
 - `InitComponents(...)`：声明 Component 类型
 - `InitModules(...)`：声明 Module 类型
 - `InitHooks(...)`：注册应用级生命周期回调
@@ -154,7 +154,7 @@ app.NewBundled(
 
 ### 运行模式构造
 
-- `linked.New(...)`：同进程启动一个 Link，再以 inproc app 形式启动业务 app。`linked.Option` 支持 `HubEndpoint`、`IngressListen`、`MTLSCAFile`、`MTLSCertFile` 和 `MTLSKeyFile`，这些值也可以改由对应的命令行参数或环境变量设置。证书标识的是内嵌 `vine.link` workload，而不是业务应用
+- `linked.New(...)`：同进程启动一个 Link，再以 inproc app 形式启动业务 app。`linked.Option` 支持 `LinkHubEndpoint`、`LinkIngressListen`、`LinkMTLSCAFile`、`LinkMTLSCertFile` 和 `LinkMTLSKeyFile`，这些值也可以改由对应的命令行参数或环境变量设置。证书标识的是内嵌 `vine.link` workload，而不是业务应用
 - `linked.NewBundled(...)`：多个业务 app 共享一个同进程 Link，并连接外部 Hub。注意，被打包的 linked app 不能再带自己的 `linked.Option`
 - `standalone.New(...)`：同进程启动 Hub、Portal、Link 和一个业务 app。`standalone.Option` 支持 seed YAML、SQLite 文件、PostgreSQL URL，以及进程内 Hub 的 Admin API 与 Dashboard 监听地址
 - `standalone.NewBundled(...)`：把多个 standalone app 打包进同一套内置 Hub / Portal / Link。注意，被打包的 standalone app 不能再带自己的 `standalone.Option`
@@ -238,6 +238,26 @@ app.New[*DemoApp](
     app.With(&DemoFlag{Region: "cn"}),
 )
 ```
+
+### 忽略与重命名 flag
+
+把 standalone 或 linked 应用嵌入自己程序时，程序可以接管 runtime 声明的 flag：
+
+- `IgnoredFlags` 表示接受该参数但从不应用：flag 与其环境变量仍可解析，命令行和环境变量照常可用，但取值不会进入 runtime；程序需要在代码中提供该值时，直接设置对应的 `Option` 字段
+- `RenamedFlags` 把已声明的 flag 名映射到二进制实际注册的名称。原名称及其环境变量被移除，新名称使用由它推导出的环境变量。同一个 flag 不能同时被重命名和忽略
+
+flag 名使用各 package 导出的常量：进程内 Hub 参数用 `standalone.FlagHub*` 与 `standalone.EnvHub*`，进程内 Link 参数用 `linked.Flag*` 与 `linked.Env*`。
+
+```go
+linked.NewWithOption[*DemoApp](linked.Option{
+    IgnoredFlags: []string{linked.FlagHubEndpoint},
+    RenamedFlags: map[string]string{
+        linked.FlagMTLSKeyFile: "worker-mtls-key-file",
+    },
+}).StartAndWait()
+```
+
+二进制未声明的参数会在解析前被丢弃，因此启动器可以添加自己的 flag（例如 `go test` 传入的 `-test.*`），而不会让 `VINE_*` 变量失效，也不会跳过 `version` 和 `help` 参数。重命名后的名称由小写字母、数字和分隔它们的短横线组成，其推导出的环境变量可以被 shell 设置。声明了不存在的 flag 名、与其他 flag 注册名冲突，或名称会占用 `--log-level`、`--log-rule`，都会在启动阶段被拒绝。
 
 ## 组件与模块
 

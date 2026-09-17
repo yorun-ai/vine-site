@@ -118,8 +118,8 @@ Hub, and continues Hub heartbeats. The in-process App is coupled to the Link
 lifecycle, so its separate application health check is disabled.
 
 When the external Hub requires backend mTLS, configure the embedded Link with
-`linked.Option.MTLSCAFile`, `MTLSCertFile`, and `MTLSKeyFile`, or use the shared
-`--mtls-*-file` flags and `VINE_MTLS_*_FILE` environment variables. The
+`linked.Option.LinkMTLSCAFile`, `LinkMTLSCertFile`, and `LinkMTLSKeyFile`, or use
+the shared `--mtls-*-file` flags and `VINE_MTLS_*_FILE` environment variables. The
 certificate represents the embedded `vine.link` workload.
 
 Only standalone mode runs Hub, Portal, Link, and the application in a single

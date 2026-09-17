@@ -42,7 +42,7 @@ flowchart LR
 
 ```go title="main.go"
 standalone.NewWithOption[*HelloApp](standalone.Option{
-	SQLiteFile: "./vine.sqlite",
+	HubDBSQLiteFile: "./vine.sqlite",
 }).StartAndWait()
 ```
 
@@ -51,15 +51,15 @@ Shutdown reverses that order. Hub uses in-process Redis, while Link and Portal
 use inproc endpoints, so no runtime service needs to be started ahead of time.
 
 To embed seed configuration in the application, pass YAML text through
-`standalone.Option.SeedHubData`, for example a string populated by `go:embed`:
+`standalone.Option.HubSeedData`, for example a string populated by `go:embed`:
 
 ```go
 standalone.NewWithOption[*HelloApp](standalone.Option{
-    SeedHubData: "{}",
+    HubSeedData: "{}",
 }).StartAndWait()
 ```
 
-`SeedHubData` and `SeedHubDataFile` are mutually exclusive, including a seed file
+`HubSeedData` and `HubSeedDataFile` are mutually exclusive, including a seed file
 supplied through the CLI or environment. Without a database option, one of the
 two seed sources is required and configuration is read-only; use `{}` for empty
 configuration. Inline YAML is validated and imported exactly like a seed file,
@@ -84,8 +84,8 @@ var seedHubSource string
 
 func main() {
     standalone.NewWithOption[*HelloApp](standalone.Option{
-        SeedHubData:   seedHubData,
-        SeedHubSource: seedHubSource,
+        HubSeedData:   seedHubData,
+        HubSeedSource: seedHubSource,
     }).StartAndWait()
 }
 ```
@@ -128,7 +128,7 @@ schema declarations, substitution syntax, and defaults.
 - Hub and Link neither renew nor expire registrations. A registration is removed
   explicitly when the application stops.
 - Hub and Link do not expose separate management ports, apart from the Hub Admin
-  API and Dashboard listener `--hub-admin-listen` / `Option.AdminListen` opens.
+  API and Dashboard listener `--hub-admin-listen` / `Option.HubAdminListen` opens.
   Portal can still listen on business HTTP/HTTPS ports according to its entry
   rules.
 - This mode doesn't cover cross-process networking or independent service
@@ -162,16 +162,16 @@ The business application imports `go.yorun.ai/vine/app/linked` and uses:
 
 ```go title="main.go"
 linked.NewWithOption[*HelloApp](linked.Option{
-	HubEndpoint:   "http://127.0.0.1:7071",
-	IngressListen: "127.0.0.1:7082",
+	LinkHubEndpoint:   "http://127.0.0.1:7071",
+	LinkIngressListen: "127.0.0.1:7082",
 }).StartAndWait()
 ```
 
-`HubEndpoint` and `IngressListen` can also come from `VINE_LINK_HUB_ENDPOINT`
-and `VINE_LINK_INGRESS_LISTEN`. When the external Hub requires backend mTLS,
-configure the embedded Link's identity via `MTLSCAFile`, `MTLSCertFile`, and
-`MTLSKeyFile`, or the matching `--link-mtls-*-file` flags and
-`VINE_LINK_MTLS_*` variables.
+`LinkHubEndpoint` and `LinkIngressListen` can also come from
+`VINE_LINK_HUB_ENDPOINT` and `VINE_LINK_INGRESS_LISTEN`. When the external Hub
+requires backend mTLS, configure the embedded Link's identity via
+`LinkMTLSCAFile`, `LinkMTLSCertFile`, and `LinkMTLSKeyFile`, or the matching
+`--link-mtls-*-file` flags and `VINE_LINK_MTLS_*` variables.
 
 This mode keeps the configuration, registration, and lease semantics of an
 independent Hub, but Link and the business application are still released and

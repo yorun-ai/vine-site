@@ -78,7 +78,7 @@ func (*GreetingApp) InitModules(add app.TypeAdder) {
 
 func main() {
     standalone.NewWithOption[*GreetingApp](standalone.Option{
-        SQLiteFile: "./vine.sqlite",
+        HubDBSQLiteFile: "./vine.sqlite",
     }).StartAndWait()
 }
 ```

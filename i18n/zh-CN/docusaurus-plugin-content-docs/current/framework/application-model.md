@@ -20,9 +20,11 @@ func (*CheckoutApp) Name() string {
 }
 ```
 
-应用名必须匹配 `^[a-z]+(?:\.[a-z]+)*$`，例如 `demo.checkout`。同一个
-进程中的不同 App 规格必须使用不同名称；同一个逻辑应用的多个副本应使用相同
+应用名必须匹配 `^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)*$`，例如 `demo.checkout`、
+`user2`。同一个进程中的不同 App 规格必须使用不同名称；同一个逻辑应用的多个副本应使用相同
 名称，这样它们也会作为同一个 Event consumer group 竞争消息。
+
+Vine 用该名称和构建链接的版本生成每个实例的身份，见[上下文与身份](./meta.md#构建身份)。
 
 ## 应用能声明什么
 
@@ -43,12 +45,12 @@ func (*CheckoutApp) Name() string {
 ```go title="main.go"
 // 单进程开发
 standalone.NewWithOption[*CheckoutApp](standalone.Option{
-    SQLiteFile: "./vine.sqlite",
+    HubDBSQLiteFile: "./vine.sqlite",
 }).StartAndWait()
 
 // 连接外部 Hub，Link 与应用同进程
 linked.NewWithOption[*CheckoutApp](linked.Option{
-    HubEndpoint: "http://127.0.0.1:7071",
+    LinkHubEndpoint: "http://127.0.0.1:7071",
 }).StartAndWait()
 
 // 连接独立 Link

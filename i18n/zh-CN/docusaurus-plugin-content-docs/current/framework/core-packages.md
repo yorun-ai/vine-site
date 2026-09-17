@@ -34,7 +34,7 @@ symbol 索引无法回答的问题：**应用代码应该选择哪个 package？
 
 ```go
 standalone.NewWithOption[*CheckoutApp](standalone.Option{
-    SQLiteFile: "./vine.sqlite",
+    HubDBSQLiteFile: "./vine.sqlite",
 }).StartAndWait()
 ```
 
@@ -67,13 +67,12 @@ Listener 或 Runner，而不是手工构造 `ServiceSpec`、`WebSpec`、`EventSp
 | --- | --- | --- |
 | 依赖绑定与 scope | [`core/di`](https://pkg.go.dev/go.yorun.ai/vine/core/di) | 绑定公共依赖或编写自定义集成 |
 | 带 filter 的方法执行 | [`core/ctr`](https://pkg.go.dev/go.yorun.ai/vine/core/ctr) | 实现 filter 或自定义执行管线 |
-| Context、trace、应用身份与 Actor | [`core/meta`](https://pkg.go.dev/go.yorun.ai/vine/core/meta) | 读取身份/context 或显式创建调用 context |
+| Context、trace、身份与 Actor | [`core/meta`](https://pkg.go.dev/go.yorun.ai/vine/core/meta) | 读取请求 context、当前应用或 Actor 身份 |
 | 跨应用实例的租约锁 | [`core/lock`](https://pkg.go.dev/go.yorun.ai/vine/core/lock) | 在不声明 Redis Component 的前提下协调实例间的互斥，见[Lock 模式](../runtime/hub.md#lock-模式) |
 | 结构化框架错误 | [`core/ex`](https://pkg.go.dev/go.yorun.ai/vine/core/ex) | 跨边界返回稳定错误码 |
 | 结构化日志 | [`core/logger`](https://pkg.go.dev/go.yorun.ai/vine/core/logger) | 使用 Vine category 与 context 字段记录应用日志 |
 | 敏感数据投影 | [`core/redact`](https://pkg.go.dev/go.yorun.ai/vine/core/redact) | 在诊断输出前遮蔽生成类型或应用数据 |
-| 进程 runtime 与 executable 身份 | [`core/runtime`](https://pkg.go.dev/go.yorun.ai/vine/core/runtime) | 读取进程级 runtime 名称、版本、instance ID 或构建信息；它不标识 bundle 中的某一个 App |
-| 构建元数据 | [`buildinfo`](https://pkg.go.dev/go.yorun.ai/vine/buildinfo) | 写入或读取发布时的 linker 元数据 |
+| 构建身份与工具链 | [`buildinfo`](https://pkg.go.dev/go.yorun.ai/vine/buildinfo) | 读取链接进二进制的名称、版本、构建元数据和 Go 工具链信息，或在构建工具中校验它们 |
 
 对于普通 RPC、Web、Event 与 Task Handler，Vine 会自动创建 execution container 并注入
 正确 context。把依赖保留到接收它的 Handler 之外前，请先阅读

@@ -138,9 +138,11 @@ Use the module path declared by your project, the same value required by
 `src/server/go.mod`. See [Project Structure](./filetree.md) for the generated
 layout.
 
-An application that sets its own version must use a full semantic version, such as
-`1.2.3`, with an optional leading `v`. An incomplete version such as `1.2` is
-rejected when the application is created.
+An application reports the version its build links, read through
+`go.yorun.ai/vine/buildinfo`. It must be a full semantic version, such as
+`1.2.3`, with an optional leading `v`; a build that links an unusable name or
+version fails when the process starts. See
+[Context & Identity](../framework/meta.md#build-identity) for the linker values.
 
 Generated Go packages are produced by skelc v0.21.0 or later and depend on Vine
 v0.20.2 or later. Regenerating them together keeps the generated

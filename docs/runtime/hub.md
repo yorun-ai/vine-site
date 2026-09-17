@@ -300,9 +300,9 @@ not control precedence. A mismatched digest or nonexistent field path fails
 startup. The map contains no file paths, line numbers, or variable values.
 
 Standalone applications can embed the template and source map with Go `embed`
-and pass `Option.SeedHubData` and `Option.SeedHubSource`, plus
-`Option.SeedHubVarsFile` for the deployment dictionary. Alternatively, pass
-`Option.SeedHubDataFile` with the optional `Option.SeedHubSourceFile`. Inline and
+and pass `Option.HubSeedData` and `Option.HubSeedSource`, plus
+`Option.HubSeedVarsFile` for the deployment dictionary. Alternatively, pass
+`Option.HubSeedDataFile` with the optional `Option.HubSeedSourceFile`. Inline and
 file inputs cannot be mixed: an embedded template requires an embedded source
 map, and a file template requires a file source map. Variables are always
 supplied through a file. For file inputs the environment variables are
