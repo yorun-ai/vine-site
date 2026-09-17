@@ -131,8 +131,6 @@ go -C ./src/server test ./...
 `--go-module` 请填写项目实际声明的 module path，与 `src/server/go.mod` 中的取值一致。
 生成产物的目录结构见[项目结构](./filetree.md)。
 
-使用 SQLite 或 PostgreSQL 的 Hub，数据库需处于 Vine v0.15.7 的 schema 级别或更高。
-
 自行设置版本号的应用必须使用完整的 semver，例如 `1.2.3`，可带 `v` 前缀；`1.2` 这类
 不完整的写法在创建应用时即被拒绝。
 

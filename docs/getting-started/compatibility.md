@@ -138,9 +138,6 @@ Use the module path declared by your project, the same value required by
 `src/server/go.mod`. See [Project Structure](./filetree.md) for the generated
 layout.
 
-A Hub backed by SQLite or PostgreSQL requires a database at the Vine v0.15.7
-schema level or later.
-
 An application that sets its own version must use a full semantic version, such as
 `1.2.3`, with an optional leading `v`. An incomplete version such as `1.2` is
 rejected when the application is created.
