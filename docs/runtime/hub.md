@@ -61,6 +61,15 @@ Portal read and subscribe to.
 
 A Portal site cannot target the admin listener.
 
+## Message queues
+
+The Dashboard's **Status → Task Queues** and **Status → Event Queues** pages report
+the messages retained by the NATS deployment Hub uses and the backlog of each
+consumer. Reading them neither consumes messages nor creates streams or consumers.
+Under external NATS, provision the Vine streams and let Hub query their JetStream
+stream and consumer information; in standalone mode the Dashboard listener must be
+enabled.
+
 ## Backend mTLS
 
 Hub, Link, and Portal can use one deployment-provided CA and a distinct

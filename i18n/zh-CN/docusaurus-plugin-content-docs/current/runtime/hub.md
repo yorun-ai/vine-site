@@ -50,6 +50,13 @@ watch listener 承载 Link 与 Portal 读取和订阅的流量，该 listener �
 
 Portal 站点不能以 admin listener 为目标。
 
+## 消息队列
+
+Dashboard 的 **状态 → 任务队列** 与 **状态 → 事件队列** 页面展示 Hub 所用 NATS 中保留的
+消息与各消费者的积压情况。读取不会消费消息，也不会创建 Stream 或 Consumer。使用外置
+NATS 时，需要由部署方创建 Vine 的 Stream，并允许 Hub 查询其 JetStream 的 Stream 与
+Consumer 信息；standalone 模式需要开启 Dashboard listener。
+
 ## 后台 mTLS
 
 Hub、Link 与 Portal 可以使用一个由部署提供的 CA，并为每个组件身份使用不同证书。
