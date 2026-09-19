@@ -138,6 +138,11 @@ A concrete DAO embeds `Dao[M]`. Common methods include:
 - `Delete(model)`
 - `GormDB()`
 
+Vine runs `EnsureSchema()` for every DAO a component registers, after the
+connection opens and before DAOs are exposed. The embedded implementation does
+nothing, so a concrete DAO can override it to create or migrate its own schema
+through `GormDB()`.
+
 A typical DAO looks like this:
 
 ```go
