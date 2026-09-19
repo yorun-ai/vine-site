@@ -132,6 +132,9 @@ type DeletableModel struct {
 - `Delete(model)`
 - `GormDB()`
 
+连接打开后、DAO 对外暴露前，Vine 会为组件注册的每个 DAO 运行 `EnsureSchema()`。
+嵌入的默认实现什么都不做，具体 DAO 可以覆盖它，通过 `GormDB()` 创建或迁移自己的 schema。
+
 典型 DAO：
 
 ```go

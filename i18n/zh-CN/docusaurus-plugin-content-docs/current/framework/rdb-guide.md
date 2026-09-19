@@ -30,9 +30,11 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 :::warning Schema 迁移
 
-Vine 会打开数据库并构造 DAO，但不会调用 GORM `AutoMigrate`，也不会创建应用
-数据表。请在实例开始服务前，把经过审查的迁移作为显式部署步骤执行。
-`standalone.Option.HubDBSQLiteFile` 属于 Hub，与这里的业务数据库无关。
+Vine 会打开数据库并构造 DAO，但不会自行调用 GORM `AutoMigrate`。具体 DAO 可以覆盖
+`EnsureSchema()`：连接打开后、DAO 对外暴露前，Vine 会为组件注册的每个 DAO 调用它，
+嵌入的默认实现什么都不做。请让该 hook 可重复执行，或在实例开始服务前把经过审查的
+迁移作为显式部署步骤执行。`standalone.Option.HubDBSQLiteFile` 属于 Hub，与这里的
+业务数据库无关。
 
 :::
 

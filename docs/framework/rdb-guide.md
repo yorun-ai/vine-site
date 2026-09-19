@@ -30,11 +30,13 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 :::warning Schema migrations
 
-Vine opens the database and constructs DAOs; it doesn't call GORM
-`AutoMigrate` or create application tables. Run reviewed migrations as an
-explicit deployment step before instances begin serving. The
-`standalone.Option.HubDBSQLiteFile` belongs to Hub and is unrelated to this
-business database.
+Vine opens the database and constructs DAOs, but it doesn't call GORM
+`AutoMigrate` on its own. A concrete DAO can override `EnsureSchema()`, which Vine
+runs for every DAO the component registers after the connection opens and before
+DAOs are exposed; the embedded implementation does nothing. Keep that hook
+repeatable, or run reviewed migrations as an explicit deployment step before
+instances begin serving. The `standalone.Option.HubDBSQLiteFile` belongs to Hub
+and is unrelated to this business database.
 
 :::
 
