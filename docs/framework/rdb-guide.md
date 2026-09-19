@@ -20,6 +20,12 @@ func (*MainDatabase) InitOption(option *rdb.Option) {
 func (*MainDatabase) InitDao(add rdb.TypeAdder) {
     add(rdb.T[*UserDao]())
 }
+
+func (d *UserDao) EnsureSchema() {
+    if err := d.GormDB().AutoMigrate(&User{}); err != nil {
+        panic(err)
+    }
+}
 ```
 
 ```go title="app.go"
@@ -30,9 +36,9 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 :::warning Schema migrations
 
-Vine opens the database and constructs DAOs; it doesn't call GORM
-`AutoMigrate` or create application tables. Run reviewed migrations as an
-explicit deployment step before instances begin serving. The
+Registered DAOs receive an empty `EnsureSchema` call after Vine opens the
+database and before DAOs are exposed. Override it for reviewed migrations or
+explicit schema setup; Vine does not automatically call GORM `AutoMigrate`. The
 `standalone.Option.HubDBSQLiteFile` belongs to Hub and is unrelated to this
 business database.
 

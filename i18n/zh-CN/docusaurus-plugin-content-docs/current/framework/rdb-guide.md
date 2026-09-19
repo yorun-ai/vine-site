@@ -20,6 +20,12 @@ func (*MainDatabase) InitOption(option *rdb.Option) {
 func (*MainDatabase) InitDao(add rdb.TypeAdder) {
     add(rdb.T[*UserDao]())
 }
+
+func (d *UserDao) EnsureSchema() {
+    if err := d.GormDB().AutoMigrate(&User{}); err != nil {
+        panic(err)
+    }
+}
 ```
 
 ```go title="app.go"
@@ -30,8 +36,9 @@ func (*DemoApp) InitComponents(add app.TypeAdder) {
 
 :::warning Schema 迁移
 
-Vine 会打开数据库并构造 DAO，但不会调用 GORM `AutoMigrate`，也不会创建应用
-数据表。请在实例开始服务前，把经过审查的迁移作为显式部署步骤执行。
+Vine 打开数据库后、向外暴露 DAO 前，会对已注册 DAO 调用空的 `EnsureSchema` 方法。
+可以在 DAO 中覆写它，执行经过审查的迁移或显式 schema 初始化；Vine 不会自动调用
+GORM `AutoMigrate`。
 `standalone.Option.HubDBSQLiteFile` 属于 Hub，与这里的业务数据库无关。
 
 :::

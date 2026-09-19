@@ -39,7 +39,10 @@ type Option struct {
 ### `DatabaseSpec`
 
 A business component embeds `rdb.Database` and overrides `InitOption` and
-`InitDao` as needed.
+`InitDao` as needed. Each registered DAO inherits an empty `EnsureSchema`
+method; override it on a concrete DAO for reviewed migrations or other schema
+setup. Vine calls these methods after opening the connection and before DAOs
+are exposed.
 
 ### `Database`
 
@@ -61,6 +64,12 @@ func (d *ConfigDatabase) InitOption(option *rdb.Option) {
 
 func (d *ConfigDatabase) InitDao(add rdb.TypeAdder) {
     add(reflect.TypeFor[*ConfigDAO]())
+}
+
+func (d *ConfigDAO) EnsureSchema() {
+    if err := d.GormDB().AutoMigrate(&ConfigModel{}); err != nil {
+        panic(err)
+    }
 }
 ```
 

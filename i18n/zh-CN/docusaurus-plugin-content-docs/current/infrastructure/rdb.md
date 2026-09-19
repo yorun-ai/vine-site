@@ -37,6 +37,8 @@ type Option struct {
 ### `DatabaseSpec`
 
 业务组件通过嵌入 `rdb.Database` 并按需实现 `InitOption` 与 `InitDao` 完成配置。
+每个已注册 DAO 都继承一个空的 `EnsureSchema` 方法；具体 DAO 可以覆写它，执行经过
+审查的迁移或其他 schema 初始化。Vine 会在打开连接、暴露 DAO 之前调用这些方法。
 
 ### `Database`
 
@@ -56,6 +58,12 @@ func (d *ConfigDatabase) InitOption(option *rdb.Option) {
 
 func (d *ConfigDatabase) InitDao(add rdb.TypeAdder) {
     add(reflect.TypeFor[*ConfigDAO]())
+}
+
+func (d *ConfigDAO) EnsureSchema() {
+    if err := d.GormDB().AutoMigrate(&ConfigModel{}); err != nil {
+        panic(err)
+    }
 }
 ```
 
