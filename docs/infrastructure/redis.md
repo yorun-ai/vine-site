@@ -39,6 +39,8 @@ type Option struct {
   - `redis://user:pass@127.0.0.1:6379/2`
 - Plain addresses are also supported:
   - `127.0.0.1:6379`
+- A process-local in-memory instance uses `redis+memory://name` or
+  `redis+memory://name/dbIndex`.
 
 ### `RedisSpec`
 
@@ -98,10 +100,19 @@ value, err := s.CacheRedis.Get(ctx, "user:1").Result()
 
 ## Lifecycle
 
-The Redis client is created when the component starts and closed after the
-application stops. Caches, Lockers, and user-defined Redis components all share
-this client; business modules don't need to open duplicate connections or close
-it manually.
+Redis components with exactly the same external `Endpoint` string share one
+client connection pool within the process; memory endpoints share by instance
+name and database index instead. Each component acquires a reference at startup
+and releases it after its application stops, and the pool closes only after the
+last reference is released, which leaves external Redis data in place. Different
+endpoint strings use separate pools, even when they identify the same server. Caches and Lockers use their Redis
+component's client; business modules don't need to open duplicate connections or
+close it manually.
+
+`SELECT` may only select the database configured by the endpoint. Selecting a
+different database returns a client-side error; use another Redis component with
+the desired endpoint instead. If a pipeline or transaction pipeline contains a
+forbidden `SELECT`, the entire batch is rejected before execution.
 
 ## Locker
 

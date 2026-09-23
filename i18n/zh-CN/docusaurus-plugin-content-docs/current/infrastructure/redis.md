@@ -37,6 +37,7 @@ type Option struct {
   - `redis://user:pass@127.0.0.1:6379/2`
 - 也支持裸地址：
   - `127.0.0.1:6379`
+- 进程内内存实例使用 `redis+memory://name` 或 `redis+memory://name/dbIndex`
 
 
 ### `RedisSpec`
@@ -94,7 +95,15 @@ value, err := s.CacheRedis.Get(ctx, "user:1").Result()
 
 ## 生命周期
 
-Redis client 在组件启动时创建，在应用停止后关闭。Cache、Locker 和用户定义的 Redis 组件共享该 client；无需在业务模块中重复连接或手工关闭。
+同一进程内，外部 `Endpoint` 字符串完全相同的 Redis 组件共享一个客户端连接池；
+内存连接串则按实例名称和数据库编号共享。每个组件在启动时获取引用，在所属应用停止后
+释放引用；最后一个引用释放后才关闭连接池，外部 Redis 的数据不受影响。不同连接串使用
+独立连接池，即使它们指向同一个服务端。Cache 和 Locker 使用所属 Redis 组件的 client；
+无需在业务模块中重复连接或手工关闭。
+
+`SELECT` 只能选择连接串配置的 DB，切换到其他 DB 会在客户端报错；
+需要访问其他 DB 时，使用配置了对应连接串的 Redis 组件。
+普通 Pipeline 或事务 Pipeline 中包含被禁止的 `SELECT` 时，整批命令在执行前被拒绝。
 
 ## Locker
 

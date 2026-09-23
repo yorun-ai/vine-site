@@ -211,16 +211,26 @@ API 更新时不传 `routePathPrefix` 表示不修改，传空字符串表示清
 以下要求适用于 Admin API 和启动 seed YAML。
 
 入口必须填写 `scheme`（`http` 或 `https`）和 `port`（`0` 表示协议默认端口，或
-`1–65535`）；`host` 可以为空或主机名/IP，不能带完整 URL、端口或通配符。为声明访问
-地址的规则创建的入口会按该访问地址命名。规则必须填写名称；`matchPathPrefix` 非空时
-必须以 `/` 开头，不包含查询参数或片段分隔符、反斜杠、空白、控制字符及 `.` / `..`
-路径段。通过 Admin API 创建的规则用 `entryName` 指定所属入口。
+`1–65535`）；`host` 可以为空、填写主机名/IP，或使用 `*.example.com` 这样的通配符域名，
+不能带完整 URL 或端口；通配符只允许开头的 `*.`。为声明访问地址的规则创建的入口会按该
+访问地址命名。规则必须填写名称；`matchPathPrefix` 非空时必须以 `/` 开头，不包含查询参数
+或片段分隔符、反斜杠、空白、控制字符及 `.` / `..` 路径段。通过 Admin API 创建的规则用
+`entryName` 指定所属入口。
+
+通配符只匹配一级子域名：`*.example.com` 匹配 `shop.example.com`，不匹配 `example.com`
+或 `a.b.example.com`。通配符入口下的每条规则都必须指向 Web 站点，且该站点必须已存在：
+不允许 Rpc 目标和重定向；目标站点之后被删除或改为非 Web 类型时，该规则停止服务。还需将
+DNS 泛解析指向 Portal；使用 HTTPS 时提供匹配的证书。
+
+同一个入口内的规则按域名精确程度排序：精确域名优先于通配符域名，两者都优先于空 Host
+兜底规则；同一组内优先匹配更长的 `matchPathPrefix`。
 
 `SITE` 必须填写 `routeSiteName`，不能设置 `routeRedirectionPattern`。
 `PERMANENT_REDIRECT` 和 `TEMPORARY_REDIRECT` 必须填写 `routeRedirectionPattern`，
 不能设置站点名称或非空路由路径前缀。重定向模板支持 `{scheme}`、`{host}`、`{uri}`、
 `{path}`、`{query}`、`{method}`、`{remote}`；未知占位符或未配对的大括号会报错。
-保存规则时不会检查目标站点是否存在，请确保目标站点在接收请求前已配置。
+保存规则时不会检查目标站点是否存在；通配符入口例外，其目标必须是已存在的 Web 站点。
+请确保目标站点在接收请求前已配置。
 
 ## 规则冲突
 
@@ -232,6 +242,27 @@ API 更新时不传 `routePathPrefix` 表示不修改，传空字符串表示清
 从而改变其规则解析出的路径。
 
 ## 证书信息
+
+证书使用 PEM 文本：`certificate` 包含站点证书及其后的中间证书，`privateKey` 包含私钥：
+
+```yaml
+portalCerts:
+  - name: example
+    certificate: |
+      -----BEGIN CERTIFICATE-----
+      ...
+      -----END CERTIFICATE-----
+    privateKey: |
+      -----BEGIN PRIVATE KEY-----
+      ...
+      -----END PRIVATE KEY-----
+```
+
+Hub 在保存前校验证书链，以及证书与私钥是否配对。Admin API 更新时可以省略
+`privateKey` 以保留已有私钥；Dashboard 的私钥输入留空也按此处理。证书读取 API
+不返回私钥内容。
+
+Hub 启动时会转换已保存的证书；无法转换的记录会终止启动，并指出相关证书。
 
 证书签发者、域名和有效期自动从证书内容解析，无需手填。YAML 中即使填写了
 这些元数据，也以证书内容为准。

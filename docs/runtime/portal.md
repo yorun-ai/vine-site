@@ -251,20 +251,33 @@ Seed YAML is a complete rule value: omitting the field means empty.
 The following requirements apply to the Admin API and startup seed YAML.
 
 An entry requires a `scheme` of `http` or `https` and a `port` of `0` (the
-protocol default) or `1–65535`; its `host` may be empty or a hostname or IP
-address, without a URL, port, or wildcard. An entry created for a rule that
-declares access is named from that access. A rule requires a name, and its
+protocol default) or `1–65535`; its `host` may be empty, a hostname or IP
+address, or a wildcard such as `*.example.com`, without a URL or port, and only a
+leading `*.` is accepted for a wildcard. An entry created for a rule that declares
+access is named from that access. A rule requires a name, and its
 `matchPathPrefix`, when set, must start with `/` and cannot contain query or
 fragment delimiters, backslashes, whitespace, control characters, or dot
 segments. A rule created through the Admin API names its entry with `entryName`.
+
+A wildcard host matches exactly one subdomain label, so `*.example.com` matches
+`shop.example.com` but not `example.com` or `a.b.example.com`. Every rule in a
+wildcard entry must target a Web site, and that site must already exist: Rpc
+targets and redirects are rejected, and the rule stops serving if its target site
+is later removed or becomes a non-Web type. Point wildcard DNS at Portal and
+provide a matching certificate for HTTPS.
+
+Rules in one entry are ordered by host specificity: an exact host wins over a
+wildcard host, and both win over an empty-host fallback rule. Within one group,
+the longest `matchPathPrefix` wins.
 
 `SITE` requires `routeSiteName` and rejects `routeRedirectionPattern`.
 `PERMANENT_REDIRECT` and `TEMPORARY_REDIRECT` require `routeRedirectionPattern`
 and reject site names and nonempty route path prefixes. Redirect placeholders
 are `{scheme}`, `{host}`, `{uri}`, `{path}`, `{query}`, `{method}`, and `{remote}`;
 unrecognized placeholders or unmatched braces are rejected.
-Saving a rule does not check whether its target site exists. Configure the
-target site before it needs to handle requests.
+Saving a rule does not check whether its target site exists, except in a wildcard
+entry, whose target must already be a Web site. Configure the target site before
+it needs to handle requests.
 
 ## Rule conflicts
 
@@ -279,6 +292,30 @@ entry, or changing the mount path of its site, which changes the path its rules
 resolve to.
 
 ## Certificate information
+
+Certificates use PEM text in `certificate`, which carries the leaf certificate
+followed by any intermediate certificates, and `privateKey`:
+
+```yaml
+portalCerts:
+  - name: example
+    certificate: |
+      -----BEGIN CERTIFICATE-----
+      ...
+      -----END CERTIFICATE-----
+    privateKey: |
+      -----BEGIN PRIVATE KEY-----
+      ...
+      -----END PRIVATE KEY-----
+```
+
+Hub validates the certificate chain and its match with the private key before
+saving. An Admin API update may omit `privateKey` to keep the stored key, which is
+also how an empty Dashboard key field behaves, and certificate read APIs never
+return private key contents.
+
+Hub converts existing stored certificates when it starts; a record it cannot
+convert stops startup and names the affected certificate.
 
 Issuer, domains, and validity dates are read automatically from the certificate;
 you do not need to fill them in. Certificate content takes precedence over any
