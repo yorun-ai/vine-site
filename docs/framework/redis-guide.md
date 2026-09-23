@@ -95,5 +95,27 @@ token-checked release; it returns `false` when the lock is unavailable or
 ownership is lost. Redis locks are coordination leases, not fencing tokens.
 Synchronous Redis failures from `Lock(...)` or `Unlock()` panic; `Unlock()` also
 panics when its token-checked delete finds ownership is already gone.
+
+## In-memory Redis
+
+`redis+memory://cache` serves caches and locks from a process-local in-memory
+instance, without an external server, in every runtime mode including bundles.
+The name allows letters, digits, `_`, `-`, and `.`; an optional database index
+from `0` to `15` selects a logical database, and omitting it selects DB 0. No
+credentials, port, extra path segment, or query parameter is accepted.
+
+Within one process, one name shares one server, and one name and database index
+share one client pool. `Cache[T]` and `Locker` behave as they do on an external
+server, including key expiration and lock renewal. A component releases its
+reference when it stops: the last reference to a database closes that database's
+client while another database keeps the instance alive, and the last reference to
+the instance closes it and discards its data, so a later acquisition starts empty.
+
+The instance exists only inside the process that creates it, so separate processes
+never share caches or locks even when they use the same URL. A deployment with more
+than one replica needs an external Redis (`redis://` or `rediss://`) for shared
+caches or coordinated locks. The backend covers the commands behind these APIs,
+not the full Redis command set.
+
 See the [Redis Reference](../infrastructure/redis.md) for Cache, KeyPrefix, lock states, and
 direct construction.
