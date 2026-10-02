@@ -96,8 +96,8 @@ Embedded NATS accepts the Hub and Link identities and rejects Portal.
 The Admin API serves cleartext HTTP on its own listener, because the Dashboard it
 carries is reached from an operator's browser, which holds no mesh certificate.
 
-The equivalent environment variables are `VINE_MTLS_CA_FILE`,
-`VINE_MTLS_CERT_FILE`, and `VINE_MTLS_KEY_FILE`.
+The equivalent environment variables are `VINE_HUB_MTLS_CA_FILE`,
+`VINE_HUB_MTLS_CERT_FILE`, and `VINE_HUB_MTLS_KEY_FILE`.
 
 :::warning Remaining security boundaries
 
@@ -187,8 +187,8 @@ vine hub serve \
 
 Link connects directly to the Redis endpoint advertised by Hub. The endpoint
 supports `redis://` and `rediss://`, including URL credentials and a database
-number. The corresponding environment variables are `VINE_LOCK_MODE` and
-`VINE_LOCK_REDIS_ENDPOINT`.
+number. The corresponding environment variables are `VINE_HUB_LOCK_MODE` and
+`VINE_HUB_LOCK_REDIS_ENDPOINT`.
 
 `redis` mode requires an endpoint. `embedded` and `disable` reject one.
 Use `--lock-mode=disable` to reject lock operations. Standalone always uses
@@ -310,15 +310,15 @@ startup. The map contains no file paths, line numbers, or variable values.
 
 Standalone applications can embed the template and source map with Go `embed`
 and pass `Option.HubSeedData` and `Option.HubSeedSource`, plus
-`Option.HubSeedVarsFile` for the deployment dictionary. Alternatively, pass
-`Option.HubSeedDataFile` with the optional `Option.HubSeedSourceFile`. Inline and
-file inputs cannot be mixed: an embedded template requires an embedded source
-map, and a file template requires a file source map. Variables are always
-supplied through a file. For file inputs the environment variables are
-`VINE_SEED_DATA_FILE`, `VINE_SEED_SOURCE_FILE`, and `VINE_SEED_VARS_FILE` when
-Hub runs as its own service, and `VINE_HUB_SEED_DATA_FILE`,
-`VINE_HUB_SEED_SOURCE_FILE`, and `VINE_HUB_SEED_VARS_FILE` when a standalone
-application hosts the Hub.
+`Option.HubSeedVarsFile` for the deployment dictionary or `Option.HubSeedVars`
+for assignments in code. Alternatively, pass `Option.HubSeedDataFile` with the
+optional `Option.HubSeedSourceFile`. Inline and file inputs cannot be mixed: an
+embedded template requires an embedded source map, and a file template requires a
+file source map; variables may come from a file or from assignments in either
+case. In both standalone service and embedded modes, file inputs use
+`VINE_HUB_SEED_DATA_FILE`, `VINE_HUB_SEED_SOURCE_FILE`, and
+`VINE_HUB_SEED_VARS_FILE`; `VINE_HUB_SEED_VAR` supplies one variable assignment. See
+[deployment variables](../framework/configuration.md#deployment-variables).
 
 The Dashboard's **Field sources** action shows definitions, last overrides,
 original templates, resolved variable values, and default usage. Editing a field

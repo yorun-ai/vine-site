@@ -88,8 +88,11 @@ func main() {
 ```
 
 Seed data 和 source 文件是构建输入，运行时无需随二进制分发。
-变量只能通过文件提供，没有通过 Vine 选项嵌入变量的入口。
+变量可以来自文件，也可以通过 `Option.HubSeedVars` 在代码中赋值。
 没有占位符，或所有引用都有默认值时，二进制可以不带 vars 文件直接启动。
+
+如果希望把选定的路径暴露为二进制自身的 flag，可在 `Option.VarFlags` 中映射，
+见[部署变量的业务参数](../framework/app.md#named-deployment-variable-flags)。
 
 示例未指定数据库，因此每次启动都从内嵌 seed 和部署字典加载配置；
 修改 `vars.yaml` 后重启即可生效。如果选择 SQLite 或 PostgreSQL，seed 变量只在

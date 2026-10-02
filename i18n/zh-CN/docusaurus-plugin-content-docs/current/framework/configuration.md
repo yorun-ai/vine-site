@@ -49,14 +49,28 @@ type CheckoutService struct {
 
 生成的配置类型无需手工注册。
 
+## 嵌套值与 binary
+
+配置字段使用普通 Skel 值类型：包含 `binary` 的标量、enum、可复用的 `data` 类型、
+泛型 data、可空值以及列表和 Map。共享结构应声明为 `data`；`config` 和 `event` 是入口
+声明，不能作为字段类型使用。声明结构化配置需要 skelc v0.23.0 或更高版本，
+运行时需要 Vine v0.25.0 或更高版本。
+
+JSON 或 YAML 中的 `binary` 值使用带标准填充的 base64 字符串。YAML 字面块（`|`）
+可以分行填写 base64：支持 CR 和 LF，不支持空格和制表符。使用普通字符串或字面块，
+不要使用 `!!binary` 或折叠块（`>`）。
+
+Hub Dashboard 提供嵌套字段和枚举补全、类型与描述提示，以及带字段路径的校验；
+`@sensitive` 字段的诊断信息会脱敏值本身和 Map Key。配置更新替换整份 JSON；
+缺失字段、多余字段或无效的嵌套值会显示为 `MISMATCH`，同时仍会被保存以便后续修正。
+
 ## 字符串空白处理
 
-Vine 会去除配置字符串字段的首尾 Unicode 空白，包括可空字符串、列表元素和 Map
-中的字符串 Value。例如，`"  hello  world\n"` 会变成 `"hello  world"`，字符串内部
-空白保留。空值、Map Key、枚举和 `json` 内容保持原样。
+Vine 保留配置字符串的原值，包括可空字符串、列表元素、Map value 和嵌套 data
+中的首尾 Unicode 空白。例如，`"  hello  world\n"` 会原样传递给应用代码。
 
-该行为同时适用于 `eternal` 和 `instant` 配置，只影响应用收到的值，不会修改 Hub
-保存或 Dashboard 显示的值。`@sensitive` 控制日志脱敏，不会关闭 trim。
+该行为同时适用于 `eternal` 和 `instant` 配置。字段含义需要处理空白时，应由使用
+该字段的代码显式规范化或校验。`@sensitive` 控制日志脱敏，不修改配置值。
 
 ## 选择生命周期
 
@@ -145,8 +159,35 @@ checkout:
 ```
 
 文件名可以自行选择，通过 `--seed-vars-file ./vars.yaml`、
-`VINE_SEED_VARS_FILE` 或 `standalone.Option.HubSeedVarsFile` 指定。
+`VINE_HUB_SEED_VARS_FILE` 或 `standalone.Option.HubSeedVarsFile` 指定。
 应用代码仍然取得替换后的 `CheckoutConfig`，无需自行读取字典或解析占位符。
+
+也可以不使用变量文件，直接传入变量，或覆盖文件中的指定路径；两种情况都需要先提供 seed。
+每个赋值使用一次 `--seed-var 路径=YAML`，可重复传入：
+
+```bash
+vine hub serve --seed-data-file ./seed.yaml --seed-vars-file ./vars.yaml \
+  --seed-var checkout.timeoutMs=6000 \
+  --seed-var 'origins=["https://a.com","https://b.com"]' \
+  --seed-var 'database={host: localhost, port: 5432}'
+```
+
+standalone 应用使用 `--hub-seed-var`，或通过
+`standalone.Option.HubSeedVars` 传入采用相同赋值格式的 `[]string`。
+两种模式的 `VINE_HUB_SEED_VAR` 均提供一个赋值；命令行赋值替代对应的
+环境变量输入。非空的 `Option.HubSeedVars` 替代命令行或环境变量中的赋值。
+
+赋值在读取变量文件后按顺序应用，同一路径最后传入的值优先。
+赋值给 `database` 会替换整个对象，赋值给 `database.host` 则保留同级字段。
+缺失的父对象会自动创建；已有的标量、列表或 null 不能接收子字段赋值。
+路径使用点分隔的 camelCase 字段，不支持数组下标。
+值保留 YAML 的标量、列表和对象类型，复用文件变量的替换和校验规则。
+逗号和额外的 `=` 都保留在值中。数字形式的字符串可写为
+`--seed-var 'code="123"'`，空字符串写为 `--seed-var text=`，
+null 写为 `--seed-var optional=null`。插入的值不会再次展开占位符。
+
+standalone 还可以通过 [`Option.VarFlags`](./app.md#named-deployment-variable-flags)
+将选定路径暴露为业务参数，并生成对应环境变量。
 
 ### 定义变量结构
 

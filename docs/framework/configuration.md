@@ -52,16 +52,34 @@ type CheckoutService struct {
 
 Do not register generated configuration types by hand.
 
+## Nested values and binary
+
+Configuration fields use ordinary Skel value types: scalars including `binary`,
+enums, reusable `data` types, generic data, nullable values, and lists and maps.
+Declare shared structures as `data`; `config` and `event` declarations are entry
+points and cannot be used as field types. Declaring structured values needs skelc
+v0.23.0 or later, and serving them needs Vine v0.25.0 or later.
+
+Write `binary` values as standard padded base64 strings in JSON or YAML. A YAML
+literal block (`|`) can wrap base64 across lines: CR and LF are accepted, while
+spaces and tabs are invalid. Use a plain string or literal block rather than
+`!!binary` or a folded block (`>`).
+
+The Hub Dashboard offers nested field and enum completion, type and description
+hints, and validation that reports field paths; diagnostics for `@sensitive`
+fields redact values and map keys. A configuration update replaces the whole JSON
+value, and a value with missing or extra fields or an invalid nested value is
+reported as `MISMATCH` while it stays saved for later correction.
+
 ## String whitespace
 
-Vine removes leading and trailing Unicode whitespace from configuration string
-fields, including nullable strings, list elements, and string values in maps.
-For example, `"  hello  world\n"` becomes `"hello  world"`; whitespace inside the
-string is preserved. Null values, map keys, enums, and `json` content are unchanged.
+Vine preserves configuration string values, including leading and trailing
+Unicode whitespace in nullable strings, list elements, map values, and nested
+data. For example, `"  hello  world\n"` reaches application code unchanged.
 
-This applies to both `eternal` and `instant` configuration. It affects the value
-received by your application, not the value saved in Hub or shown in the Dashboard.
-Marking a field `@sensitive` controls log redaction; it does not disable trimming.
+This applies to both `eternal` and `instant` configuration. Normalize or validate
+whitespace in the code that uses a field when its meaning requires it.
+`@sensitive` controls log redaction and does not modify configuration values.
 
 ## Choose the lifecycle
 
@@ -163,9 +181,41 @@ checkout:
 ```
 
 The filename is your choice. Supply it with `--seed-vars-file ./vars.yaml`,
-`VINE_SEED_VARS_FILE`, or `standalone.Option.HubSeedVarsFile`.
+`VINE_HUB_SEED_VARS_FILE`, or `standalone.Option.HubSeedVarsFile`.
 Application code still receives `CheckoutConfig` with the resolved values; it
 does not need to read this file or interpret placeholders.
+
+Variables can also be supplied directly, without a vars file, or to override
+selected paths in that file; either way the seed they substitute into is
+required. Repeat `--seed-var path=YAML` for each assignment:
+
+```bash
+vine hub serve --seed-data-file ./seed.yaml --seed-vars-file ./vars.yaml \
+  --seed-var checkout.timeoutMs=6000 \
+  --seed-var 'origins=["https://a.com","https://b.com"]' \
+  --seed-var 'database={host: localhost, port: 5432}'
+```
+
+Standalone applications use `--hub-seed-var` or
+`standalone.Option.HubSeedVars` (`[]string` with the same assignments).
+`VINE_HUB_SEED_VAR` supplies one assignment in either mode; command-line
+assignments replace that environment input. A non-empty `Option.HubSeedVars`
+replaces assignments from the command line or environment.
+
+Assignments are applied after the vars file, in order; the last value at a path
+wins. Assigning `database` replaces the entire object, while assigning
+`database.host` preserves its siblings. Missing parent objects are created;
+a scalar, list or null parent cannot receive a child assignment. Paths use
+camelCase segments separated by dots; array indexes are not supported.
+Values retain YAML scalar, list and object types and use the same substitution
+and validation rules as file variables. Commas and additional `=` characters
+remain part of the value. Use `--seed-var 'code="123"'` for a numeric-looking
+string, `--seed-var text=` for an empty string, and `--seed-var optional=null`
+for null. Inserted values are not expanded again.
+
+Standalone can also expose selected paths as business parameters with
+[`Option.VarFlags`](./app.md#named-deployment-variable-flags), including derived
+environment variables.
 
 ### Declare the variable schema
 

@@ -59,16 +59,16 @@ the NATS CLI before starting Hub or Link. This example uses file storage and one
 replica; adjust `--storage` and `--replicas` for the deployment topology:
 
 ```bash
-export VINE_MQ_NATS_ENDPOINT=nats://127.0.0.1:4222
+export VINE_HUB_MQ_NATS_ENDPOINT=nats://127.0.0.1:4222
 
-nats --server "$VINE_MQ_NATS_ENDPOINT" stream add VINE_EVENTS \
+nats --server "$VINE_HUB_MQ_NATS_ENDPOINT" stream add VINE_EVENTS \
   --subjects "event.>" \
   --retention interest \
   --storage file \
   --replicas 1 \
   --defaults
 
-nats --server "$VINE_MQ_NATS_ENDPOINT" stream add VINE_TASKS \
+nats --server "$VINE_HUB_MQ_NATS_ENDPOINT" stream add VINE_TASKS \
   --subjects "task.>" \
   --retention workqueue \
   --storage file \
@@ -76,14 +76,14 @@ nats --server "$VINE_MQ_NATS_ENDPOINT" stream add VINE_TASKS \
   --defaults
 ```
 
-Verify both streams with `nats --server "$VINE_MQ_NATS_ENDPOINT"
+Verify both streams with `nats --server "$VINE_HUB_MQ_NATS_ENDPOINT"
 stream info VINE_EVENTS` and the matching `VINE_TASKS` command, then start
 Hub:
 
 ```bash
 vine hub serve \
   --mq-mode=nats \
-  --mq-nats-endpoint "$VINE_MQ_NATS_ENDPOINT" \
+  --mq-nats-endpoint "$VINE_HUB_MQ_NATS_ENDPOINT" \
   --db-sqlite-file ./hub.sqlite
 ```
 
@@ -118,8 +118,9 @@ vine hub serve \
 ```
 
 Use `--seed-source-file` for field origins and `--seed-vars-file` for a
-deployment variable dictionary. SQLite and PostgreSQL read these files only
-during initial seeding; no-db mode reads them on every start. See
+deployment variable dictionary. Repeat `--seed-var path=YAML` to supply variables
+directly or override paths from the vars file. SQLite and PostgreSQL apply these
+inputs only during initial seeding; no-db mode applies them on every start. See
 [deployment variables](../framework/configuration.md#deployment-variables).
 
 The admin listener serves the Dashboard and answers the Admin API on
@@ -146,18 +147,19 @@ database named by `--lock-redis-endpoint`, which accepts `redis://` and
 
 These settings are also available as environment variables:
 
-- `VINE_CONTROL_LISTEN`
-- `VINE_ADMIN_LISTEN`
-- `VINE_WATCH_LISTEN`
-- `VINE_LOCK_MODE`
-- `VINE_LOCK_REDIS_ENDPOINT`
-- `VINE_MQ_NATS_ENDPOINT`
-- `VINE_MQ_MODE`
-- `VINE_SEED_DATA_FILE`
-- `VINE_SEED_SOURCE_FILE`
-- `VINE_SEED_VARS_FILE`
-- `VINE_DB_SQLITE_FILE`
-- `VINE_DB_POSTGRES_URL`
+- `VINE_HUB_CONTROL_LISTEN`
+- `VINE_HUB_ADMIN_LISTEN`
+- `VINE_HUB_WATCH_LISTEN`
+- `VINE_HUB_LOCK_MODE`
+- `VINE_HUB_LOCK_REDIS_ENDPOINT`
+- `VINE_HUB_MQ_NATS_ENDPOINT`
+- `VINE_HUB_MQ_MODE`
+- `VINE_HUB_SEED_DATA_FILE`
+- `VINE_HUB_SEED_SOURCE_FILE`
+- `VINE_HUB_SEED_VAR`
+- `VINE_HUB_SEED_VARS_FILE`
+- `VINE_HUB_DB_SQLITE_FILE`
+- `VINE_HUB_DB_POSTGRES_URL`
 
 Notes:
 
@@ -166,6 +168,25 @@ Notes:
   Use `--mq-mode=nats` with `--mq-nats-endpoint` to connect to external NATS.
 - `--lock-mode=redis` requires `--lock-redis-endpoint`; `embedded` and `disable`
   reject it.
+
+## Component environment variables
+
+The `hub serve`, `link serve`, and `portal serve` commands read environment
+variables scoped by component: `VINE_HUB_*`, `VINE_LINK_*`, and `VINE_PORTAL_*`.
+An embedded runtime reads the same Hub names, and flag names are unchanged.
+Command-line values take priority over environment variables.
+
+Each command accepts `--log-level` and repeatable `--log-rule pattern=LEVEL`:
+
+| Service | Log level | Named rules |
+| --- | --- | --- |
+| Hub | `VINE_HUB_LOG_LEVEL` | `VINE_HUB_LOG_RULES` |
+| Link | `VINE_LINK_LOG_LEVEL` | `VINE_LINK_LOG_RULES` |
+| Portal | `VINE_PORTAL_LOG_LEVEL` | `VINE_PORTAL_LOG_RULES` |
+
+An embedded application keeps the process-wide `VINE_LOG_LEVEL` and
+`VINE_LOG_RULES`. For the mTLS variables below, `<COMPONENT>` is `HUB`, `LINK`, or
+`PORTAL`.
 
 ## Backend mTLS flags
 
@@ -182,8 +203,8 @@ with exactly one SPIFFE URI SAN. The required identities are
 `spiffe://<trust-domain>/vine/daemon/vine.portal`; all communicating components must use
 the same trust domain. Certificates must be valid for both server and client
 authentication. DNS SANs are not used for component authorization. The
-corresponding environment variables are `VINE_MTLS_CA_FILE`,
-`VINE_MTLS_CERT_FILE`, and `VINE_MTLS_KEY_FILE`.
+corresponding environment variables are `VINE_<COMPONENT>_MTLS_CA_FILE`,
+`VINE_<COMPONENT>_MTLS_CERT_FILE`, and `VINE_<COMPONENT>_MTLS_KEY_FILE`.
 
 Programs using `app/linked` configure the embedded Link through flags that name
 it: `--link-mtls-ca-file`, `--link-mtls-cert-file`, and `--link-mtls-key-file`,
@@ -223,9 +244,9 @@ vine link serve \
 
 Environment variables:
 
-- `VINE_API_LISTEN`
-- `VINE_INGRESS_LISTEN`
-- `VINE_HUB_ENDPOINT`
+- `VINE_LINK_API_LISTEN`
+- `VINE_LINK_INGRESS_LISTEN`
+- `VINE_LINK_HUB_ENDPOINT`
 
 ## portal
 
@@ -245,7 +266,7 @@ vine portal serve \
 
 Environment variables:
 
-- `VINE_HUB_ENDPOINT`
+- `VINE_PORTAL_HUB_ENDPOINT`
 
 ## Common workflow
 

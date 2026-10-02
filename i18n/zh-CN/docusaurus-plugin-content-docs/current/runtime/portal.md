@@ -45,7 +45,7 @@ vine portal serve \
   --hub-endpoint http://127.0.0.1:7071
 ```
 
-`--hub-endpoint` 也能通过 `VINE_HUB_ENDPOINT` 设置。Portal 的实际 HTTP / HTTPS 监听地址不是命令行固定参数，而是由 Hub 中的 Portal entry 和 rule 配置驱动。
+`--hub-endpoint` 也能通过 `VINE_PORTAL_HUB_ENDPOINT` 设置。Portal 的实际 HTTP / HTTPS 监听地址不是命令行固定参数，而是由 Hub 中的 Portal entry 和 rule 配置驱动。
 
 网络部署中，应配置 Portal 的 `vine.portal` 后台身份：
 

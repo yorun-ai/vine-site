@@ -45,42 +45,52 @@ Hub 默认使用只读的 no-db 模式、内嵌 NATS 与内存锁。需要可写
 
 | 关注点 | 选项一 | 选项二 |
 | --- | --- | --- |
-| 数据库 | `VINE_DB_SQLITE_FILE=/data/hub.sqlite` | `VINE_DB_POSTGRES_URL=postgres://...` |
-| 消息系统 | `VINE_MQ_MODE=embedded` | `VINE_MQ_MODE=nats` 搭配 `VINE_MQ_NATS_ENDPOINT=nats://...` |
+| 数据库 | `VINE_HUB_DB_SQLITE_FILE=/data/hub.sqlite` | `VINE_HUB_DB_POSTGRES_URL=postgres://...` |
+| 消息系统 | `VINE_HUB_MQ_MODE=embedded` | `VINE_HUB_MQ_MODE=nats` 搭配 `VINE_HUB_MQ_NATS_ENDPOINT=nats://...` |
 
-两项数据库配置不能同时设置。embedded 模式拒绝 `VINE_MQ_NATS_ENDPOINT`，
+两项数据库配置不能同时设置。embedded 模式拒绝 `VINE_HUB_MQ_NATS_ENDPOINT`，
 nats 模式必须提供它。使用 SQLite 时，将持久化存储挂载到 `/data`。通过
-`VINE_SEED_DATA_FILE` 配置 seed 文件时，也需要将对应文件挂载进容器。
-`VINE_SEED_SOURCE_FILE` 和 `VINE_SEED_VARS_FILE` 引用的来源、变量文件
+`VINE_HUB_SEED_DATA_FILE` 配置 seed 文件时，也需要将对应文件挂载进容器。
+`VINE_HUB_SEED_SOURCE_FILE` 和 `VINE_HUB_SEED_VARS_FILE` 引用的来源、变量文件
 也需要挂载；这些变量均应填写容器内的文件路径。
 
 镜像接受以下环境变量，其中默认值一列是变量未设置时实际生效的取值：
 
 | 镜像 | 变量 | 生效默认值 | 用途 |
 | --- | --- | --- | --- |
-| Hub | `VINE_CONTROL_LISTEN` | `0.0.0.0:7071` | Link 与 Portal 使用的 Control API |
-| Hub | `VINE_ADMIN_LISTEN` | `0.0.0.0:7099` | Admin API 与 Dashboard |
-| Hub | `VINE_WATCH_LISTEN` | `0.0.0.0:7072` | 配置与发现 watch 端点 |
-| Hub | `VINE_DB_SQLITE_FILE` | 空 | SQLite 数据库路径 |
-| Hub | `VINE_DB_POSTGRES_URL` | 空 | PostgreSQL 连接 URL |
-| Hub | `VINE_MQ_MODE` | `embedded` | MQ 模式：`embedded` 或 `nats` |
-| Hub | `VINE_MQ_NATS_ENDPOINT` | 空 | 外部 NATS URL |
-| Hub | `VINE_LOCK_MODE` | `embedded` | 锁后端：`embedded`、`redis` 或 `disable` |
-| Hub | `VINE_LOCK_REDIS_ENDPOINT` | 空 | `VINE_LOCK_MODE=redis` 时使用的 Redis endpoint |
-| Hub | `VINE_SEED_DATA_FILE` | 空 | 启动 seed 文件 |
-| Hub | `VINE_SEED_SOURCE_FILE` | 空 | 可选的字段来源文件 |
-| Hub | `VINE_SEED_VARS_FILE` | 空 | 部署变量 YAML 字典 |
-| Link | `VINE_HUB_ENDPOINT` | `http://hub:7071` | Hub Control API endpoint |
-| Link | `VINE_API_LISTEN` | `0.0.0.0:7079` | 面向应用的 Link API |
-| Link | `VINE_INGRESS_LISTEN` | `0.0.0.0:7082` | Link ingress endpoint |
-| Portal | `VINE_HUB_ENDPOINT` | `http://hub:7071` | Hub Control API endpoint |
-| 全部 | `VINE_MTLS_CA_FILE` | 空 | 后台 mTLS CA 文件 |
-| 全部 | `VINE_MTLS_CERT_FILE` | 空 | 组件证书文件 |
-| 全部 | `VINE_MTLS_KEY_FILE` | 空 | 组件私钥文件 |
+| Hub | `VINE_HUB_CONTROL_LISTEN` | `0.0.0.0:7071` | Link 与 Portal 使用的 Control API |
+| Hub | `VINE_HUB_ADMIN_LISTEN` | `0.0.0.0:7099` | Admin API 与 Dashboard |
+| Hub | `VINE_HUB_WATCH_LISTEN` | `0.0.0.0:7072` | 配置与发现 watch 端点 |
+| Hub | `VINE_HUB_DB_SQLITE_FILE` | 空 | SQLite 数据库路径 |
+| Hub | `VINE_HUB_DB_POSTGRES_URL` | 空 | PostgreSQL 连接 URL |
+| Hub | `VINE_HUB_MQ_MODE` | `embedded` | MQ 模式：`embedded` 或 `nats` |
+| Hub | `VINE_HUB_MQ_NATS_ENDPOINT` | 空 | 外部 NATS URL |
+| Hub | `VINE_HUB_LOCK_MODE` | `embedded` | 锁后端：`embedded`、`redis` 或 `disable` |
+| Hub | `VINE_HUB_LOCK_REDIS_ENDPOINT` | 空 | `VINE_HUB_LOCK_MODE=redis` 时使用的 Redis endpoint |
+| Hub | `VINE_HUB_SEED_DATA_FILE` | 空 | 启动 seed 文件 |
+| Hub | `VINE_HUB_SEED_SOURCE_FILE` | 空 | 可选的字段来源文件 |
+| Hub | `VINE_HUB_SEED_VAR` | 空 | 一个 `路径=YAML` 变量赋值 |
+| Hub | `VINE_HUB_SEED_VARS_FILE` | 空 | 部署变量 YAML 字典 |
+| Link | `VINE_LINK_HUB_ENDPOINT` | `http://hub:7071` | Hub Control API endpoint |
+| Link | `VINE_LINK_API_LISTEN` | `0.0.0.0:7079` | 面向应用的 Link API |
+| Link | `VINE_LINK_INGRESS_LISTEN` | `0.0.0.0:7082` | Link ingress endpoint |
+| Portal | `VINE_PORTAL_HUB_ENDPOINT` | `http://hub:7071` | Hub Control API endpoint |
+| Hub | `VINE_HUB_MTLS_CA_FILE` | 空 | 后台 mTLS CA 文件 |
+| Link | `VINE_LINK_MTLS_CA_FILE` | 空 | 后台 mTLS CA 文件 |
+| Portal | `VINE_PORTAL_MTLS_CA_FILE` | 空 | 后台 mTLS CA 文件 |
+| Hub | `VINE_HUB_MTLS_CERT_FILE` | 空 | 组件证书文件 |
+| Link | `VINE_LINK_MTLS_CERT_FILE` | 空 | 组件证书文件 |
+| Portal | `VINE_PORTAL_MTLS_CERT_FILE` | 空 | 组件证书文件 |
+| Hub | `VINE_HUB_MTLS_KEY_FILE` | 空 | 组件私钥文件 |
+| Link | `VINE_LINK_MTLS_KEY_FILE` | 空 | 组件私钥文件 |
+| Portal | `VINE_PORTAL_MTLS_KEY_FILE` | 空 | 组件私钥文件 |
 
 三个 mTLS 变量必须全部省略或全部配置。Hub Admin API 与 Dashboard 的 listener 无论
 后台 mTLS 如何配置都保持明文 HTTP，因此请直接访问并把它放在私有网络中。flag 对应关系
 和详细服务语义参阅 [CLI 参考](../getting-started/cli.md)。
+
+请使用上表中带组件前缀的变量，命令行取值优先于环境变量。
+详见 [CLI 命名规则](../getting-started/cli.md#component-environment-variables)。
 
 ## Kubernetes 快速部署
 
@@ -164,8 +174,8 @@ kubectl apply -k deploy/k8s/overlays/stable-mtls
 ```
 
 overlay 将每个 Secret 以只读方式挂载到 `/run/vine/mtls`，设置全部三个
-`VINE_MTLS_*` 变量，并将 Link 和 Portal 改为
-`VINE_HUB_ENDPOINT=https://hub:7071`。Portal 对外 HTTPS listener 使用的公开证书
+`VINE_<COMPONENT>_MTLS_*` 变量，并把 Link 和 Portal 的 Hub 地址设置为
+`VINE_LINK_HUB_ENDPOINT=https://hub:7071` / `VINE_PORTAL_HUB_ENDPOINT=https://hub:7071`。Portal 对外 HTTPS listener 使用的公开证书
 属于另一套配置边界，由 Hub 管理。
 
 ## 私有镜像仓库
