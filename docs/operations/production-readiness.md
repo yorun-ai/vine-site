@@ -138,11 +138,11 @@ vine hub serve \
   --mtls-ca-file /run/vine/ca.pem \
   --mtls-cert-file /run/vine/hub.pem \
   --mtls-key-file /run/vine/hub-key.pem \
-  --db-postgres-url "$VINE_DB_POSTGRES_URL" \
+  --db-postgres-url "$VINE_HUB_DB_POSTGRES_URL" \
   --mq-mode=nats \
-  --mq-nats-endpoint "$VINE_MQ_NATS_ENDPOINT" \
+  --mq-nats-endpoint "$VINE_HUB_MQ_NATS_ENDPOINT" \
   --lock-mode=redis \
-  --lock-redis-endpoint "$VINE_LOCK_REDIS_ENDPOINT"
+  --lock-redis-endpoint "$VINE_HUB_LOCK_REDIS_ENDPOINT"
 ```
 
 The Hub database is the source of truth for imported configuration, Portal rules,
@@ -164,11 +164,11 @@ determines whether each stream uses memory or file storage.
 For example, provision file-backed, single-replica streams with the NATS CLI:
 
 ```bash
-nats --server "$VINE_MQ_NATS_ENDPOINT" stream add VINE_EVENTS \
+nats --server "$VINE_HUB_MQ_NATS_ENDPOINT" stream add VINE_EVENTS \
   --subjects "event.>" --retention interest \
   --storage file --replicas 1 --defaults
 
-nats --server "$VINE_MQ_NATS_ENDPOINT" stream add VINE_TASKS \
+nats --server "$VINE_HUB_MQ_NATS_ENDPOINT" stream add VINE_TASKS \
   --subjects "task.>" --retention workqueue \
   --storage file --replicas 1 --defaults
 ```

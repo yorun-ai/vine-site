@@ -103,9 +103,13 @@ settings, then run:
 ```
 
 The seed data and source files are build inputs; they do not need to be shipped
-beside the executable. Variables are supplied only by file, never embedded via a
-Vine option. With no placeholders, or defaults for every reference, the binary
-can start without a vars file.
+beside the executable. Variables come from a file or from `Option.HubSeedVars`
+assignments in code. With no placeholders, or defaults for every reference, the
+binary can start without a vars file.
+
+To expose selected paths as flags of the binary instead, map them in
+`Option.VarFlags`; see
+[named deployment variable flags](../framework/app.md#named-deployment-variable-flags).
 
 No database is selected in this example, so configuration comes from the embedded
 seed and deployment dictionary on every start. Editing `vars.yaml` and restarting

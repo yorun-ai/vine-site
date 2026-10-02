@@ -243,8 +243,8 @@ app.New[*DemoApp](
 
 把 standalone 或 linked 应用嵌入自己程序时，程序可以接管 runtime 声明的 flag：
 
-- `IgnoredFlags` 表示接受该参数但从不应用：flag 与其环境变量仍可解析，命令行和环境变量照常可用，但取值不会进入 runtime；程序需要在代码中提供该值时，直接设置对应的 `Option` 字段
-- `RenamedFlags` 把已声明的 flag 名映射到二进制实际注册的名称。原名称及其环境变量被移除，新名称使用由它推导出的环境变量。同一个 flag 不能同时被重命名和忽略
+- `IgnoredFlags` 表示接受该参数但从不应用：命令行和环境变量会接受该 flag 及其环境变量，但取值不会进入 runtime；程序需要在代码中提供该值时，直接设置对应的 `Option` 字段
+- `RenamedFlags` 把已声明的 flag 名映射到二进制实际注册的名称。二进制以映射后的名称注册该 flag，并读取由该名称推导的环境变量（转为大写、短横线替换为下划线，不添加 `VINE_`）。例如 `worker-mtls-key-file` 读取 `WORKER_MTLS_KEY_FILE`。未重命名的内置参数保留原有 `VINE_*` 环境变量。同一个 flag 不能同时被重命名和忽略
 
 flag 名使用各 package 导出的常量：进程内 Hub 参数用 `standalone.FlagHub*` 与 `standalone.EnvHub*`，进程内 Link 参数用 `linked.Flag*` 与 `linked.Env*`。
 
@@ -258,6 +258,41 @@ linked.NewWithOption[*DemoApp](linked.Option{
 ```
 
 二进制未声明的参数会在解析前被丢弃，因此启动器可以添加自己的 flag（例如 `go test` 传入的 `-test.*`），而不会让 `VINE_*` 变量失效，也不会跳过 `version` 和 `help` 参数。重命名后的名称由小写字母、数字和分隔它们的短横线组成，其推导出的环境变量可以被 shell 设置。声明了不存在的 flag 名、与其他 flag 注册名冲突，或名称会占用 `--log-level`、`--log-rule`，都会在启动阶段被拒绝。
+
+### 部署变量的业务参数 {#named-deployment-variable-flags}
+
+standalone 应用可以把 seed 变量暴露为自身的 flag。
+`VarFlags` 将变量路径映射到参数名：
+
+```go
+standalone.NewWithOption[*DemoApp](standalone.Option{
+    VarFlags: map[string]string{
+        "database.host": "db-host",
+        "database.port": "db-port",
+    },
+}).StartAndWait()
+```
+
+`--db-host localhost --db-port 5432` 与
+`--hub-seed-var database.host=localhost --hub-seed-var database.port=5432` 的赋值相同。
+每个 flag 读取由参数名推导、不带 `VINE_` 前缀的环境变量，这里是 `DB_HOST` 和 `DB_PORT`。
+参数可重复传入，接受 YAML 标量、列表和对象；环境变量提供一个 YAML 值，命令行传入该参数时
+替代对应的环境变量输入。
+
+如果导入的生成 schema 在 `app.Vars` 中将路径声明为 `bool`，该参数会变为布尔开关，
+可使用 `--enabled`、`--enabled=false` 或 `ENABLED=false`；命令行显式传值须使用 `=` 形式。
+可空 bool 还支持 `--enabled=null` 和 `ENABLED=null`。其他取值（包括空环境变量）会被拒绝；
+其他类型以及无法解析类型的路径仍然需要显式传入 YAML 值。
+
+先读取变量文件，再应用环境变量赋值，最后应用命令行赋值。环境变量输入中，通用 seed 变量
+输入在前，业务参数按路径顺序应用；命令行赋值按出现顺序应用，因此业务参数与
+`--hub-seed-var` 可以混用。同一路径最后一次赋值优先；非空的 `Option.HubSeedVars`
+替代全部环境变量和命令行赋值。
+
+即使忽略 `FlagHubSeedVar`，业务参数仍然有效，应用因此可以只暴露选定的参数；
+`IgnoredFlags` 和 `RenamedFlags` 作用于内置参数。非法路径或参数名、重复参数名，以及
+参数名或环境变量名与其他已注册参数（包括重命名后的参数和日志参数）冲突的声明，
+都会在启动时被拒绝。被忽略的参数仍保留其环境变量名，重命名后的参数只保留新名称。
 
 ## 组件与模块
 

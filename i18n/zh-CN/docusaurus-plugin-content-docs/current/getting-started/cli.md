@@ -57,16 +57,16 @@ Link。下面的示例使用文件存储和单副本；请根据实际部署拓�
 `--replicas`：
 
 ```bash
-export VINE_MQ_NATS_ENDPOINT=nats://127.0.0.1:4222
+export VINE_HUB_MQ_NATS_ENDPOINT=nats://127.0.0.1:4222
 
-nats --server "$VINE_MQ_NATS_ENDPOINT" stream add VINE_EVENTS \
+nats --server "$VINE_HUB_MQ_NATS_ENDPOINT" stream add VINE_EVENTS \
   --subjects "event.>" \
   --retention interest \
   --storage file \
   --replicas 1 \
   --defaults
 
-nats --server "$VINE_MQ_NATS_ENDPOINT" stream add VINE_TASKS \
+nats --server "$VINE_HUB_MQ_NATS_ENDPOINT" stream add VINE_TASKS \
   --subjects "task.>" \
   --retention workqueue \
   --storage file \
@@ -74,14 +74,14 @@ nats --server "$VINE_MQ_NATS_ENDPOINT" stream add VINE_TASKS \
   --defaults
 ```
 
-分别运行 `nats --server "$VINE_MQ_NATS_ENDPOINT" stream info
+分别运行 `nats --server "$VINE_HUB_MQ_NATS_ENDPOINT" stream info
 VINE_EVENTS` 和对应的 `VINE_TASKS` 命令，确认两个 stream 都已就绪，再启动
 Hub：
 
 ```bash
 vine hub serve \
   --mq-mode=nats \
-  --mq-nats-endpoint "$VINE_MQ_NATS_ENDPOINT" \
+  --mq-nats-endpoint "$VINE_HUB_MQ_NATS_ENDPOINT" \
   --db-sqlite-file ./hub.sqlite
 ```
 
@@ -116,8 +116,8 @@ vine hub serve \
 ```
 
 可通过 `--seed-source-file` 提供字段来源，通过 `--seed-vars-file`
-提供部署变量字典。SQLite 或 PostgreSQL 仅在首次初始化时读取这些文件；
-no-db 模式每次启动都重新读取。用法见[部署变量](../framework/configuration.md#deployment-variables)。
+提供部署变量字典。重复传入 `--seed-var 路径=YAML` 可直接提供变量或覆盖变量文件中的路径。
+SQLite 或 PostgreSQL 仅在首次初始化时应用这些输入；no-db 模式每次启动都重新应用。用法见[部署变量](../framework/configuration.md#deployment-variables)。
 
 admin listener 提供 Dashboard，并在 `/api/invoke` 上响应 Admin API，浏览器因此只需访问
 同一个 origin。Dashboard 只属于这个 listener：Hub 不为它发布 Portal 入口、站点或规则，
@@ -140,18 +140,19 @@ Hub 默认使用 `--lock-mode=embedded`，租约锁保存在自身内存中，�
 
 环境变量也能提供同名配置：
 
-- `VINE_CONTROL_LISTEN`
-- `VINE_ADMIN_LISTEN`
-- `VINE_WATCH_LISTEN`
-- `VINE_LOCK_MODE`
-- `VINE_LOCK_REDIS_ENDPOINT`
-- `VINE_MQ_NATS_ENDPOINT`
-- `VINE_MQ_MODE`
-- `VINE_SEED_DATA_FILE`
-- `VINE_SEED_SOURCE_FILE`
-- `VINE_SEED_VARS_FILE`
-- `VINE_DB_SQLITE_FILE`
-- `VINE_DB_POSTGRES_URL`
+- `VINE_HUB_CONTROL_LISTEN`
+- `VINE_HUB_ADMIN_LISTEN`
+- `VINE_HUB_WATCH_LISTEN`
+- `VINE_HUB_LOCK_MODE`
+- `VINE_HUB_LOCK_REDIS_ENDPOINT`
+- `VINE_HUB_MQ_NATS_ENDPOINT`
+- `VINE_HUB_MQ_MODE`
+- `VINE_HUB_SEED_DATA_FILE`
+- `VINE_HUB_SEED_SOURCE_FILE`
+- `VINE_HUB_SEED_VAR`
+- `VINE_HUB_SEED_VARS_FILE`
+- `VINE_HUB_DB_SQLITE_FILE`
+- `VINE_HUB_DB_POSTGRES_URL`
 
 注意：
 
@@ -160,6 +161,23 @@ Hub 默认使用 `--lock-mode=embedded`，租约锁保存在自身内存中，�
   连接外部 NATS 时，必须同时提供 `--mq-mode=nats` 和 `--mq-nats-endpoint`。
 - `--lock-mode=redis` 必须提供 `--lock-redis-endpoint`；`embedded` 和 `disable`
   模式拒绝该参数。
+
+## 组件环境变量 {#component-environment-variables}
+
+`hub serve`、`link serve` 与 `portal serve` 读取按组件划分的环境变量：
+`VINE_HUB_*`、`VINE_LINK_*` 和 `VINE_PORTAL_*`。嵌入模式读取相同的 Hub 变量名，
+命令行参数名保持不变；命令行取值优先于环境变量。
+
+各命令都接受 `--log-level` 和可重复的 `--log-rule pattern=LEVEL`：
+
+| 服务 | 日志级别 | 命名规则 |
+| --- | --- | --- |
+| Hub | `VINE_HUB_LOG_LEVEL` | `VINE_HUB_LOG_RULES` |
+| Link | `VINE_LINK_LOG_LEVEL` | `VINE_LINK_LOG_RULES` |
+| Portal | `VINE_PORTAL_LOG_LEVEL` | `VINE_PORTAL_LOG_RULES` |
+
+嵌入应用继续使用进程级的 `VINE_LOG_LEVEL` 和 `VINE_LOG_RULES`。
+下文 mTLS 变量中的 `<COMPONENT>` 替换为 `HUB`、`LINK` 或 `PORTAL`。
 
 ## 后台 mTLS 参数
 
@@ -175,8 +193,8 @@ Hub、Link 与 Portal 的身份分别是
 `spiffe://<trust-domain>/vine/daemon/vine.link` 与
 `spiffe://<trust-domain>/vine/daemon/vine.portal`，相互通讯的组件必须使用相同 trust domain。
 证书还必须同时允许 server 与 client authentication。DNS SAN 即使存在，也不参与
-组件身份授权。对应环境变量是 `VINE_MTLS_CA_FILE`、`VINE_MTLS_CERT_FILE` 和
-`VINE_MTLS_KEY_FILE`。
+组件身份授权。对应环境变量是 `VINE_<COMPONENT>_MTLS_CA_FILE`、`VINE_<COMPONENT>_MTLS_CERT_FILE` 和
+`VINE_<COMPONENT>_MTLS_KEY_FILE`。
 
 使用 `app/linked` 的程序通过带 Link 前缀的参数配置内嵌 Link：`--link-mtls-ca-file`、
 `--link-mtls-cert-file` 和 `--link-mtls-key-file`，或 `VINE_LINK_MTLS_CA_FILE`、
@@ -213,9 +231,9 @@ vine link serve \
 
 环境变量：
 
-- `VINE_API_LISTEN`
-- `VINE_INGRESS_LISTEN`
-- `VINE_HUB_ENDPOINT`
+- `VINE_LINK_API_LISTEN`
+- `VINE_LINK_INGRESS_LISTEN`
+- `VINE_LINK_HUB_ENDPOINT`
 
 ## portal
 
@@ -233,7 +251,7 @@ vine portal serve \
 
 环境变量：
 
-- `VINE_HUB_ENDPOINT`
+- `VINE_PORTAL_HUB_ENDPOINT`
 
 ## 常见工作流
 

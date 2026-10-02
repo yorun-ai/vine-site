@@ -82,8 +82,8 @@ mTLS。Redis 还会把 SPIFFE 身份绑定到对应的 Redis ACL 用户。
 Admin API 在自己的监听上提供明文 HTTP，因为它承载的 Dashboard 由浏览器访问，
 浏览器不持有 mesh 证书。
 
-对应环境变量是 `VINE_MTLS_CA_FILE`、`VINE_MTLS_CERT_FILE` 与
-`VINE_MTLS_KEY_FILE`。
+对应环境变量是 `VINE_HUB_MTLS_CA_FILE`、`VINE_HUB_MTLS_CERT_FILE` 与
+`VINE_HUB_MTLS_KEY_FILE`。
 
 :::warning 仍需注意的安全边界
 
@@ -157,8 +157,8 @@ vine hub serve \
 ```
 
 Link 直接连接 Hub 下发的 Redis endpoint。地址支持 `redis://` 和 `rediss://`，
-可以包含用户名、密码和数据库编号。对应环境变量为 `VINE_LOCK_MODE` 和
-`VINE_LOCK_REDIS_ENDPOINT`。
+可以包含用户名、密码和数据库编号。对应环境变量为 `VINE_HUB_LOCK_MODE` 和
+`VINE_HUB_LOCK_REDIS_ENDPOINT`。
 
 `redis` 模式必须提供 endpoint，`embedded` 和 `disable` 模式拒绝 endpoint。
 使用 `--lock-mode=disable` 拒绝锁操作。standalone 固定使用进程内嵌锁，不暴露
@@ -257,12 +257,13 @@ fields:
 
 standalone 应用可以通过 Go `embed` 嵌入模板和来源映射，并传入
 `Option.HubSeedData`、`Option.HubSeedSource`，部署变量字典通过
-`Option.HubSeedVarsFile` 指定。也可以使用 `Option.HubSeedDataFile` 和可选的
+`Option.HubSeedVarsFile` 指定，或直接用 `Option.HubSeedVars` 在代码中赋值；
+也可以改用 `Option.HubSeedDataFile` 和可选的
 `Option.HubSeedSourceFile`。嵌入与文件模式不能混用：嵌入模板必须搭配嵌入来源映射，
-文件模板必须搭配文件来源映射。变量在两种模式下都只能通过文件传入；文件模式对应的
-Hub 作为独立服务运行时，环境变量为 `VINE_SEED_DATA_FILE`、`VINE_SEED_SOURCE_FILE`
-和 `VINE_SEED_VARS_FILE`；由 standalone 应用托管 Hub 时，对应为
-`VINE_HUB_SEED_DATA_FILE`、`VINE_HUB_SEED_SOURCE_FILE` 和 `VINE_HUB_SEED_VARS_FILE`。
+文件模板必须搭配文件来源映射；两种模式下变量都可以来自文件或赋值。
+独立服务与嵌入模式均使用 `VINE_HUB_SEED_DATA_FILE`、`VINE_HUB_SEED_SOURCE_FILE`
+和 `VINE_HUB_SEED_VARS_FILE`；`VINE_HUB_SEED_VAR` 提供一个变量赋值。用法见
+[部署变量](../framework/configuration.md#deployment-variables)。
 
 Dashboard 的“字段来源”显示最初定义、最后覆盖、原始模板、实际使用的变量值及默认值使用
 情况。编辑某个字段会清除该字段的变量依赖。

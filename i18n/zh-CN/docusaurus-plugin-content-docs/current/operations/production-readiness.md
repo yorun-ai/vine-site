@@ -120,11 +120,11 @@ vine hub serve \
   --mtls-ca-file /run/vine/ca.pem \
   --mtls-cert-file /run/vine/hub.pem \
   --mtls-key-file /run/vine/hub-key.pem \
-  --db-postgres-url "$VINE_DB_POSTGRES_URL" \
+  --db-postgres-url "$VINE_HUB_DB_POSTGRES_URL" \
   --mq-mode=nats \
-  --mq-nats-endpoint "$VINE_MQ_NATS_ENDPOINT" \
+  --mq-nats-endpoint "$VINE_HUB_MQ_NATS_ENDPOINT" \
   --lock-mode=redis \
-  --lock-redis-endpoint "$VINE_LOCK_REDIS_ENDPOINT"
+  --lock-redis-endpoint "$VINE_HUB_LOCK_REDIS_ENDPOINT"
 ```
 
 Hub 数据库是导入配置、Portal rule 和证书的事实来源。不指定数据库参数会进入只读的
@@ -144,11 +144,11 @@ retention。每个 stream 使用内存还是文件存储，由外部 NATS 部署
 例如，可以使用 NATS CLI 创建采用文件存储的单副本 stream：
 
 ```bash
-nats --server "$VINE_MQ_NATS_ENDPOINT" stream add VINE_EVENTS \
+nats --server "$VINE_HUB_MQ_NATS_ENDPOINT" stream add VINE_EVENTS \
   --subjects "event.>" --retention interest \
   --storage file --replicas 1 --defaults
 
-nats --server "$VINE_MQ_NATS_ENDPOINT" stream add VINE_TASKS \
+nats --server "$VINE_HUB_MQ_NATS_ENDPOINT" stream add VINE_TASKS \
   --subjects "task.>" --retention workqueue \
   --storage file --replicas 1 --defaults
 ```

@@ -50,46 +50,57 @@ messaging that survives the Hub process:
 
 | Concern | Option 1 | Option 2 |
 | --- | --- | --- |
-| Database | `VINE_DB_SQLITE_FILE=/data/hub.sqlite` | `VINE_DB_POSTGRES_URL=postgres://...` |
-| Messaging | `VINE_MQ_MODE=embedded` | `VINE_MQ_MODE=nats` with `VINE_MQ_NATS_ENDPOINT=nats://...` |
+| Database | `VINE_HUB_DB_SQLITE_FILE=/data/hub.sqlite` | `VINE_HUB_DB_POSTGRES_URL=postgres://...` |
+| Messaging | `VINE_HUB_MQ_MODE=embedded` | `VINE_HUB_MQ_MODE=nats` with `VINE_HUB_MQ_NATS_ENDPOINT=nats://...` |
 
 Do not set both database variables. Embedded messaging rejects
-`VINE_MQ_NATS_ENDPOINT`, and `nats` mode requires it. When using SQLite, mount
+`VINE_HUB_MQ_NATS_ENDPOINT`, and `nats` mode requires it. When using SQLite, mount
 persistent storage at `/data`. When a seed file is configured with
-`VINE_SEED_DATA_FILE`, mount that file into the container as well. Mount any
-source and variable files referenced by `VINE_SEED_SOURCE_FILE` and
-`VINE_SEED_VARS_FILE` too; each value must name its path inside the container.
+`VINE_HUB_SEED_DATA_FILE`, mount that file into the container as well. Mount any
+source and variable files referenced by `VINE_HUB_SEED_SOURCE_FILE` and
+`VINE_HUB_SEED_VARS_FILE` too; each value must name its path inside the container.
 
 The images accept these environment variables; the default column shows the
 value in effect when a variable is unset:
 
 | Image | Variable | Effective default | Purpose |
 | --- | --- | --- | --- |
-| Hub | `VINE_CONTROL_LISTEN` | `0.0.0.0:7071` | Control API for Link and Portal |
-| Hub | `VINE_ADMIN_LISTEN` | `0.0.0.0:7099` | Admin API and Dashboard |
-| Hub | `VINE_WATCH_LISTEN` | `0.0.0.0:7072` | Watch endpoint for configuration and discovery |
-| Hub | `VINE_DB_SQLITE_FILE` | empty | SQLite database path |
-| Hub | `VINE_DB_POSTGRES_URL` | empty | PostgreSQL connection URL |
-| Hub | `VINE_MQ_MODE` | `embedded` | MQ mode: `embedded` or `nats` |
-| Hub | `VINE_MQ_NATS_ENDPOINT` | empty | External NATS URL |
-| Hub | `VINE_LOCK_MODE` | `embedded` | Lock backend: `embedded`, `redis`, or `disable` |
-| Hub | `VINE_LOCK_REDIS_ENDPOINT` | empty | Redis endpoint for `VINE_LOCK_MODE=redis` |
-| Hub | `VINE_SEED_DATA_FILE` | empty | Startup seed file |
-| Hub | `VINE_SEED_SOURCE_FILE` | empty | Optional field source map |
-| Hub | `VINE_SEED_VARS_FILE` | empty | Deployment variable YAML dictionary |
-| Link | `VINE_HUB_ENDPOINT` | `http://hub:7071` | Hub Control API endpoint |
-| Link | `VINE_API_LISTEN` | `0.0.0.0:7079` | Application-facing Link API |
-| Link | `VINE_INGRESS_LISTEN` | `0.0.0.0:7082` | Link ingress endpoint |
-| Portal | `VINE_HUB_ENDPOINT` | `http://hub:7071` | Hub Control API endpoint |
-| All | `VINE_MTLS_CA_FILE` | empty | Backend mTLS CA file |
-| All | `VINE_MTLS_CERT_FILE` | empty | Component certificate file |
-| All | `VINE_MTLS_KEY_FILE` | empty | Component private-key file |
+| Hub | `VINE_HUB_CONTROL_LISTEN` | `0.0.0.0:7071` | Control API for Link and Portal |
+| Hub | `VINE_HUB_ADMIN_LISTEN` | `0.0.0.0:7099` | Admin API and Dashboard |
+| Hub | `VINE_HUB_WATCH_LISTEN` | `0.0.0.0:7072` | Watch endpoint for configuration and discovery |
+| Hub | `VINE_HUB_DB_SQLITE_FILE` | empty | SQLite database path |
+| Hub | `VINE_HUB_DB_POSTGRES_URL` | empty | PostgreSQL connection URL |
+| Hub | `VINE_HUB_MQ_MODE` | `embedded` | MQ mode: `embedded` or `nats` |
+| Hub | `VINE_HUB_MQ_NATS_ENDPOINT` | empty | External NATS URL |
+| Hub | `VINE_HUB_LOCK_MODE` | `embedded` | Lock backend: `embedded`, `redis`, or `disable` |
+| Hub | `VINE_HUB_LOCK_REDIS_ENDPOINT` | empty | Redis endpoint for `VINE_HUB_LOCK_MODE=redis` |
+| Hub | `VINE_HUB_SEED_DATA_FILE` | empty | Startup seed file |
+| Hub | `VINE_HUB_SEED_SOURCE_FILE` | empty | Optional field source map |
+| Hub | `VINE_HUB_SEED_VAR` | empty | One `path=YAML` variable assignment |
+| Hub | `VINE_HUB_SEED_VARS_FILE` | empty | Deployment variable YAML dictionary |
+| Link | `VINE_LINK_HUB_ENDPOINT` | `http://hub:7071` | Hub Control API endpoint |
+| Link | `VINE_LINK_API_LISTEN` | `0.0.0.0:7079` | Application-facing Link API |
+| Link | `VINE_LINK_INGRESS_LISTEN` | `0.0.0.0:7082` | Link ingress endpoint |
+| Portal | `VINE_PORTAL_HUB_ENDPOINT` | `http://hub:7071` | Hub Control API endpoint |
+| Hub | `VINE_HUB_MTLS_CA_FILE` | empty | Backend mTLS CA file |
+| Link | `VINE_LINK_MTLS_CA_FILE` | empty | Backend mTLS CA file |
+| Portal | `VINE_PORTAL_MTLS_CA_FILE` | empty | Backend mTLS CA file |
+| Hub | `VINE_HUB_MTLS_CERT_FILE` | empty | Component certificate file |
+| Link | `VINE_LINK_MTLS_CERT_FILE` | empty | Component certificate file |
+| Portal | `VINE_PORTAL_MTLS_CERT_FILE` | empty | Component certificate file |
+| Hub | `VINE_HUB_MTLS_KEY_FILE` | empty | Component private-key file |
+| Link | `VINE_LINK_MTLS_KEY_FILE` | empty | Component private-key file |
+| Portal | `VINE_PORTAL_MTLS_KEY_FILE` | empty | Component private-key file |
 
 The three mTLS variables must be set together or left unset. The Hub Admin API
 and Dashboard listener stays cleartext HTTP regardless of backend mTLS, so reach
 it directly and keep it on a private network. See the
 [CLI reference](../getting-started/cli.md) for flag equivalents and detailed
 service semantics.
+
+Use the component-prefixed variables above; command-line values take priority
+over environment variables. See the
+[CLI naming rules](../getting-started/cli.md#component-environment-variables).
 
 ## Kubernetes quick start
 
@@ -180,8 +191,8 @@ kubectl apply -k deploy/k8s/overlays/stable-mtls
 ```
 
 The overlay mounts each Secret read-only at `/run/vine/mtls`, sets all three
-`VINE_MTLS_*` variables, and changes Link and Portal to
-`VINE_HUB_ENDPOINT=https://hub:7071`. The public certificates used by Portal's
+`VINE_<COMPONENT>_MTLS_*` variables, and changes Link and Portal to
+`VINE_LINK_HUB_ENDPOINT=https://hub:7071` / `VINE_PORTAL_HUB_ENDPOINT=https://hub:7071`. The public certificates used by Portal's
 external HTTPS listeners are a separate configuration boundary managed by
 Hub.
 

@@ -252,14 +252,17 @@ app.New[*DemoApp](
 A program that embeds a standalone or linked application can take over the flags
 the runtime declares:
 
-- `IgnoredFlags` accepts a parameter but never applies it. The flag and its
-  environment variable still parse, so the command line and the environment keep
-  working, but their values stay out of the runtime. Set the matching `Option`
-  field when the program needs to supply the value from code.
+- `IgnoredFlags` accepts a parameter but never applies it. The command line and
+  the environment accept the flag and its environment variable, but their values
+  stay out of the runtime. Set the matching `Option` field when the program needs
+  to supply the value from code.
 - `RenamedFlags` maps a declared flag name to the name the binary registers it
-  under. The declared name and its environment variable are dropped, and the new
-  name carries the environment variable derived from it. A flag cannot be both
-  renamed and ignored.
+  under. The binary registers the flag under the mapped name and reads the
+  environment variable derived from that name by uppercasing it and replacing
+  dashes with underscores, without adding `VINE_`. For example,
+  `worker-mtls-key-file` reads `WORKER_MTLS_KEY_FILE`. Unrenamed built-in flags
+  retain their declared `VINE_*` variables. A flag cannot be both renamed and
+  ignored.
 
 Name the flags with the constants each package exports: `standalone.FlagHub*` and
 `standalone.EnvHub*` for the in-process Hub parameters, and `linked.Flag*` and
@@ -281,6 +284,49 @@ renamed name uses lowercase letters and digits with dashes between them, so its
 derived environment variable is one a shell can set. A declaration that names no
 declared flag, reuses a name another flag registers, or takes over `--log-level`
 or `--log-rule` is rejected during startup.
+
+### Named deployment variable flags
+
+Standalone applications can expose seed variables as their own flags. `VarFlags`
+maps each variable path to a flag name:
+
+```go
+standalone.NewWithOption[*DemoApp](standalone.Option{
+    VarFlags: map[string]string{
+        "database.host": "db-host",
+        "database.port": "db-port",
+    },
+}).StartAndWait()
+```
+
+`--db-host localhost --db-port 5432` assigns the same values as
+`--hub-seed-var database.host=localhost --hub-seed-var database.port=5432`. Each
+flag reads the environment variable derived from its name without a `VINE_`
+prefix, here `DB_HOST` and `DB_PORT`. A flag can be repeated and accepts a YAML
+scalar, list, or object; its environment variable supplies one YAML value, and a
+command-line occurrence replaces that environment input.
+
+When the imported generated schema declares a path as `bool` in `app.Vars`, its
+flag becomes a boolean switch that accepts `--enabled`, `--enabled=false`, or
+`ENABLED=false`; an explicit command-line value uses `=`. A nullable bool also
+accepts `--enabled=null` and `ENABLED=null`. Other values, including an empty
+environment value, are rejected, while paths of another type and paths whose type
+cannot be resolved still require an explicit YAML value.
+
+The vars file is read first, then environment assignments, then command-line
+assignments. Among the environment inputs the general seed variable input comes
+before the named ones, which apply in path order; command-line assignments apply
+in the order they appear, so a named flag and `--hub-seed-var` can be mixed. The
+last assignment to a path wins, and a non-empty `Option.HubSeedVars` replaces
+every environment and command-line assignment.
+
+Named variable flags stay active when `FlagHubSeedVar` is ignored, so an
+application can expose only selected parameters; `IgnoredFlags` and `RenamedFlags`
+apply to the built-in flags. Invalid paths or flag names, duplicate flag names,
+and flag or environment names that collide with another registered parameter,
+including a renamed flag or the logging parameters, are rejected at startup. An
+ignored flag still reserves its environment name, while a renamed flag reserves
+only the new one.
 
 ## Components and modules
 

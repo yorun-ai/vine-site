@@ -48,7 +48,7 @@ vine link serve \
   --hub-endpoint http://127.0.0.1:7071
 ```
 
-对应环境变量为 `VINE_API_LISTEN`、`VINE_INGRESS_LISTEN` 与 `VINE_HUB_ENDPOINT`。
+对应环境变量为 `VINE_LINK_API_LISTEN`、`VINE_LINK_INGRESS_LISTEN` 与 `VINE_LINK_HUB_ENDPOINT`。
 
 网络部署中，应配置 Link 的 `vine.link` 后台身份并使用 Hub HTTPS endpoint：
 
@@ -98,7 +98,7 @@ Link，目标 Link 再校验本地实例与 Handler，并调用应用 endpoint�
 
 外部 Hub 要求后台 mTLS 时，可通过 `linked.Option.LinkMTLSCAFile`、`LinkMTLSCertFile`、
 `LinkMTLSKeyFile` 配置进程内 Link，也可使用共享的 `--mtls-*-file` 参数和
-`VINE_MTLS_*_FILE` 环境变量。该证书代表内嵌的 `vine.link` workload。
+`VINE_LINK_MTLS_*_FILE` 环境变量。该证书代表内嵌的 `vine.link` workload。
 
 standalone 才会把 Hub、Portal、Link 和应用全部放入同一进程，并使用进程内 Redis 与 endpoint；这种模式不执行心跳。要验证租约和网络故障，可使用 linked 或完全分开部署。
 

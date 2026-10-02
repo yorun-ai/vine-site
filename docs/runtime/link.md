@@ -60,8 +60,8 @@ vine link serve \
   --hub-endpoint http://127.0.0.1:7071
 ```
 
-The corresponding environment variables are `VINE_API_LISTEN`,
-`VINE_INGRESS_LISTEN`, and `VINE_HUB_ENDPOINT`.
+The corresponding environment variables are `VINE_LINK_API_LISTEN`,
+`VINE_LINK_INGRESS_LISTEN`, and `VINE_LINK_HUB_ENDPOINT`.
 
 For a network deployment, configure Link's `vine.link` backend identity and use
 the Hub HTTPS endpoint:
@@ -119,7 +119,7 @@ lifecycle, so its separate application health check is disabled.
 
 When the external Hub requires backend mTLS, configure the embedded Link with
 `linked.Option.LinkMTLSCAFile`, `LinkMTLSCertFile`, and `LinkMTLSKeyFile`, or use
-the shared `--mtls-*-file` flags and `VINE_MTLS_*_FILE` environment variables. The
+the shared `--mtls-*-file` flags and `VINE_LINK_MTLS_*_FILE` environment variables. The
 certificate represents the embedded `vine.link` workload.
 
 Only standalone mode runs Hub, Portal, Link, and the application in a single
