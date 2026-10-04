@@ -89,7 +89,7 @@ data in Hub Redis:
 - Rule changes: determine the scheme, port, and site that receives a request.
 - Site changes: define Rpc or Web sites and their routing rules.
 - Endpoint registrations: determine which Link instances can receive a request.
-- Actor, service, and resource schemas: determine Rpc authentication and
+- Actor, service, Web, and resource schemas: determine authentication and
   authorization admission.
 - TLS certificates: provide SNI matching for HTTPS listeners.
 
@@ -99,6 +99,37 @@ endpoint discovery refreshes as business instances register or expire.
 A Hub restart needs no action on Portal: Portal reconnects to the running Hub and
 continues serving without a restart. See
 [Hub Restart and Endpoint Changes](./hub.md#hub-restart-and-endpoint-changes).
+
+## Authentication modes
+
+A service method inherits the service authentication mode when it declares none;
+services and Web declarations cannot use `inherit`.
+
+Rpc supports `required`, `optional`, and `anonymous` in runtime schemas; Web also
+supports `off`. Local schema registration and Hub reject explicit Rpc `off`:
+
+| Mode | No credentials | Valid credentials | Invalid credentials |
+| --- | --- | --- | --- |
+| `required` | Reject | Authenticated actor | Reject |
+| `optional` | Anonymous actor | Authenticated actor | Reject |
+| `anonymous` | Anonymous actor | Reject | Reject |
+| `off` (Web only) | No authentication | No authentication | No authentication |
+
+Authentication-service failures also reject the request. Authentication admission
+is followed by any applicable Rpc permission checks.
+
+Web `off` skips Portal authentication and supplies an anonymous actor, preserving
+`Authorization` so the application can authenticate it itself. Rpc and Web
+`required`, `optional`, and `anonymous` remove `Authorization` after admission and
+forward only the admitted actor.
+
+An Rpc method without a mode uses its service mode; a service or Web declaration
+without one is treated as `required`. Such a Web endpoint needs valid credentials
+and an actor with authentication configured. Select `optional` or `off` for
+anonymous access or handler-owned authentication.
+
+Explicit modes need skelc v0.26.0 or later and Vine v0.27.0 or later, because the
+mode travels in the schemas Hub publishes. Run Hub and Portal on the same version.
 
 ## Optional credentials
 
