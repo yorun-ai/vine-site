@@ -134,7 +134,7 @@ vine hub serve \
 ```
 
 Hub 默认使用 `--lock-mode=embedded`，租约锁保存在自身内存中，重启后丢失。
-`--lock-mode=redis` 改为使用 `--lock-redis-endpoint` 指定的 Redis 数据库，该地址
+`--lock-mode=redis` 把租约锁交给 `--lock-redis-endpoint` 指定的 Redis 数据库，该地址
 支持 `redis://` 和 `rediss://`。`--lock-mode=disable` 拒绝锁操作。应用侧用法见
 [Lock 模式](../runtime/hub.md#lock-模式)。
 

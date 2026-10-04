@@ -324,6 +324,8 @@ metadata supplied in YAML.
 ## API Service Boundaries
 
 An `api service` is a client entry point reached through Portal. Only API services
-are exposed to clients; plain backend services are not. Backend authentication,
-permission, and resource-check services keep running behind Portal and are not
-client entry points.
+are exposed to clients; plain backend services are not. An [extension
+service](https://skel.yorun.ai/docs/services) (`ext service`) is not a client entry
+point either, even when the declaration carries `for`, `auth`, or `require` rules.
+Backend authentication, permission, and resource-check services keep running
+behind Portal and are not client entry points.

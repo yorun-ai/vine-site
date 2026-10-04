@@ -246,7 +246,9 @@ app.WithRunnerNoRetry()
 not move the message to a dead-letter queue and does not create a failure
 record that the sender can query.
 
-Embedded NATS provisions the streams with memory storage. With external NATS,
+Embedded NATS provisions the streams with memory storage and limits each stream
+to 1000 consumers. A deployment that needs more consumers on one stream must use
+external NATS and provision the streams with a higher limit. With external NATS,
 the pre-provisioned streams determine the storage policy. A successfully
 published message survives an individual handler failure, but durability across
 messaging-runtime restarts requires a file-backed external deployment that has
