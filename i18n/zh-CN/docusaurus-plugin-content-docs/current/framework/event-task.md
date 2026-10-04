@@ -230,11 +230,12 @@ app.WithRunnerConcurrency(2)
 app.WithRunnerNoRetry()
 ```
 
-`NoRetry` 的含义是“第一次尝试失败后终结这条消息”。它不会把消息移动到死信队列，
+`NoRetry` 表示第一次尝试失败后终结这条消息。它不会把消息移动到死信队列，
 也不会产生发送方可查询的失败记录。
 
-内嵌 NATS 会使用内存存储预创建 stream；使用外部 NATS 时，存储策略由预创建的
-stream 决定。发布成功的消息可以经受单个 Handler 失败，但要跨消息运行时重启
+内嵌 NATS 会使用内存存储预创建 stream，并把每个 stream 的 consumer 上限设为 1000。
+单个 stream 需要更多 consumer 的部署必须使用外部 NATS，并以更高的上限预创建 stream；
+存储策略由预创建的 stream 决定。发布成功的消息可以经受单个 Handler 失败，但要跨消息运行时重启
 保持持久，则需要经过恢复验证、使用文件存储的外部部署。如果无法接受重启带来的
 消息丢失，可以考虑数据库 outbox、持久化外部工作流系统或其他持久记录。
 

@@ -57,9 +57,9 @@ vine portal serve \
   --hub-endpoint http://127.0.0.1:7071
 ```
 
-`--hub-endpoint` can also be set through `VINE_PORTAL_HUB_ENDPOINT`. Portal's actual
-HTTP and HTTPS listen addresses are not fixed command-line options; Portal entry
-and rule configuration stored in Hub determines them.
+`--hub-endpoint` can also be set through `VINE_PORTAL_HUB_ENDPOINT`. HTTP and HTTPS
+listen addresses are not command-line options; the entry and rule configuration
+stored in Hub determines them.
 
 For a network deployment, configure Portal's `vine.portal` backend identity:
 
@@ -102,7 +102,7 @@ continues serving without a restart. See
 
 ## Optional credentials
 
-For RPC and Web authentication, optional credential fields can be omitted from
+For Rpc and Web authentication, optional credential fields can be omitted from
 `Authorization`. For example, when `token` is required and `tenant` is optional,
 send `Authorization: token abc` if no tenant value is available, or
 `Authorization: token abc, tenant team-a` to include it. An omitted field reaches
@@ -216,7 +216,7 @@ asset URLs, or redirect locations.
 | `/api` | `/internal` | `/api` | `/internal` |
 | `/api` | `/internal` | `/api/` | `/internal/` |
 
-Empty or `/` retains prefix stripping. Other values must start with `/` and
+An empty value or `/` retains prefix stripping. Other values must start with `/` and
 must not contain a scheme, host, query, fragment, backslash, control characters,
 or `.` / `..` segments. Trailing slashes on the configured target prefix are
 removed. Encoded request suffixes, query parameters, method, body, and request
@@ -252,8 +252,8 @@ The following requirements apply to the Admin API and startup seed YAML.
 
 An entry requires a `scheme` of `http` or `https` and a `port` of `0` (the
 protocol default) or `1–65535`; its `host` may be empty, a hostname or IP
-address, or a wildcard such as `*.example.com`, without a URL or port, and only a
-leading `*.` is accepted for a wildcard. An entry created for a rule that declares
+address, or a wildcard such as `*.example.com`, and must not include a URL or
+port; only a leading `*.` is accepted for a wildcard. An entry created for a rule that declares
 access is named from that access. A rule requires a name, and its
 `matchPathPrefix`, when set, must start with `/` and cannot contain query or
 fragment delimiters, backslashes, whitespace, control characters, or dot
@@ -324,6 +324,8 @@ metadata supplied in YAML.
 ## API Service Boundaries
 
 An `api service` is a client entry point reached through Portal. Only API services
-are exposed to clients; plain backend services are not. Backend authentication,
-permission, and resource-check services keep running behind Portal and are not
-client entry points.
+are exposed to clients; plain backend services are not. An [extension
+service](https://skel.yorun.ai/docs/services) (`ext service`) is not exposed to
+clients either, even when the declaration carries `for`, `auth`, or `require` rules.
+Backend authentication, permission, and resource-check services keep running
+behind Portal and are not client entry points.

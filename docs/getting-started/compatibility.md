@@ -77,9 +77,9 @@ skelc version
 ```
 
 `vine version` reports the Vine version, build platform, Go version, and
-`MinSkelcVersion`. The JSON form works well for a CI preflight check. Make sure
-`go version` reports the intended compiler and that the binary found on `PATH` is
-the same one used by deployment automation.
+`MinSkelcVersion`. Use the JSON form in a CI preflight check. `go version` must
+report the intended compiler, and the binary on `PATH` must be the one deployment
+automation uses.
 
 See [Vine CLI](./cli.md) for the command reference and
 [First Skel Contract](./first-contract.md) for the generation workflow.
@@ -144,9 +144,9 @@ An application reports the version its build links, read through
 version fails when the process starts. See
 [Context & Identity](../framework/meta.md#build-identity) for the linker values.
 
-Generated Go packages are produced by skelc v0.21.0 or later and depend on Vine
-v0.20.2 or later. Regenerating them together keeps the generated
-schemas and handler shapes aligned with the installed Vine. See [Go generation](https://skel.yorun.ai/docs/generation/go)
+Generated Go packages are produced by skelc v0.24.0 or later and depend on Vine
+v0.25.1 or later. Regenerating the packages keeps generated schemas and handler
+shapes aligned with the installed Vine. See [Go generation](https://skel.yorun.ai/docs/generation/go)
 for what the generator produces and how application code copies a generated bean.
 
 Before promoting the result, complete the

@@ -36,7 +36,7 @@ type Option struct {
 
 ### `DatabaseSpec`
 
-业务组件通过嵌入 `rdb.Database` 并按需实现 `InitOption` 与 `InitDao` 完成配置。
+业务组件嵌入 `rdb.Database`，并可覆盖 `InitOption` 与 `InitDao`。
 
 ### `Database`
 

@@ -134,7 +134,7 @@ vine hub serve \
 ```
 
 Hub 默认使用 `--lock-mode=embedded`，租约锁保存在自身内存中，重启后丢失。
-`--lock-mode=redis` 改为使用 `--lock-redis-endpoint` 指定的 Redis 数据库，该地址
+`--lock-mode=redis` 把租约锁交给 `--lock-redis-endpoint` 指定的 Redis 数据库，该地址
 支持 `redis://` 和 `rediss://`。`--lock-mode=disable` 拒绝锁操作。应用侧用法见
 [Lock 模式](../runtime/hub.md#lock-模式)。
 
@@ -165,8 +165,8 @@ Hub 默认使用 `--lock-mode=embedded`，租约锁保存在自身内存中，�
 ## 组件环境变量 {#component-environment-variables}
 
 `hub serve`、`link serve` 与 `portal serve` 读取按组件划分的环境变量：
-`VINE_HUB_*`、`VINE_LINK_*` 和 `VINE_PORTAL_*`。嵌入模式读取相同的 Hub 变量名，
-命令行参数名保持不变；命令行取值优先于环境变量。
+`VINE_HUB_*`、`VINE_LINK_*` 和 `VINE_PORTAL_*`。嵌入模式读取相同的 Hub 变量名，命令行参数名不带组件前缀；
+命令行取值优先于环境变量。
 
 各命令都接受 `--log-level` 和可重复的 `--log-rule pattern=LEVEL`：
 
@@ -176,7 +176,7 @@ Hub 默认使用 `--lock-mode=embedded`，租约锁保存在自身内存中，�
 | Link | `VINE_LINK_LOG_LEVEL` | `VINE_LINK_LOG_RULES` |
 | Portal | `VINE_PORTAL_LOG_LEVEL` | `VINE_PORTAL_LOG_RULES` |
 
-嵌入应用继续使用进程级的 `VINE_LOG_LEVEL` 和 `VINE_LOG_RULES`。
+嵌入应用使用进程级的 `VINE_LOG_LEVEL` 和 `VINE_LOG_RULES`。
 下文 mTLS 变量中的 `<COMPONENT>` 替换为 `HUB`、`LINK` 或 `PORTAL`。
 
 ## 后台 mTLS 参数
@@ -203,7 +203,7 @@ Hub、Link 与 Portal 的身份分别是
 嵌入该应用的程序可以接管这些 flag，见[忽略与重命名 flag](../framework/app.md#忽略与重命名-flag)。
 
 Link 或 Portal 启用 mTLS 时，`--hub-endpoint` 必须使用 `https://`；后台服务注册
-也必须使用 HTTPS，组件不会静默接受旧的明文 endpoint。
+也必须使用 HTTPS，组件不会静默接受明文 endpoint。
 
 ## link
 

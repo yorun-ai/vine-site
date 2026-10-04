@@ -38,8 +38,8 @@ type Option struct {
 
 ### `DatabaseSpec`
 
-A business component embeds `rdb.Database` and overrides `InitOption` and
-`InitDao` as needed.
+A business component embeds `rdb.Database` and may override `InitOption` and
+`InitDao`.
 
 ### `Database`
 

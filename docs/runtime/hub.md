@@ -315,7 +315,8 @@ for assignments in code. Alternatively, pass `Option.HubSeedDataFile` with the
 optional `Option.HubSeedSourceFile`. Inline and file inputs cannot be mixed: an
 embedded template requires an embedded source map, and a file template requires a
 file source map; variables may come from a file or from assignments in either
-case. In both standalone service and embedded modes, file inputs use
+case. Whether Hub runs inside a standalone application or as an independent service,
+file inputs use
 `VINE_HUB_SEED_DATA_FILE`, `VINE_HUB_SEED_SOURCE_FILE`, and
 `VINE_HUB_SEED_VARS_FILE`; `VINE_HUB_SEED_VAR` supplies one variable assignment. See
 [deployment variables](../framework/configuration.md#deployment-variables).

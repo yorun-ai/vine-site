@@ -45,7 +45,7 @@ vine portal serve \
   --hub-endpoint http://127.0.0.1:7071
 ```
 
-`--hub-endpoint` 也能通过 `VINE_PORTAL_HUB_ENDPOINT` 设置。Portal 的实际 HTTP / HTTPS 监听地址不是命令行固定参数，而是由 Hub 中的 Portal entry 和 rule 配置驱动。
+`--hub-endpoint` 也能通过 `VINE_PORTAL_HUB_ENDPOINT` 设置。HTTP / HTTPS 监听地址不是命令行参数，而是由 Hub 中的 Portal entry 和 rule 配置驱动。
 
 网络部署中，应配置 Portal 的 `vine.portal` 后台身份：
 
@@ -269,4 +269,7 @@ Hub 启动时会转换已保存的证书；无法转换的记录会终止启动�
 
 ## API 服务边界
 
-`api service` 是客户端经 Portal 访问的入口。只有 API 服务会暴露给客户端，普通后端服务不会。后端认证、权限和资源检查等服务仍在 Portal 背后运行，不作为客户端入口。
+`api service` 是客户端经 Portal 访问的入口。只有 API 服务会暴露给客户端，普通后端服务不会；
+[扩展服务](https://skel.yorun.ai/zh-CN/docs/services)（`ext service`）同样不会暴露给客户端，
+即使声明中带有 `for`、`auth` 或 `require` 规则。后端认证、权限和资源检查等服务仍在 Portal
+背后运行，不作为客户端入口。

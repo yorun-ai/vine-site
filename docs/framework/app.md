@@ -57,13 +57,13 @@ Typical usage:
 app.New[*DemoApp]().StartAndWait()
 ```
 
-Here's what each method does:
+Each method behaves as follows:
 
 - `Start()`: starts the application without blocking.
 - `StopGracefully()`: performs a graceful shutdown and blocks until the application has fully stopped.
 - `StartAndWait()`: starts the application, waits for a termination signal, and then performs a graceful shutdown.
 
-Lifecycle methods are single-use. Calling `Start()` more than once, calling `StopGracefully()` before startup, calling `StopGracefully()` more than once, or calling `Start()` after shutdown causes a panic.
+Lifecycle methods are single-use. Calling `Start()` twice, `StopGracefully()` before startup or twice, or `Start()` after shutdown panics.
 
 ### `ApplicationSpec`
 
@@ -281,7 +281,7 @@ Arguments the binary does not declare are dropped before parsing, so a launcher
 can add its own flags, such as the `-test.*` flags that `go test` passes, without
 silencing `VINE_*` variables or skipping the `version` and `help` arguments. A
 renamed name uses lowercase letters and digits with dashes between them, so its
-derived environment variable is one a shell can set. A declaration that names no
+derived environment variable is valid in a shell. A declaration that names no
 declared flag, reuses a name another flag registers, or takes over `--log-level`
 or `--log-rule` is rejected during startup.
 
@@ -314,19 +314,20 @@ environment value, are rejected, while paths of another type and paths whose typ
 cannot be resolved still require an explicit YAML value.
 
 The vars file is read first, then environment assignments, then command-line
-assignments. Among the environment inputs the general seed variable input comes
-before the named ones, which apply in path order; command-line assignments apply
+assignments. Among environment inputs, `VINE_HUB_SEED_VAR` applies before the
+named flags, which apply in path order; command-line assignments apply
 in the order they appear, so a named flag and `--hub-seed-var` can be mixed. The
 last assignment to a path wins, and a non-empty `Option.HubSeedVars` replaces
 every environment and command-line assignment.
 
 Named variable flags stay active when `FlagHubSeedVar` is ignored, so an
 application can expose only selected parameters; `IgnoredFlags` and `RenamedFlags`
-apply to the built-in flags. Invalid paths or flag names, duplicate flag names,
-and flag or environment names that collide with another registered parameter,
-including a renamed flag or the logging parameters, are rejected at startup. An
-ignored flag still reserves its environment name, while a renamed flag reserves
-only the new one.
+apply to the built-in flags.
+
+Startup validation rejects an invalid path or flag name, a duplicate flag name,
+and a flag or environment name that collides with another registered parameter,
+including a renamed flag or a logging parameter. An ignored flag still reserves
+its environment name; a renamed flag reserves only the new one.
 
 ## Components and modules
 
@@ -368,7 +369,7 @@ Shutdown hooks run in reverse order.
 
 ## Optional capabilities
 
-An application spec can implement the following capability interfaces as needed.
+An application spec can implement any of the following capability interfaces.
 
 ### Rpc: `ServicerSpec`
 
@@ -465,7 +466,7 @@ The Cron scheduler registers a schedule for a trigger with no arguments. `trigge
 
 ## Routing model
 
-An application process mounts these built-in prefixes as needed:
+An application process mounts the built-in prefixes its capabilities use:
 
 - `/console`
 - `/rpc/invoke`

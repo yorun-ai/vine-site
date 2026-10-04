@@ -20,7 +20,7 @@ flowchart LR
 
 ## Responsibilities
 
-- **Application registration**: stores the facts for local application instances,
+- **Application registration**: maintains local application instance state,
   registers their capabilities with Hub, and unregisters them on exit.
 - **Health and leases**: performs instance health checks and sends heartbeats to
   Hub in normal mode.

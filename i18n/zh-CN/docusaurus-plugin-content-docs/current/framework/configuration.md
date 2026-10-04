@@ -10,7 +10,7 @@ description: 类型化 Vine 配置、实例级快照与运行时更新。
 Vine 配置由 Skel 声明、Hub 存储、Link 分发，最终作为类型化 Go 依赖解析。应用代码
 不需要自己轮询 Hub 或解码配置 JSON。
 
-配置设计的关键不只是字段本身，还有一个很重要的问题：**一个应用实例什么时候可以看到新值**。
+配置设计不只是字段本身，还包括**一个应用实例什么时候可以看到新值**。
 
 ## 声明类型化配置
 
@@ -61,8 +61,8 @@ JSON 或 YAML 中的 `binary` 值使用带标准填充的 base64 字符串。YAM
 不要使用 `!!binary` 或折叠块（`>`）。
 
 Hub Dashboard 提供嵌套字段和枚举补全、类型与描述提示，以及带字段路径的校验；
-`@sensitive` 字段的诊断信息会脱敏值本身和 Map Key。配置更新替换整份 JSON；
-缺失字段、多余字段或无效的嵌套值会显示为 `MISMATCH`，同时仍会被保存以便后续修正。
+`@sensitive` 字段的诊断信息会脱敏值本身和 Map Key。配置更新替换整份 JSON。缺失字段、多余字段或无效的嵌套值会被保存，
+并显示为 `MISMATCH` 以便后续修正。
 
 ## 字符串空白处理
 
@@ -187,7 +187,7 @@ standalone 应用使用 `--hub-seed-var`，或通过
 null 写为 `--seed-var optional=null`。插入的值不会再次展开占位符。
 
 standalone 还可以通过 [`Option.VarFlags`](./app.md#named-deployment-variable-flags)
-将选定路径暴露为业务参数，并生成对应环境变量。
+将选定路径暴露为命名参数，并生成对应环境变量。
 
 ### 定义变量结构
 

@@ -174,8 +174,8 @@ kubectl apply -k deploy/k8s/overlays/stable-mtls
 ```
 
 overlay 将每个 Secret 以只读方式挂载到 `/run/vine/mtls`，设置全部三个
-`VINE_<COMPONENT>_MTLS_*` 变量，并把 Link 和 Portal 的 Hub 地址设置为
-`VINE_LINK_HUB_ENDPOINT=https://hub:7071` / `VINE_PORTAL_HUB_ENDPOINT=https://hub:7071`。Portal 对外 HTTPS listener 使用的公开证书
+`VINE_<COMPONENT>_MTLS_*` 变量，并把 `VINE_LINK_HUB_ENDPOINT` 和
+`VINE_PORTAL_HUB_ENDPOINT` 设置为 `https://hub:7071`。Portal 对外 HTTPS listener 使用的公开证书
 属于另一套配置边界，由 Hub 管理。
 
 ## 私有镜像仓库

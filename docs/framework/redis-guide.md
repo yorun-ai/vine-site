@@ -104,8 +104,8 @@ The name allows letters, digits, `_`, `-`, and `.`; an optional database index
 from `0` to `15` selects a logical database, and omitting it selects DB 0. No
 credentials, port, extra path segment, or query parameter is accepted.
 
-Within one process, one name shares one server, and one name and database index
-share one client pool. `Cache[T]` and `Locker` behave as they do on an external
+Within one process, a name shares one server, and each name and database index
+pair shares one client pool. `Cache[T]` and `Locker` behave as they do on an external
 server, including key expiration and lock renewal. A component releases its
 reference when it stops: the last reference to a database closes that database's
 client while another database keeps the instance alive, and the last reference to

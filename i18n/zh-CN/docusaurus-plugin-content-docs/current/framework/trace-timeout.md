@@ -97,7 +97,7 @@ portal-trace-id: <trace_id>
 
 ## Timeout 怎么计算
 
-timeout 从进入 gateway 开始计时，而不是只限制最后一次转发。
+timeout 从进入 gateway 开始计时，覆盖整条链路，而不是只限制最后一次转发。
 
 例如客户端传：
 

@@ -11,8 +11,8 @@ Vine configuration is declared in Skel, stored by Hub, distributed through
 Link, and resolved as a typed Go dependency. Application code doesn't poll Hub
 or decode configuration JSON itself.
 
-The important design choice is not only the fields in a configuration. It is
-also **when an application instance is allowed to observe a new value**.
+The design choice is not only which fields a configuration holds, but
+**when an application instance may observe a new value**.
 
 ## Declare typed configuration
 
@@ -68,8 +68,8 @@ spaces and tabs are invalid. Use a plain string or literal block rather than
 The Hub Dashboard offers nested field and enum completion, type and description
 hints, and validation that reports field paths; diagnostics for `@sensitive`
 fields redact values and map keys. A configuration update replaces the whole JSON
-value, and a value with missing or extra fields or an invalid nested value is
-reported as `MISMATCH` while it stays saved for later correction.
+value. A value with missing or extra fields, or an invalid nested value, is saved
+and reported as `MISMATCH` for later correction.
 
 ## String whitespace
 
@@ -213,7 +213,7 @@ remain part of the value. Use `--seed-var 'code="123"'` for a numeric-looking
 string, `--seed-var text=` for an empty string, and `--seed-var optional=null`
 for null. Inserted values are not expanded again.
 
-Standalone can also expose selected paths as business parameters with
+Standalone can also expose selected paths as named flags with
 [`Option.VarFlags`](./app.md#named-deployment-variable-flags), including derived
 environment variables.
 

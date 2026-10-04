@@ -56,13 +56,13 @@ type App interface {
 app.New[*DemoApp]().StartAndWait()
 ```
 
-语义如下：
+各方法的语义如下：
 
 - `Start()`：启动应用，非阻塞
 - `StopGracefully()`：执行优雅停止并阻塞到应用完全退出
 - `StartAndWait()`：启动后等待退出信号，再执行优雅停止流程
 
-生命周期调用是单次的。重复 `Start()`、没启动就 `StopGracefully()`、重复 `StopGracefully()`，或者停止后再次 `Start()`，这些操作都会 panic。
+生命周期调用是单次的。重复 `Start()`、在启动前或重复调用 `StopGracefully()`、停止后再次 `Start()`，都会 panic。
 
 ### `ApplicationSpec`
 
@@ -257,9 +257,9 @@ linked.NewWithOption[*DemoApp](linked.Option{
 }).StartAndWait()
 ```
 
-二进制未声明的参数会在解析前被丢弃，因此启动器可以添加自己的 flag（例如 `go test` 传入的 `-test.*`），而不会让 `VINE_*` 变量失效，也不会跳过 `version` 和 `help` 参数。重命名后的名称由小写字母、数字和分隔它们的短横线组成，其推导出的环境变量可以被 shell 设置。声明了不存在的 flag 名、与其他 flag 注册名冲突，或名称会占用 `--log-level`、`--log-rule`，都会在启动阶段被拒绝。
+二进制未声明的参数会在解析前被丢弃，因此启动器可以添加自己的 flag（例如 `go test` 传入的 `-test.*`），而不会让 `VINE_*` 变量失效，也不会跳过 `version` 和 `help` 参数。重命名后的名称由小写字母、数字和分隔它们的短横线组成，其推导出的环境变量在 shell 中有效。声明了不存在的 flag 名、与其他 flag 注册名冲突，或名称会占用 `--log-level`、`--log-rule`，都会在启动阶段被拒绝。
 
-### 部署变量的业务参数 {#named-deployment-variable-flags}
+### 部署变量的命名参数 {#named-deployment-variable-flags}
 
 standalone 应用可以把 seed 变量暴露为自身的 flag。
 `VarFlags` 将变量路径映射到参数名：
@@ -284,15 +284,16 @@ standalone.NewWithOption[*DemoApp](standalone.Option{
 可空 bool 还支持 `--enabled=null` 和 `ENABLED=null`。其他取值（包括空环境变量）会被拒绝；
 其他类型以及无法解析类型的路径仍然需要显式传入 YAML 值。
 
-先读取变量文件，再应用环境变量赋值，最后应用命令行赋值。环境变量输入中，通用 seed 变量
-输入在前，业务参数按路径顺序应用；命令行赋值按出现顺序应用，因此业务参数与
+先读取变量文件，再应用环境变量赋值，最后应用命令行赋值。环境变量输入中，`VINE_HUB_SEED_VAR` 先应用，命名参数再按路径顺序应用；命令行赋值按出现顺序应用，因此命名参数与
 `--hub-seed-var` 可以混用。同一路径最后一次赋值优先；非空的 `Option.HubSeedVars`
 替代全部环境变量和命令行赋值。
 
-即使忽略 `FlagHubSeedVar`，业务参数仍然有效，应用因此可以只暴露选定的参数；
-`IgnoredFlags` 和 `RenamedFlags` 作用于内置参数。非法路径或参数名、重复参数名，以及
-参数名或环境变量名与其他已注册参数（包括重命名后的参数和日志参数）冲突的声明，
-都会在启动时被拒绝。被忽略的参数仍保留其环境变量名，重命名后的参数只保留新名称。
+即使忽略 `FlagHubSeedVar`，命名参数仍然有效，应用因此可以只暴露选定的参数；
+`IgnoredFlags` 和 `RenamedFlags` 作用于内置参数。
+
+启动校验会拒绝非法路径或参数名、重复参数名，以及参数名或环境变量名与其他已注册参数
+（包括重命名后的参数和日志参数）冲突的声明。被忽略的参数仍保留其环境变量名，
+重命名后的参数只保留新名称。
 
 ## 组件与模块
 
@@ -334,7 +335,7 @@ Module 同样会参与：
 
 ## 可选能力
 
-应用 spec 按需实现以下能力接口即可。
+应用 spec 可以实现以下任一能力接口。
 
 ### RPC：`ServicerSpec`
 
@@ -430,7 +431,7 @@ cron scheduler 用于给某个无参数 trigger 注册定时触发规则。`trig
 
 ## 路由模型
 
-app 进程会按需挂载这些内建前缀：
+app 进程会挂载其能力对应的内建前缀：
 
 - `/console`
 - `/rpc/invoke`

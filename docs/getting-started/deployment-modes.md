@@ -131,8 +131,9 @@ schema declarations, substitution syntax, and defaults.
   file seed source, and the in-process Hub's Admin API and Dashboard address.
 - Hub and Link neither renew nor expire registrations. A registration is removed
   explicitly when the application stops.
-- Hub and Link do not expose separate management ports, apart from the Hub Admin
-  API and Dashboard listener `--hub-admin-listen` / `Option.HubAdminListen` opens.
+- Neither Hub nor Link exposes a separate management port beyond the Hub Admin
+  API and Dashboard listener configured by `--hub-admin-listen` or
+  `Option.HubAdminListen`.
   Portal can still listen on business HTTP/HTTPS ports according to its entry
   rules.
 - This mode doesn't cover cross-process networking or independent service
