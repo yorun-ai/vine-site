@@ -12,8 +12,11 @@ Web 能力用于为应用注册 HTTP 路由、静态资源或开发服务器代�
 ```skel title="web.skel"
 web UserPortalWeb {
     for ClientActor via client
+    auth required
 }
 ```
+
+声明的 auth 模式决定 Portal 如何准入请求，见[认证模式](../runtime/portal.md#认证模式)。
 
 当前端需要固定的公开前缀时，加上 `mount /path`。此时 Portal 会使用该前缀进行匹配和
 转发，而不是站点规则上配置的前缀；handler 中的路由仍相对该前缀书写，因此声明

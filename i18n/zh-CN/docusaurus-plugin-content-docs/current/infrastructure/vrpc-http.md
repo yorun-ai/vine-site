@@ -181,7 +181,7 @@ Portal rpcgw 是面向外部客户端的 HTTP gateway，会保留 `vrpc-status`�
 Portal 在 vRPC transport 之外还负责外部 HTTP 语义：
 
 - 校验站点是否允许目标 service，并完成服务发现和转发。
-- 根据站点的 Actor 策略执行认证和权限检查；外部客户端不应伪造 `vrpc-actor` 或 `vrpc-initiator`。
+- 根据服务方法的认证模式和站点的 Actor 策略完成准入；外部客户端不应伪造 `vrpc-actor` 或 `vrpc-initiator`。
 - 为缺少 span 的合法 `vrpc-trace` 补充入口 span，并在转发时派生 child span。
 - 返回 `portal-trace-id`，供客户端记录本次请求的 trace id。
 - 清除转发错误中的内部 `detail`，避免把服务端诊断信息暴露到外部。

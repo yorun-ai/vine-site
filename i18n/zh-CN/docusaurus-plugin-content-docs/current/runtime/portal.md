@@ -79,6 +79,34 @@ Hub 发布配置变更后，Portal 无需重启即可使其生效；业务实例
 
 Hub 重启无需对 Portal 做任何操作：Portal 会重新连接运行中的 Hub，并在不重启的情况下继续提供服务。详见 [Hub 重启与端点变化](./hub.md#hub-重启与端点变化)。
 
+## 认证模式
+
+method 未声明模式时继承 service 的认证模式；service 与 Web 声明不能使用 `inherit`。
+
+
+RPC 支持运行时 schema 中的 `required`、`optional`、`anonymous`，Web 另支持 `off`。
+本地 schema 注册及 Hub 接收入口均拒绝 RPC 显式使用 `off`：
+
+| 模式 | 无凭据 | 有效凭据 | 无效凭据 |
+| --- | --- | --- | --- |
+| `required` | 拒绝 | 已认证 actor | 拒绝 |
+| `optional` | 匿名 actor | 已认证 actor | 拒绝 |
+| `anonymous` | 匿名 actor | 拒绝 | 拒绝 |
+| `off`（仅 Web） | 不认证 | 不认证 | 不认证 |
+
+认证服务错误也会拒绝请求。通过认证准入后，RPC 仍会执行适用的权限检查。
+
+Web `off` 跳过 Portal 认证并传递匿名 actor，保留 `Authorization` 供应用自行认证。
+RPC 和 Web 的 `required`、`optional`、`anonymous` 在准入通过后删除 `Authorization`，
+仅向下传递已准入的 actor。
+
+RPC method 未声明模式时使用 service 模式；service 或 Web 声明未声明模式时按 `required`
+处理。这类 Web 需要有效凭证，且 actor 必须配置认证。需要匿名访问或由应用自行认证时，
+选择 `optional` 或 `off`。
+
+显式模式需要 skelc v0.26.0 或更高版本，以及 Vine v0.27.0 或更高版本，因为模式随
+Hub 发布的 schema 传递。Hub 与 Portal 必须使用同一版本。
+
 ## 可选凭据字段
 
 RPC 和 Web 认证允许在 `Authorization` 中省略可选凭据字段。

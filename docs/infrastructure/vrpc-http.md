@@ -213,8 +213,8 @@ Portal adds external HTTP behavior around the vRPC transport:
 
 - It verifies that the site allows the target service, then performs service
   discovery and forwarding.
-- It runs authentication and permission checks according to the site's Actor
-  policy. External clients should not forge `vrpc-actor` or `vrpc-initiator`.
+- It admits the request according to the service method's authentication mode and
+  the site's Actor policy. External clients should not forge `vrpc-actor` or `vrpc-initiator`.
 - It adds an entry span when a valid `vrpc-trace` has no span and derives child
   spans while forwarding.
 - It returns `portal-trace-id` so the client can record the request trace id.

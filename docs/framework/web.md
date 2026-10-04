@@ -12,8 +12,12 @@ The Web capability registers HTTP routes, static assets, or a development-server
 ```skel title="web.skel"
 web UserPortalWeb {
     for ClientActor via client
+    auth required
 }
 ```
+
+The declared auth mode decides how Portal admits the request; see
+[authentication modes](../runtime/portal.md#authentication-modes).
 
 Add `mount /path` when the frontend needs a fixed public prefix. Portal then matches
 and forwards that prefix instead of the prefixes configured on the site's rules, and

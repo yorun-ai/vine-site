@@ -144,8 +144,8 @@ An application reports the version its build links, read through
 version fails when the process starts. See
 [Context & Identity](../framework/meta.md#build-identity) for the linker values.
 
-Generated Go packages are produced by skelc v0.24.0 or later and depend on Vine
-v0.25.1 or later. Regenerating the packages keeps generated schemas and handler
+Generated Go packages are produced by skelc v0.26.0 or later and depend on Vine
+v0.27.0 or later. Regenerating the packages keeps generated schemas and handler
 shapes aligned with the installed Vine. See [Go generation](https://skel.yorun.ai/docs/generation/go)
 for what the generator produces and how application code copies a generated bean.
 
