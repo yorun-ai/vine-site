@@ -191,8 +191,8 @@ kubectl apply -k deploy/k8s/overlays/stable-mtls
 ```
 
 The overlay mounts each Secret read-only at `/run/vine/mtls`, sets all three
-`VINE_<COMPONENT>_MTLS_*` variables, and changes Link and Portal to
-`VINE_LINK_HUB_ENDPOINT=https://hub:7071` / `VINE_PORTAL_HUB_ENDPOINT=https://hub:7071`. The public certificates used by Portal's
+`VINE_<COMPONENT>_MTLS_*` variables, and sets `VINE_LINK_HUB_ENDPOINT` and
+`VINE_PORTAL_HUB_ENDPOINT` to `https://hub:7071`. The public certificates used by Portal's
 external HTTPS listeners are a separate configuration boundary managed by
 Hub.
 

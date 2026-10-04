@@ -7,8 +7,8 @@ slug: /tutorial-first-app
 # 第一个应用
 
 最快看到 Vine 跑起来的方式是 standalone：Hub、Portal、Link 和业务应用都在
-同一进程启动。下面的应用暂时没有业务入口，只用来验证应用装配、module
-生命周期、Hub 状态持久化和优雅停机。
+同一进程启动。下面的应用还没有业务入口，只用于验证应用装配、module 生命周期、
+Hub 状态持久化和优雅停机。
 
 为了聚焦首次运行，本教程使用扁平的单 module 目录。持续开发的应用应采用
 [标准项目结构](./filetree.md)，并把 Go module 放在 `src/server/` 下。

@@ -76,8 +76,8 @@ authentication; the deployment must protect and restrict the path itself.
 | External traffic | Embedded Portal may open configured listeners | Independently deployed Portal forwards to registered Links |
 | Scaling and failure | One process boundary | Application and Link form one co-located workload; Portal and infrastructure are operated independently |
 
-In practice, keep the entry point small. Keep the application specification in a
-reusable package:
+Keep the entry point small and put the application specification in a reusable
+package:
 
 ```go title="cmd/checkout-standalone/main.go"
 func main() {

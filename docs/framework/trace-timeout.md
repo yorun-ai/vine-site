@@ -98,7 +98,7 @@ If the request carries a valid trace id, `portal-trace-id` usually returns the s
 
 ## How Timeout Is Counted
 
-Timeout starts when the request enters the gateway. It isn't only applied to the final forward.
+Timeout starts when the request enters the gateway and covers the whole chain, not only the final forward.
 
 For example, if the client sends:
 

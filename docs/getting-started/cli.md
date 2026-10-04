@@ -173,8 +173,8 @@ Notes:
 
 The `hub serve`, `link serve`, and `portal serve` commands read environment
 variables scoped by component: `VINE_HUB_*`, `VINE_LINK_*`, and `VINE_PORTAL_*`.
-An embedded runtime reads the same Hub names, and flag names are unchanged.
-Command-line values take priority over environment variables.
+Standalone mode reads the same Hub names, and flag names take no component
+prefix. Command-line values take priority over environment variables.
 
 Each command accepts `--log-level` and repeatable `--log-rule pattern=LEVEL`:
 
@@ -184,7 +184,7 @@ Each command accepts `--log-level` and repeatable `--log-rule pattern=LEVEL`:
 | Link | `VINE_LINK_LOG_LEVEL` | `VINE_LINK_LOG_RULES` |
 | Portal | `VINE_PORTAL_LOG_LEVEL` | `VINE_PORTAL_LOG_RULES` |
 
-An embedded application keeps the process-wide `VINE_LOG_LEVEL` and
+A standalone application keeps the process-wide `VINE_LOG_LEVEL` and
 `VINE_LOG_RULES`. For the mTLS variables below, `<COMPONENT>` is `HUB`, `LINK`, or
 `PORTAL`.
 
@@ -215,8 +215,8 @@ that embeds the application can take over these flags; see
 [Ignored and renamed flags](../framework/app.md#ignored-and-renamed-flags).
 
 When Link or Portal enables mTLS, `--hub-endpoint` must use `https://`. Backend
-service registrations are also required to use HTTPS, preventing a component
-from silently accepting an older plaintext endpoint.
+service registrations must also use HTTPS, so a component cannot silently accept
+a plaintext endpoint.
 
 ## link
 

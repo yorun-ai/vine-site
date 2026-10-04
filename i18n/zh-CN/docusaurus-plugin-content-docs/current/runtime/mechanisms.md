@@ -70,7 +70,7 @@ flowchart LR
 | 外部流量 | 内嵌 Portal 可按配置打开 listener | 独立 Portal 将请求转发到已注册 Link |
 | 扩缩容与故障 | 只有一个进程边界 | 应用与 Link 构成同主机 workload；Portal 与基础设施独立运维 |
 
-实际项目里，把启动入口保持得很薄就行，应用 specification 放在可复用 package 中：
+把启动入口保持得很薄，应用 specification 放在可复用 package 中：
 
 ```go title="cmd/checkout-standalone/main.go"
 func main() {

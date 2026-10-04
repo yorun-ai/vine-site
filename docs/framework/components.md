@@ -12,7 +12,7 @@ stop hooks in reverse order.
 
 ## Capability overview
 
-Application-side capabilities are declared by the App and enabled as needed:
+The App declares the application-side capabilities it uses:
 
 | Capability | What it provides | Entry point |
 | --- | --- | --- |

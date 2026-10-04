@@ -66,8 +66,8 @@ Backend mTLS is opt-in: omitting the certificate flags preserves plaintext
 development behavior. Application-to-Link traffic is deliberately outside this
 boundary because Link is the application's sidecar: both normally run on the
 same host and within the same deployment trust boundary. A non-loopback Link
-API remains available for unusual deployments, but emits a warning and does not
-add transport authentication; that cross-host traffic requires deployment-level
+API remains available for unusual deployments, but Link emits a warning and adds
+no transport authentication; that cross-host traffic requires deployment-level
 protection. Portal public listeners use separately configured public
 certificates; with mTLS enabled, a missing match falls back
 to a process-local self-signed Web certificate for encrypted bootstrap access.

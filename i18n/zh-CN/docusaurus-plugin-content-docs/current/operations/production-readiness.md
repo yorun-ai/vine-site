@@ -58,7 +58,7 @@ trust domain，DNS SAN 不授予组件身份。发现到的明文 endpoint 会�
 
 后台 mTLS 是可选配置；省略证书参数时会保留明文开发行为。应用到 Link 的通讯有意
 不包含在该边界内，因为 Link 是应用的 sidecar：两者通常位于同一主机和部署信任
-边界内。Vine 允许特殊部署使用非 loopback Link API，但会告警，并且不会为这条
+边界内。Vine 允许特殊部署使用非 loopback Link API，但 Link 会告警，并且不会为这条
 跨主机 h2c 路径增加 transport 认证；必须由部署侧保护。Portal 对外 listener 使用
 独立配置的公开证书；启用 mTLS 后，如果没有匹配项，会回退到一个仅驻留当前进程的
 自签 Web 证书，用于加密引导访问。该临时证书不受浏览器信任，也不是生产证书。其他

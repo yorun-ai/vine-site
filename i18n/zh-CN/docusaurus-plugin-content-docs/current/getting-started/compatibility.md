@@ -74,9 +74,8 @@ skelc version
 ```
 
 `vine version` 会输出 Vine 版本、构建平台、Go 版本和
-`MinSkelcVersion`。JSON 形式适合作为 CI 的部署前检查。请确认
-`go version` 报告预期的 compiler，并确认 `PATH` 中找到的 binary 就是部署
-自动化实际使用的 binary。
+`MinSkelcVersion`。JSON 形式可用于 CI 的部署前检查。`go version` 必须报告预期的 compiler，
+`PATH` 中找到的 binary 必须是部署自动化实际使用的那个。
 
 命令参考见 [Vine CLI](./cli.md)，生成流程见
 [第一个 Skel 契约](./first-contract.md)。
@@ -135,8 +134,7 @@ go -C ./src/server test ./...
 例如 `1.2.3`，可带 `v` 前缀；链接了不可用的名称或版本时，进程启动阶段就会失败。链接项见
 [上下文与身份](../framework/meta.md#构建身份)。
 
-生成的 Go 包由 skelc v0.24.0 或更高版本产生，并依赖 Vine v0.25.1 或更高版本。与 runtime
-一起重新生成，可以让生成的 schema 与 handler 形态与所安装的 Vine 保持一致。生成器的产物以及应用代码复制生成 bean 的方式，见
+生成的 Go 包由 skelc v0.24.0 或更高版本产生，并依赖 Vine v0.25.1 或更高版本。重新生成这些包可以让生成的 schema 与 handler 形态与所安装的 Vine 保持一致。生成器的产物以及应用代码复制生成 bean 的方式，见
 [Go 生成](https://skel.yorun.ai/docs/generation/go)。
 
 提升到生产环境之前，完成
