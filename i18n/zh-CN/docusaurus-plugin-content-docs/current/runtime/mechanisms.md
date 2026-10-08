@@ -98,7 +98,7 @@ VINE_LINK_ENDPOINT=http://127.0.0.1:7079 ./checkout
 背后有三个机制：
 
 1. **能力注册与 transport 无关。** 无论 endpoint 在进程内还是网络上，应用上报的
-   身份、schema 和 RPC/Web/Event/Task 能力都相同。
+   身份、descriptor 和 RPC/Web/Event/Task 能力都相同。
 2. **位置与交付由 Link 负责。** 业务 Handler 不解析 Pod 地址，也不选择服务实例。
    Link 维护本地和分布式视图，完成最终转发或消息交付。
 3. **进程内 transport 复用运行时契约。** Standalone 只是把网络跳转替换为注册过的
@@ -119,7 +119,7 @@ flowchart LR
 | --- | --- | --- |
 | Application | Component、Module、Handler、Listener、Runner 与业务状态 | 是，作为调用方或目标 |
 | Link | 本地应用状态、配置读取、发现快照、转发、Event/Task consumer、健康与 drain | 是 |
-| Hub | 配置、注册状态、Portal 配置、schema 与运行时分发 | 否；Link 与 Portal 使用同步后的状态 |
+| Hub | 配置、注册状态、Portal 配置、descriptor 与运行时分发 | 否；Link 与 Portal 使用同步后的状态 |
 | Portal | 外部 listener、site、TLS、准入策略与 endpoint 选择 | 仅外部流量 |
 | NATS | Event 与 Task 消息 | 仅异步交付 |
 
@@ -149,8 +149,8 @@ Link 基于这些视图转发 RPC/Web 请求、提供配置、创建 Event/Task 
 
 ### 外部入口：Portal
 
-Portal 是北向基础设施。它从 Hub 监听 entry rule、site、certificate、schema
-与可用 endpoint，随后接收外部 HTTP/HTTPS 流量。Portal 可以根据生成 schema 和 site
+Portal 是北向基础设施。它从 Hub 监听 entry rule、site、certificate、descriptor
+与可用 endpoint，随后接收外部 HTTP/HTTPS 流量。Portal 可以根据生成 descriptor 和 site
 策略完成认证、授权，再把请求转发给目标 Link。
 
 应用之间的调用不经过 Portal。Portal 也不能替代 Link：它选择的目标是 Link ingress
@@ -175,7 +175,7 @@ sequenceDiagram
   App->>App: 构造 component、module 与能力 server
   App->>App: 执行 BeforeAppStart
   App->>App: 启动 HTTP 或进程内 endpoint
-  App->>RuntimeLink: 注册身份、endpoint、schema 与能力
+  App->>RuntimeLink: 注册身份、endpoint、descriptor 与能力
   RuntimeLink->>RuntimeLink: 安装本地路由与交付状态
   RuntimeLink->>Hub: 发布分布式注册
   Hub-->>Peer: 注册快照/变更
@@ -183,7 +183,7 @@ sequenceDiagram
 ```
 
 注册只描述已声明的运行时事实：应用身份和 endpoint，以及它的 RPC service、Web Handler、
-Event Listener、Task Runner 与 domain schema。业务数据不会进入 registry。
+Event Listener、Task Runner 与 domain descriptor。业务数据不会进入 registry。
 
 只拥有 Module、未暴露这些能力的应用仍可正常运行，但它没有需要通过服务发现公开的内容。
 

@@ -57,9 +57,7 @@ Do not register generated configuration types by hand.
 Configuration fields use ordinary Skel value types: scalars including `binary`,
 enums, reusable `data` types, generic data, nullable values, and lists and maps.
 Declare shared structures as `data`; `config` and `event` declarations are entry
-points and cannot be used as field types. Declaring structured values needs skelc
-v0.23.0 or later, and serving them needs Vine v0.25.0 or later.
-
+points and cannot be used as field types.
 Write `binary` values as standard padded base64 strings in JSON or YAML. A YAML
 literal block (`|`) can wrap base64 across lines: CR and LF are accepted, while
 spaces and tabs are invalid. Use a plain string or literal block rather than
@@ -85,7 +83,7 @@ whitespace in the code that uses a field when its meaning requires it.
 
 | Lifecycle | What Link retains | What application code observes | Good fit |
 | --- | --- | --- | --- |
-| `eternal` | The value captured when this application instance first reads the config | The same snapshot for the rest of that application instance | Connection settings, schema choices, startup policy |
+| `eternal` | The value captured when this application instance first reads the config | The same snapshot for the rest of that application instance | Connection settings, database schema selection, startup policy |
 | `instant` | A watched snapshot that changes when Hub publishes an update | A newly decoded value on a later DI resolution | Feature flags, limits, and behavior that may change at runtime |
 
 Both lifecycles are lazy: the first read happens when DI first needs the
@@ -217,7 +215,7 @@ Standalone can also expose selected paths as named flags with
 [`Option.VarFlags`](./app.md#named-deployment-variable-flags), including derived
 environment variables.
 
-### Declare the variable schema
+### Declare the variable structure
 
 An application can declare the deployment dictionary as the Skel data type
 `app.Vars`, with nested data types:
@@ -235,8 +233,8 @@ data CheckoutVars {
 ```
 
 Generate and import its Go package with the normal Skel workflow. Importing the
-generated package registers the schema, so standalone Hub can validate referenced
-variables. An independently running Hub only uses schemas registered in its own
+generated package registers the descriptor, so standalone Hub can validate referenced
+variables. An independently running Hub only uses descriptors registered in its own
 process. Without a registered `app.Vars`, placeholder lookup still works, but
 referenced values are not type-checked.
 
@@ -249,8 +247,8 @@ referenced values are not type-checked.
   its use site; it does not select the default.
 - A whole-field reference can supply a scalar, object, or list. A reference
   inside text, such as `"https://${host}/api"`, performs string interpolation.
-- Registered variable schemas check referenced values. Registered configuration
-  schemas also validate whole-object substitutions: required keys must be present,
+- Registered variable descriptors check referenced values. Registered configuration
+  descriptors also validate whole-object substitutions: required keys must be present,
   and extra object keys are ignored. Unused dictionary values are not required.
 - Inserted values are not parsed again for placeholders.
 - A missing variable without a default fails seed initialization with an error
@@ -302,7 +300,7 @@ When diagnosing a missing value:
 2. Confirm the fully qualified name and JSON field names in Hub.
 3. Confirm the application's Link can reach Hub's API and Redis distribution
    endpoint.
-4. Confirm the deployed generated schema and configuration value were released
+4. Confirm the deployed generated descriptor and configuration value were released
    together.
 5. For instant configuration, create a new execution before concluding that an
    already injected singleton should have changed.

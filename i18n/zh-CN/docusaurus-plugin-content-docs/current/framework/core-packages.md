@@ -49,7 +49,7 @@ standalone.NewWithOption[*CheckoutApp](standalone.Option{
 | Web | [`core/web`](https://pkg.go.dev/go.yorun.ai/vine/core/web) | 生成的 Web Handler、router、assets server 或开发服务器代理 |
 | Event | [`core/event`](https://pkg.go.dev/go.yorun.ai/vine/core/event) | 生成的 emitter 与 Listener |
 | Task | [`core/task`](https://pkg.go.dev/go.yorun.ai/vine/core/task) | 生成的 launcher 与 Runner |
-| Skel 运行时类型 | [`core/skel`](https://pkg.go.dev/go.yorun.ai/vine/core/skel) | 生成的 scalar/schema 辅助类型与 `MinSkelcVersion()` |
+| Skel 运行时类型 | [`core/skel`](https://pkg.go.dev/go.yorun.ai/vine/core/skel) | descriptor 注册、兼容适配及 `MinSkelcVersion()` |
 
 生成代码已经把这些 package 接入类型安全 facade。推荐优先使用生成的 client、Handler、
 Listener 或 Runner，而不是手工构造 `ServiceSpec`、`WebSpec`、`EventSpec` 或 `TaskSpec`。

@@ -38,11 +38,21 @@ CLI behavior, configuration, Skel integration, or protocols.
 
 Current Vine source reports `v0.17.1` from
 `core/skel.MinSkelcVersion()`. This is a lower bound, not a version-selection
-policy. Generated schemas record their compiler version, and Vine rejects a
-schema whose compiler version is missing or below the runtime minimum.
+policy. Generated descriptors record their compiler version, and Vine rejects a
+descriptor whose compiler version is missing or below the runtime minimum.
 
 The runtime check doesn't set an upper compatibility bound for future skelc
 releases. Pin a version your application has generated, reviewed, and tested.
+
+Current source uses `go.yorun.ai/skel/descriptor` throughout the runtime, and
+generated packages register `descriptor.Domain`. A descriptor carries the
+effective authentication and permission policies, which registration validates
+before Portal applies them directly. An Rpc method without a mode uses its
+service mode; a service or Web declaration without one is treated as `required`.
+
+A service that combines a backend entry point with actor audiences or permission
+requirements is rejected. Split it into a backend service and an `api service`.
+Run Hub, Link, and Portal on the same version.
 
 ## Pin a reviewed toolchain
 
@@ -110,7 +120,7 @@ v0.17.1
 ```
 
 Use this value when a build system needs to compare the selected generator
-against the Vine runtime. The generated schema is still the final runtime check,
+against the Vine runtime. The generated descriptor is still the final runtime check,
 so regenerate and test the application after changing either Vine or skelc.
 
 ## Upgrade the set together
@@ -144,8 +154,8 @@ An application reports the version its build links, read through
 version fails when the process starts. See
 [Context & Identity](../framework/meta.md#build-identity) for the linker values.
 
-Generated Go packages are produced by skelc v0.26.0 or later and depend on Vine
-v0.27.0 or later. Regenerating the packages keeps generated schemas and handler
+Generated Go packages are produced by skelc v0.31.0 or later and depend on Vine
+v0.28.0 or later. Regenerating the packages keeps generated descriptors and handler
 shapes aligned with the installed Vine. See [Go generation](https://skel.yorun.ai/docs/generation/go)
 for what the generator produces and how application code copies a generated bean.
 

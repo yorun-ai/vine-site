@@ -28,7 +28,7 @@ flowchart LR
   the Portal daemons that register with it, so the Dashboard can report which
   gateway instances are serving.
 - **Runtime distribution layer**: writes configuration, registrations, Portal
-  rules, schemas, and certificates to Redis for consumers to read and subscribe
+  rules, descriptors, and certificates to Redis for consumers to read and subscribe
   to.
 - **Component control API**: provides discovery and registration services used
   by Link and Portal.

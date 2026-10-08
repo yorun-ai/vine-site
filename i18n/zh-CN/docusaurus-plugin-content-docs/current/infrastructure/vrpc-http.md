@@ -81,7 +81,7 @@ JSON 请求体是一个只包含 `params` 的信封：
 }
 ```
 
-`params` 内字段由目标 Skel method 的 input 决定。对于有 input 的 method，参数会按生成的 schema 解码和校验；缺少 body、缺少 `params`、字段类型错误或校验失败都会得到 `INVALID_REQUEST`。
+`params` 内字段由目标 Skel method 的 input 决定。对于有 input 的 method，参数会按生成的参数类型解码和校验；缺少 body、缺少 `params`、字段类型错误或校验失败都会得到 `INVALID_REQUEST`。
 
 没有 input 参数的方法仍使用相同信封，可发送空对象：
 

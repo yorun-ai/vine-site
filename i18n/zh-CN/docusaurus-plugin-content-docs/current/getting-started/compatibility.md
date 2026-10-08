@@ -36,11 +36,19 @@ Vine 目前仍处于 1.0 之前。同一个 minor 版本线内的 patch 版本�
 | 当前源码 / `next` | `1.27.0` 或更高 | `v0.17.1` | 与应用一起审查过的精确 revision |
 
 当前 Vine 源码通过 `core/skel.MinSkelcVersion()` 报告最低版本 `v0.17.1`。
-这是兼容下限，不是版本选择策略。生成的 Schema 会记录 skelc 版本；如果版本缺失
-或低于 runtime 要求，Vine 会拒绝注册该 schema。
+这是兼容下限，不是版本选择策略。生成的 Descriptor 会记录 skelc 版本；如果版本缺失
+或低于 runtime 要求，Vine 会拒绝注册该 descriptor。
 
 runtime 检查没有为未来的 skelc 版本定义兼容上限。请固定已经在应用中完成
 生成、审查和测试的版本。
+
+当前源码在运行时统一使用 `go.yorun.ai/skel/descriptor`，生成包注册
+`descriptor.Domain`。descriptor 携带 effective 认证与权限策略，注册时会先校验，
+再由 Portal 直接应用。RPC method 未声明模式时使用 service 模式；service 或 Web
+未声明模式时按 `required` 处理。
+
+同时提供后端入口和 actor audience 或权限要求的 service 会被拒绝，应拆为独立的
+后端 service 与 `api service`。Hub、Link、Portal 必须使用同一版本。
 
 ## 固定经过审查的工具链
 
@@ -105,7 +113,7 @@ v0.17.1
 ```
 
 构建系统需要比较所选 generator 与 Vine runtime 时，可读取这个值。生成
-schema 仍然是最终的 runtime 检查，因此修改 Vine 或 skelc 版本后都要重新
+descriptor 仍然是最终的 runtime 检查，因此修改 Vine 或 skelc 版本后都要重新
 生成并测试应用。
 
 ## 将整套版本一起升级
@@ -134,7 +142,7 @@ go -C ./src/server test ./...
 例如 `1.2.3`，可带 `v` 前缀；链接了不可用的名称或版本时，进程启动阶段就会失败。链接项见
 [上下文与身份](../framework/meta.md#构建身份)。
 
-生成的 Go 包由 skelc v0.26.0 或更高版本产生，并依赖 Vine v0.27.0 或更高版本。重新生成这些包可以让生成的 schema 与 handler 形态与所安装的 Vine 保持一致。生成器的产物以及应用代码复制生成 bean 的方式，见
+生成的 Go 包由 skelc v0.31.0 或更高版本产生，并依赖 Vine v0.28.0 或更高版本。重新生成这些包可以让生成的 descriptor 与 handler 形态与所安装的 Vine 保持一致。生成器的产物以及应用代码复制生成 bean 的方式，见
 [Go 生成](https://skel.yorun.ai/docs/generation/go)。
 
 提升到生产环境之前，完成

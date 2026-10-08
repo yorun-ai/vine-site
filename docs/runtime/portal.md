@@ -6,7 +6,7 @@ sidebar_label: Portal Gateway
 # Portal Gateway
 
 Portal is Vine's northbound entry point. It reads entry, site, certificate,
-schema, and endpoint data from Hub Redis, then routes incoming HTTP, HTTPS, Rpc,
+descriptor, and endpoint data from Hub Redis, then routes incoming HTTP, HTTPS, Rpc,
 and Web requests to the target application's Link endpoint.
 
 ```mermaid
@@ -23,7 +23,7 @@ flowchart LR
   configuration and matches requests within each site.
 - **Endpoint discovery**: continuously subscribes to Rpc and Web endpoint
   registrations and supplies available instances to gateways.
-- **Authentication and authorization**: uses actor, service, and resource schemas
+- **Authentication and authorization**: uses actor, service, and resource descriptors
   to call backend authentication and permission services when required before
   forwarding Rpc requests.
 - **TLS certificates**: reads and watches certificates stored in Hub and matches
@@ -89,7 +89,7 @@ data in Hub Redis:
 - Rule changes: determine the scheme, port, and site that receives a request.
 - Site changes: define Rpc or Web sites and their routing rules.
 - Endpoint registrations: determine which Link instances can receive a request.
-- Actor, service, Web, and resource schemas: determine authentication and
+- Actor, service, Web, and resource descriptors: determine authentication and
   authorization admission.
 - TLS certificates: provide SNI matching for HTTPS listeners.
 
@@ -105,8 +105,8 @@ continues serving without a restart. See
 A service method inherits the service authentication mode when it declares none;
 services and Web declarations cannot use `inherit`.
 
-Rpc supports `required`, `optional`, and `anonymous` in runtime schemas; Web also
-supports `off`. Local schema registration and Hub reject explicit Rpc `off`:
+Rpc supports `required`, `optional`, and `anonymous`; Web also supports `off`.
+Local descriptor registration and Hub reject explicit Rpc `off`:
 
 | Mode | No credentials | Valid credentials | Invalid credentials |
 | --- | --- | --- | --- |
@@ -128,8 +128,8 @@ without one is treated as `required`. Such a Web endpoint needs valid credential
 and an actor with authentication configured. Select `optional` or `off` for
 anonymous access or handler-owned authentication.
 
-Explicit modes need skelc v0.26.0 or later and Vine v0.27.0 or later, because the
-mode travels in the schemas Hub publishes. Run Hub and Portal on the same version.
+The mode travels in the descriptor Hub publishes, so run Hub, Link, and Portal on
+the same version.
 
 ## Optional credentials
 
@@ -149,7 +149,7 @@ one non-empty value.
 Portal can run in the same process as a standalone runtime, with the Hub Redis
 connection and the target Link endpoint as in-process connections.
 
-This mode can verify routing, schema subscriptions, admission, and gateway
+This mode can verify routing, descriptor subscriptions, admission, and gateway
 forwarding, but it can't simulate independent process crashes, external network
 partitions, or unreachable TLS ports. Use separate processes to test those
 conditions.

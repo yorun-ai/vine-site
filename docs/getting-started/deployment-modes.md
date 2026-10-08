@@ -121,7 +121,7 @@ You can instead keep the seed external with `--hub-seed-data-file` and the optio
 embedded source map, or file data with a file source map; mixing them is rejected.
 The vars file is separate in either case. See
 [deployment variables](../framework/configuration.md#deployment-variables) for
-schema declarations, substitution syntax, and defaults.
+variable declarations, substitution syntax, and defaults.
 
 ### Characteristics and limitations
 

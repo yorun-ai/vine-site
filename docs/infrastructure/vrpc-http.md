@@ -96,7 +96,7 @@ A JSON request body is an envelope containing only `params`:
 ```
 
 Fields inside `params` are defined by the target Skel method input. For a method
-with input, they are decoded and validated against the generated schema. A
+with input, they are decoded and validated against the generated argument types. A
 missing body, missing `params`, field type mismatch, or validation failure
 produces `INVALID_REQUEST`.
 
