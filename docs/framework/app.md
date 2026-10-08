@@ -306,7 +306,7 @@ prefix, here `DB_HOST` and `DB_PORT`. A flag can be repeated and accepts a YAML
 scalar, list, or object; its environment variable supplies one YAML value, and a
 command-line occurrence replaces that environment input.
 
-When the imported generated schema declares a path as `bool` in `app.Vars`, its
+When the imported generated descriptor declares a path as `bool` in `app.Vars`, its
 flag becomes a boolean switch that accepts `--enabled`, `--enabled=false`, or
 `ENABLED=false`; an explicit command-line value uses `=`. A nullable bool also
 accepts `--enabled=null` and `ENABLED=null`. Other values, including an empty

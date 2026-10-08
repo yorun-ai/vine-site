@@ -279,7 +279,7 @@ standalone.NewWithOption[*DemoApp](standalone.Option{
 参数可重复传入，接受 YAML 标量、列表和对象；环境变量提供一个 YAML 值，命令行传入该参数时
 替代对应的环境变量输入。
 
-如果导入的生成 schema 在 `app.Vars` 中将路径声明为 `bool`，该参数会变为布尔开关，
+如果导入的生成 descriptor 在 `app.Vars` 中将路径声明为 `bool`，该参数会变为布尔开关，
 可使用 `--enabled`、`--enabled=false` 或 `ENABLED=false`；命令行显式传值须使用 `=` 形式。
 可空 bool 还支持 `--enabled=null` 和 `ENABLED=null`。其他取值（包括空环境变量）会被拒绝；
 其他类型以及无法解析类型的路径仍然需要显式传入 YAML 值。

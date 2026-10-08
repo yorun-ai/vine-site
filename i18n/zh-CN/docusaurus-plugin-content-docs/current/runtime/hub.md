@@ -21,7 +21,7 @@ flowchart LR
 
 - **配置中心**：从 SQLite 或 PostgreSQL 读取配置，并同步到 Redis。
 - **服务注册中心**：接收 Link 上报的应用、RPC、Web、事件和任务能力；维护实例状态。它同时记录注册到 Hub 的 Portal 实例，Dashboard 据此展示正在提供服务的网关实例。
-- **运行时分发层**：将配置、注册、Portal 规则、schema 与证书写入 Redis，供消费者读取和订阅。
+- **运行时分发层**：将配置、注册、Portal 规则、descriptor 与证书写入 Redis，供消费者读取和订阅。
 - **组件 Control API**：提供 Link 与 Portal 使用的发现和注册服务。
 - **管理入口**：在独立 listener 上提供 Dashboard 与 Admin API，操作者直接访问，
   不经过 Portal。

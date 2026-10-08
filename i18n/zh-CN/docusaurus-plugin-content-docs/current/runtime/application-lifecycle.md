@@ -115,7 +115,7 @@ Vine 按以下顺序调用 `BeforeAppStart()`：
 
 1. 启动 HTTP 或进程内 endpoint。
 2. 启动已启用的 RPC、Event、Task 能力机制。
-3. 向 Link 注册应用的 RPC、Web、Event、Task 与 schema 元数据。
+3. 向 Link 注册应用的 RPC、Web、Event、Task 与 descriptor 元数据。
 
 因此，listener 会先于注册存在。注册使应用可通过 Link 被发现；远端 Link 和 Portal 的视图仍可能需要一小段传播时间。
 

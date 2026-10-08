@@ -5,7 +5,7 @@ sidebar_label: Portal 网关
 
 # Portal 网关
 
-Portal 是 Vine 的北向入口。它从 Hub Redis 读取入口、站点、证书、schema 与 endpoint 信息，并把 HTTP、HTTPS、RPC 和 Web 请求路由到目标应用的 Link endpoint。
+Portal 是 Vine 的北向入口。它从 Hub Redis 读取入口、站点、证书、descriptor 与 endpoint 信息，并把 HTTP、HTTPS、RPC 和 Web 请求路由到目标应用的 Link endpoint。
 
 ```mermaid
 flowchart LR
@@ -19,7 +19,7 @@ flowchart LR
 - **入口监听**：依据 Portal rule 维护 HTTP / HTTPS listener。
 - **站点路由**：依据 Portal site 配置创建 RpcGW 或 WebGW，并在站点内匹配请求。
 - **Endpoint 发现**：持续订阅 RPC 与 Web endpoint 注册，向网关提供可用实例。
-- **认证与授权**：根据 actor、service、resource Schema，在 RPC 转发前按需调用后端认证和权限服务。
+- **认证与授权**：根据 actor、service、resource Descriptor，在 RPC 转发前按需调用后端认证和权限服务。
 - **TLS 证书**：读取并监听 Hub 中的证书配置，按 SNI 匹配 HTTPS 证书。
 - **自身注册**：向 Hub 注册本实例及 Vine runtime 版本，并在运行期间持续续租，使 Hub
   能够展示正在提供服务的 Portal 实例。
@@ -72,7 +72,7 @@ Portal 不需要重启来加载大多数网关变更。它监听 Hub Redis 中�
 - 规则变更：决定 scheme、端口以及请求交给哪个站点。
 - 站点变更：定义 RPC 或 Web 站点及路由规则。
 - endpoint 注册信息：决定一个请求可转发到哪些 Link。
-- actor、service、resource Schema：决定 RPC 的认证与权限准入。
+- actor、service、resource Descriptor：决定 RPC 的认证与权限准入。
 - TLS 证书：用于 HTTPS listener 的 SNI 匹配。
 
 Hub 发布配置变更后，Portal 无需重启即可使其生效；业务实例注册或失效时，endpoint 发现也会随之刷新。
@@ -84,8 +84,8 @@ Hub 重启无需对 Portal 做任何操作：Portal 会重新连接运行中的 
 method 未声明模式时继承 service 的认证模式；service 与 Web 声明不能使用 `inherit`。
 
 
-RPC 支持运行时 schema 中的 `required`、`optional`、`anonymous`，Web 另支持 `off`。
-本地 schema 注册及 Hub 接收入口均拒绝 RPC 显式使用 `off`：
+RPC 支持 `required`、`optional`、`anonymous`，Web 另支持 `off`。
+本地 descriptor 注册及 Hub 接收入口均拒绝 RPC 显式使用 `off`：
 
 | 模式 | 无凭据 | 有效凭据 | 无效凭据 |
 | --- | --- | --- | --- |
@@ -104,8 +104,7 @@ RPC method 未声明模式时使用 service 模式；service 或 Web 声明未�
 处理。这类 Web 需要有效凭证，且 actor 必须配置认证。需要匿名访问或由应用自行认证时，
 选择 `optional` 或 `off`。
 
-显式模式需要 skelc v0.26.0 或更高版本，以及 Vine v0.27.0 或更高版本，因为模式随
-Hub 发布的 schema 传递。Hub 与 Portal 必须使用同一版本。
+模式随 Hub 发布的 descriptor 传递，因此 Hub、Link、Portal 必须使用同一版本。
 
 ## 可选凭据字段
 
@@ -122,7 +121,7 @@ Skel 要求至少声明一个必填凭据字段，因此合法请求总会包含
 
 Portal 可随 standalone runtime 在同一进程内启动，此时 Hub Redis 连接与目标 Link endpoint 都是进程内连接。
 
-该模式可验证路由、Schema 监听、准入和转发逻辑，但无法模拟独立进程崩溃、外部网络断连及 TLS 端口不可达等分布式条件。需要验证这些条件时，请采用独立进程部署。
+该模式可验证路由、Descriptor 监听、准入和转发逻辑，但无法模拟独立进程崩溃、外部网络断连及 TLS 端口不可达等分布式条件。需要验证这些条件时，请采用独立进程部署。
 
 ## 相关文档
 

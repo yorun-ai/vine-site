@@ -107,7 +107,7 @@ move.
 Three mechanisms make the topology switch possible:
 
 1. **Capability registration is transport-neutral.** The application reports the
-   same identity, schemas, and Rpc/Web/Event/Task capabilities whether its
+   same identity, descriptors, and Rpc/Web/Event/Task capabilities whether its
    endpoint is in-process or networked.
 2. **Link owns location and delivery.** Business handlers don't resolve pod
    addresses or select service instances. Link maintains local and distributed
@@ -131,7 +131,7 @@ flowchart LR
 | --- | --- | --- |
 | Application | Components, modules, handlers, listeners, runners, and business state | Yes, as caller or target |
 | Link | Local application state, configuration reads, discovery snapshots, forwarding, Event/Task consumers, health and drain | Yes |
-| Hub | Configuration, registry state, Portal configuration, schemas, and runtime distribution | No; Link and Portal use synchronized state |
+| Hub | Configuration, registry state, Portal configuration, descriptors, and runtime distribution | No; Link and Portal use synchronized state |
 | Portal | External listeners, sites, TLS, admission policy, and endpoint selection | Only for external traffic |
 | NATS | Event and Task messages | Only for asynchronous delivery |
 
@@ -169,9 +169,9 @@ application during shutdown.
 ### External entry: Portal
 
 Portal is northbound infrastructure. It watches Hub for entry rules, sites,
-certificates, schemas, and available endpoints, then accepts external HTTP or
+certificates, descriptors, and available endpoints, then accepts external HTTP or
 HTTPS traffic. Portal can authenticate and authorize a request according to the
-generated schemas and site policy before forwarding it to a target Link.
+generated descriptors and site policy before forwarding it to a target Link.
 
 Application-to-application calls do not go through Portal. Portal is also not a
 replacement for Link: its selected destination is a Link ingress endpoint, not an
@@ -198,7 +198,7 @@ sequenceDiagram
   App->>App: construct components, modules, and capability servers
   App->>App: run BeforeAppStart
   App->>App: start HTTP or in-process endpoints
-  App->>RuntimeLink: register identity, endpoints, schemas, and capabilities
+  App->>RuntimeLink: register identity, endpoints, descriptors, and capabilities
   RuntimeLink->>RuntimeLink: install local routing and delivery state
   RuntimeLink->>Hub: publish distributed registration
   Hub-->>Peer: registration snapshot/change
@@ -207,7 +207,7 @@ sequenceDiagram
 
 A registration describes only declared runtime facts: the application identity
 and endpoint plus its Rpc services, Web handlers, Event listeners, Task runners,
-and domain schemas. Business data does not enter the registry.
+and domain descriptors. Business data does not enter the registry.
 
 An application that only owns modules and exposes none of these capabilities can
 run normally, but it has nothing to advertise through service discovery.

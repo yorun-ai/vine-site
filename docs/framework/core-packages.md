@@ -54,7 +54,7 @@ lower-level servers or transports in `main`.
 | Web | [`core/web`](https://pkg.go.dev/go.yorun.ai/vine/core/web) | Generated Web handler, router, assets server, or development-server proxy |
 | Event | [`core/event`](https://pkg.go.dev/go.yorun.ai/vine/core/event) | Generated emitter and listener |
 | Task | [`core/task`](https://pkg.go.dev/go.yorun.ai/vine/core/task) | Generated launcher and runner |
-| Skel runtime types | [`core/skel`](https://pkg.go.dev/go.yorun.ai/vine/core/skel) | Generated scalar/schema helpers and `MinSkelcVersion()` |
+| Skel runtime types | [`core/skel`](https://pkg.go.dev/go.yorun.ai/vine/core/skel) | Descriptor registration, compatibility adapters, and `MinSkelcVersion()` |
 
 Generated code already connects these packages to its type-safe facade. Prefer
 the generated client, handler, listener, or runner over manually constructing a

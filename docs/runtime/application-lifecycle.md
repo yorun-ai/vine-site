@@ -155,7 +155,7 @@ After all pre-start hooks succeed, Vine:
 
 1. Starts the HTTP or in-process endpoint.
 2. Starts the enabled Rpc, Event, and Task capability machinery.
-3. Registers the application's Rpc, Web, Event, Task, and schema metadata with
+3. Registers the application's Rpc, Web, Event, Task, and descriptor metadata with
    Link.
 
 The listener exists before registration begins. Registration makes the
