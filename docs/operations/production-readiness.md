@@ -93,7 +93,7 @@ Inventory every listener:
 | Link ingress | `0.0.0.0:0` | Hub debug tools, Portal, and remote Link instances | Enable backend mTLS; set a fixed reachable address when network policy requires stable ports |
 | Business application HTTP | `127.0.0.1:0` | Its Link sidecar | Keep the application and Link on the same host and within the same deployment trust boundary |
 | Embedded NATS in normal Hub mode | Random TCP port | Hub internal publishers and Link instances | Enable backend mTLS; use an external NATS endpoint when operations require a fixed endpoint |
-| Portal entries | The scheme, host, and port each entry declares | External clients | Expose only intended listeners and replace temporary self-signed certificates before production use |
+| Portal entries | The protocol, host, listener addresses, and ports each entry declares | External clients | Expose only intended listeners and replace temporary self-signed certificates before production use |
 
 - [ ] Permit only the caller sets shown in the table.
 - [ ] Provision one CA and distinct `vine.hub`, `vine.link`, and `vine.portal`

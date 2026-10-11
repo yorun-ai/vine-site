@@ -16,7 +16,7 @@ flowchart LR
 
 ## 职责边界
 
-- **入口监听**：依据 Portal rule 维护 HTTP / HTTPS listener。
+- **入口监听**：依据 Portal entry 维护 HTTP / HTTPS listener。
 - **站点路由**：依据 Portal site 配置创建 RpcGW 或 WebGW，并在站点内匹配请求。
 - **Endpoint 发现**：持续订阅 RPC 与 Web endpoint 注册，向网关提供可用实例。
 - **认证与授权**：根据 actor、service、resource Descriptor，在 RPC 转发前按需调用后端认证和权限服务。
@@ -69,10 +69,12 @@ Portal 会把该证书用于 Hub Rpc 与 Redis client，以及到 Hub Admin 和 
 
 Portal 不需要重启来加载大多数网关变更。它监听 Hub Redis 中的以下内容：
 
-- 规则变更：决定 scheme、端口以及请求交给哪个站点。
+- 入口变更：决定监听地址、HTTP/HTTPS 端口和自动 HTTPS 跳转。
+- 规则变更：决定请求交给哪个站点。
 - 站点变更：定义 RPC 或 Web 站点及路由规则。
 - endpoint 注册信息：决定一个请求可转发到哪些 Link。
-- actor、service、resource Descriptor：决定 RPC 的认证与权限准入。
+- domain、actor、service、Web、resource Descriptor：决定认证与权限准入，以及 API inspection
+  和 MCP 提供的契约目录。
 - TLS 证书：用于 HTTPS listener 的 SNI 匹配。
 
 Hub 发布配置变更后，Portal 无需重启即可使其生效；业务实例注册或失效时，endpoint 发现也会随之刷新。
@@ -123,15 +125,9 @@ Portal 可随 standalone runtime 在同一进程内启动，此时 Hub Redis 连
 
 该模式可验证路由、Descriptor 监听、准入和转发逻辑，但无法模拟独立进程崩溃、外部网络断连及 TLS 端口不可达等分布式条件。需要验证这些条件时，请采用独立进程部署。
 
-## 相关文档
-
-- [Hub](./hub.md)：管理 Portal entry、rule、site 与证书配置。
-- [Link](./link.md)：承载目标应用的 ingress 与 endpoint 注册。
-- [RPC](../infrastructure/rpc.md)：应用内部的 RPC 抽象。
-
 ## Portal 入口
 
-入口是 Portal 对外提供服务的访问地址：scheme、host 和 port。每条规则都属于一个入口，
+入口定义 Portal 对外服务的协议、host、监听 IP 和端口。每条规则都属于一个入口，
 访问地址由入口持有，因此修改入口会一次性更新它承载的所有规则。Dashboard 会把入口与
 站点、规则并列展示，规则编辑器在新建规则时选择入口。
 
@@ -140,9 +136,15 @@ Seed YAML 用 `portalEntries` 段声明入口，同一文档中的规则通过 `
 ```yaml
 portalEntries:
   - name: web
-    scheme: https
+    protocol: http
     host: api.example.com
-    port: 8443
+    http:
+      httpEnabled: true
+      httpPort: 80
+      httpsEnabled: true
+      httpsPort: 443
+      autoHTTPS: true
+    listenIPs: ["0.0.0.0", "::"]
 
 portalRules:
   - name: internal-api
@@ -152,29 +154,56 @@ portalRules:
     routeSiteName: application-web
 ```
 
-seed 也可以在每条规则上用 `matchScheme`、`matchHost` 和 `matchPort` 声明访问地址，
-由 Hub 创建规则所需的入口。两种写法不能混用：同一文档中的
-每条规则要么引用入口，要么声明访问地址；规则也只能引用同一文档声明过的入口。Hub 为
-自行创建的入口推导名称为 `scheme:port`，存在 host 时为 `scheme:host:port`。入口可以
-暂时不承载任何规则，这样在补充规则期间它仍可选。
+`protocol` 目前接受 `http`，把一条 HTTP 监听和一条 HTTPS 监听归入同一个入口。`http`
+块可以省略，未填写的字段默认为 `httpEnabled: true`、`httpPort: 80`、
+`httpsEnabled: true`、`httpsPort: 443` 和 `autoHTTPS: true`。入口必须至少启用一种传输协议；
+`autoHTTPS` 要求两种都启用，且两者不能使用同一端口。端口使用 `0` 表示协议默认端口，
+或填写 `1–65535`。`http` 块必须与 `protocol` 一起使用。
+
+`autoHTTPS: true` 时，只有请求 host 匹配到当前有效的 Portal TLS 证书，HTTP 请求才会
+被跳转到 HTTPS。跳转保留请求方法、转义路径和查询参数，使用具体的请求 host（包括通配符
+证书匹配到的具体域名），并在 `httpsPort` 为 `443` 时省略端口。没有匹配的有效证书时，
+请求继续按普通 HTTP 规则处理；没有匹配规则则返回 `404`。证书更新和过期即时影响跳转，
+无需重启 Portal。设置 `autoHTTPS: false` 可让两种协议服务同一组规则，关闭任一协议时也需要
+关闭它。
+
+`listenIPs` 指定此入口绑定的网络地址，Dashboard 中展示同一份列表。省略或使用 `[]` 会保留
+默认的全网卡 TCP 监听，在主机支持时同时服务 IPv4 和 IPv6。显式地址只绑定所属地址族，
+因此 `["0.0.0.0", "::"]` 绑定两个地址族的所有网卡，`["127.0.0.1", "::1"]` 只绑定回环地址。
+显式 IPv6 监听要求 Portal 所在主机支持 IPv6。Vine 会对列表做规范化与去重，并拒绝域名、
+端口、zone 标识，以及列表中重叠的通配地址与具体地址。`host` 字段匹配请求 Host，不用于
+选择网络接口。
+
+已启用的入口在协议、地址和端口都相同时共享同一个监听器。两个入口不能在同一端口使用不同
+协议，也不能在同一端口上混用通配地址和具体地址。host、协议和端口都相同的入口还必须使用
+相同的 HTTP 配置，此时应把传输配置合并到一个入口中。已启用的入口即使没有规则也会监听：
+没有匹配规则的请求返回 `404`，自动 HTTPS 跳转照常生效。
+
+监听变更动态生效。新增绑定失败时，Portal 会关闭刚打开的监听器并恢复原有配置；初始配置
+无法绑定时启动失败。从通配地址切换到具体地址可能短暂中断连接。
+
+seed 中每条规则都通过 `entryName` 引用同一文档声明的入口；引用未声明入口的规则会被拒绝。
+入口可以暂时不承载任何规则。
 
 ## 启用与停用配置
 
-Portal 站点、入口、规则和证书都带有启用开关，可在 Dashboard 中编辑。seed 只声明需要
-关闭的项：
+Portal 站点、入口、规则和证书都带有启用开关，可在 Dashboard 中编辑。seed 使用
+`enabled`，省略时默认 `true`；显式空值或 `null` 会报错：
 
 ```yaml
 portalRules:
   - name: legacy-api
-    disabled: true
+    entryName: application
+    enabled: false
     matchPathPrefix: /legacy
     routeType: SITE
     routeSiteName: application-web
 ```
 
-seed 省略该字段时默认启用，已有数据库也保持启用状态。被停用的规则不会生效，被停用入口下的
-规则、被停用站点下的 SITE 规则同样如此。重定向规则不属于 SITE 规则，因此站点被停用后仍会
-生效。被停用的证书不提供。
+被停用的规则不会生效，被停用入口下的规则、被停用站点下的 SITE 规则同样如此。重定向规则
+不属于 SITE 规则，因此站点被停用后仍会生效。被停用的证书不提供服务，可以省略
+`certificate` 和 `privateKey`，或保留尚未完整的 PEM 内容；名称、YAML 结构和字段类型仍然
+校验，启用时必须提供有效的证书链及匹配的私钥。
 
 ## 入口路径映射
 
@@ -217,11 +246,17 @@ URL 或重定向地址。
 可以在 Dashboard 规则编辑器中配置“目标路径前缀”，或通过 Hub seed YAML 设置：
 
 ```yaml
+portalEntries:
+  - name: application
+    protocol: http
+    host: api.example.com
+    http:
+      httpPort: 8080
+      httpsEnabled: false
+      autoHTTPS: false
 portalRules:
   - name: internal-api
-    matchScheme: http
-    matchHost: api.example.com
-    matchPort: 8080
+    entryName: application
     matchPathPrefix: /api
     routeType: SITE
     routeSiteName: application-web
@@ -237,12 +272,10 @@ API 更新时不传 `routePathPrefix` 表示不修改，传空字符串表示清
 
 以下要求适用于 Admin API 和启动 seed YAML。
 
-入口必须填写 `scheme`（`http` 或 `https`）和 `port`（`0` 表示协议默认端口，或
-`1–65535`）；`host` 可以为空、填写主机名/IP，或使用 `*.example.com` 这样的通配符域名，
-不能带完整 URL 或端口；通配符只允许开头的 `*.`。为声明访问地址的规则创建的入口会按该
-访问地址命名。规则必须填写名称；`matchPathPrefix` 非空时必须以 `/` 开头，不包含查询参数
-或片段分隔符、反斜杠、空白、控制字符及 `.` / `..` 路径段。通过 Admin API 创建的规则用
-`entryName` 指定所属入口。
+入口支持 `protocol: http` 及上面说明的 HTTP 配置块；`host` 可以为空、填写主机名/IP，或使用 `*.example.com` 这样的通配符域名，
+不能带完整 URL 或端口；通配符只允许开头的 `*.`。规则必须填写名称和引用同一文档所声明入口的 `entryName`；
+`matchPathPrefix` 非空时必须以 `/` 开头，不包含查询参数
+或片段分隔符、反斜杠、空白、控制字符及 `.` / `..` 路径段。
 
 通配符只匹配一级子域名：`*.example.com` 匹配 `shop.example.com`，不匹配 `example.com`
 或 `a.b.example.com`。通配符入口下的每条规则都必须指向 Web 站点，且该站点必须已存在：
@@ -289,8 +322,6 @@ Hub 在保存前校验证书链，以及证书与私钥是否配对。Admin API 
 `privateKey` 以保留已有私钥；Dashboard 的私钥输入留空也按此处理。证书读取 API
 不返回私钥内容。
 
-Hub 启动时会转换已保存的证书；无法转换的记录会终止启动，并指出相关证书。
-
 证书签发者、域名和有效期自动从证书内容解析，无需手填。YAML 中即使填写了
 这些元数据，也以证书内容为准。
 
@@ -300,3 +331,174 @@ Hub 启动时会转换已保存的证书；无法转换的记录会终止启动�
 [扩展服务](https://skel.yorun.ai/zh-CN/docs/services)（`ext service`）同样不会暴露给客户端，
 即使声明中带有 `for`、`auth` 或 `require` 规则。后端认证、权限和资源检查等服务仍在 Portal
 背后运行，不作为客户端入口。
+
+## Inspect API 契约
+
+在 Hub Dashboard 的 RPCGW 站点上开启 **Inspect**，或在 seed 中设置
+`inspectEnabled: true`：
+
+```yaml
+portalSites:
+  - name: public-api
+    type: RPCGW
+    actorSkelName: demo.UserActor
+    inspectEnabled: true
+```
+
+开关默认 `false`，仅 RPCGW 站点支持开启。Dashboard 修改会动态生效，无需重启 Portal。
+查询只读且不要求身份认证，因此能访问该站点的客户端都可以读取目录。调用 API 仍遵循原有
+认证和权限规则。
+
+假设 Portal 规则把站点挂载在 `/api`：
+
+| GET 路径 | 响应内容 |
+| --- | --- |
+| `/api/inspect/_list` | `{ "services": [...] }`，包含服务摘要 |
+| `/api/inspect/demo.UserService/_list` | `{ "service": {...}, "methods": [...] }`，包含该服务的方法摘要 |
+| `/api/inspect/demo.UserService/get` | 方法元数据、`inputSchema` 和 `outputSchema` |
+
+`/api/inspect` 和 `/api/inspect/` 也返回服务列表。服务和方法名应使用列表返回的
+`skelName`，包括版本后缀。`/api` 前缀取决于入口规则的路径映射。
+
+响应使用 `application/json`。列表分别放在 `services` 或 `methods` 字段中，
+方法详情直接返回对象。服务列表示例：
+
+```json
+{
+  "services": [
+    {"name": "UserService", "skelName": "demo.UserService"}
+  ]
+}
+```
+
+方法列表还在 `service` 字段中携带与服务目录相同的服务摘要：
+
+```json
+{
+  "service": {
+    "name": "UserService",
+    "skelName": "demo.UserService"
+  },
+  "methods": [
+    {"name": "get", "skelName": "get", "authMode": "required"}
+  ]
+}
+```
+
+只展示本站点配置且接受当前 Actor 的 API Service，不包含内部服务和其他 Actor 的 API。
+摘要包含名称、描述和已声明的废弃信息；方法摘要及详情中的 `authMode`、`require` 表示调用时
+最终生效的策略，详情还通过 `service` 标识所属服务。列表按 `skelName` 排序，没有匹配项时
+对应字段返回空数组，如 `{ "services": [] }` 或 `{ "service": {...}, "methods": [] }`。
+已注册的契约不需要后端实例在线即可查询。
+
+### JSON Schema 格式
+
+`inputSchema` 和 `outputSchema` 分别是独立的
+[JSON Schema Draft 2020-12](https://json-schema.org/specification) 文档。
+围绕它们的服务目录和方法元数据使用 Vine 自己的 inspect 响应结构。
+
+- `inputSchema` 描述 vRPC `params` 内的命名参数对象；`outputSchema` 描述 `result`
+  内的值，无返回值的方法使用 `null` Schema。Schema 不包含协议包装层。
+- 每份文档包含自己的 `$schema`，并在 `$defs` 中携带引用的 Data/Enum 定义。
+  本地 `$ref` 支持泛型实例和递归结构，不需要访问其他接口来解析引用。
+- 非 nullable 字段列入 `required`；nullable 字段允许省略或传 `null`。
+  对象允许未知字段，以保持向前兼容。
+- 枚举包含声明项和生成代码的 `UNSPECIFIED` 默认项；list 是数组，map 是带有键和值约束的对象。
+- 标量遵循 JSON 传输格式：decimal 是字符串，binary 是 base64 字符串；UUID、timestamp、
+  local date 使用对应的标准 format。duration 使用 `1h30m0s` 这样的 Go duration 字符串；
+  local time 和 local date-time 不带时区，因此不使用 JSON Schema 的 `duration` 或要求
+  时区的 `time`/`date-time` format。
+- 描述、废弃标记和示例转为 Schema 注解。`x-skel-type`、`x-skel-sensitive`、
+  `x-skel-deprecatedReason` 保留额外的 Skel 元数据。敏感标记是注解，不是访问控制。
+
+例如，提取方法的参数 Schema：
+
+```bash
+curl -s http://localhost:8080/api/inspect/demo.UserService/get \
+  | jq '.inputSchema'
+```
+
+这些 Schema 用于描述契约，inspect 不会给 `invoke` 增加请求校验。
+提取后的 Schema 可直接交给标准校验器或工具使用。
+
+### 可用性与错误
+
+失败时使用相应的 HTTP 状态码，响应体直接返回 `code` 和 `message`，例如：
+
+```json
+{
+  "code": "SERVICE_UNAVAILABLE",
+  "message": "inspect descriptors are syncing"
+}
+```
+
+开关关闭、路径未知、服务或方法不在可见目录中时返回 HTTP 404。
+非 GET 请求返回 HTTP 400 和 `INVALID_REQUEST`；OPTIONS 按站点 CORS 配置提供 GET 预检。
+
+描述数据同步期间返回 HTTP 503、`SERVICE_UNAVAILABLE` 和 `Retry-After: 1`。
+单方法详情在所需类型缺失或无法表示时也返回 503。响应设置 `Cache-Control: no-store`。
+
+## MCP 工具
+
+在 Hub Dashboard 的 RPCGW 站点上开启 **MCP**，或设置 `mcpEnabled: true`：
+
+```yaml
+portalSites:
+  - name: api
+    type: RPCGW
+    actorSkelName: demo.UserActor
+    mcpEnabled: true
+```
+
+开关默认关闭，修改后无需重启即可生效，与 Inspect 相互独立。Entry 将 `/api` 映射到本站点
+根路径时，MCP 客户端的 Streamable HTTP 地址为
+`https://api.example.com/api/mcp`。
+
+入口实现 MCP `2026-07-28`。客户端必须在 `MCP-Protocol-Version` 头中发送该版本；其他取值
+或缺少该头都返回 HTTP 400。客户端可先通过 `server/discover` 发现服务信息，再列出或调用
+工具。响应使用 JSON，服务端不维护会话状态。入口只提供 tools，不提供 prompts、resources
+或工具列表变更通知。GET 和 DELETE 返回 405。
+
+### 发现与调用
+
+`tools/list` 返回本站点配置且接受当前 Actor 的 API Service 工具。发现工具无需
+凭据，也不要求后端实例在线。每个 API 方法对应一个工具，通常命名为
+`{serviceSkelName}.{methodSkelName}`，例如 `demo.UserService.get`。
+调用时使用返回的 `name`：不符合 MCP 工具名规则时改用稳定生成的标识符，`title` 保留
+`Service/Method` 原始路径。列表按工具名排序，每页最多 100 项；将 `nextCursor`
+作为下一次请求的 `cursor`，直到不再返回游标。
+
+工具提供 JSON Schema 2020-12 的 `inputSchema` 和 `outputSchema`，包含所依赖的
+Data 和 Enum 定义。`tools/call` 指定工具名及命名参数，例如：
+
+```json
+{
+  "name": "demo.UserService.get",
+  "arguments": {"id": 42}
+}
+```
+
+这里展示请求的 `params` 内容，MCP 客户端负责添加协议外层和版本元数据。输入和成功
+输出都会执行 schema 校验。`structuredContent` 直接包含 API 返回值，文本 `content`
+提供相同的 JSON。`outputSchema` 直接描述该值，可以是标量、数组、对象或 `null`；
+无返回值的方法返回 `"structuredContent": null`。
+
+### 认证与可用性
+
+为客户端的 HTTP `Authorization` 请求头配置与 `/api/invoke` 相同格式的 Vine
+凭据。调用使用本站点的 Actor，以及方法现有的认证和权限规则。无效凭据不会退回匿名
+访问，凭据不会到达业务服务。此入口不提供 OAuth 发现或自动登录。
+
+MCP 关闭时返回 404。未知工具和协议格式错误返回协议错误；API 执行失败或工具参数
+不合法时返回 `isError: true` 的工具结果。Descriptor 同步期间返回协议错误，并携带
+`Retry-After: 1`；无法解析的 schema 也会报错，直到契约就绪。响应禁止缓存。调用
+最多执行 30 秒，客户端取消或更短的调用方 deadline 会取消后端任务。
+
+浏览器请求必须来自 Entry 自身的 Origin 或本站点 CORS 允许的 Origin。不允许或格式
+错误的 Origin 返回 403，预检请求同样执行此校验。
+
+## 相关文档
+
+- [Hub](./hub.md)：管理 Portal entry、rule、site 与证书配置。
+- [Link](./link.md)：承载目标应用的 ingress 与 endpoint 注册。
+- [RPC](../infrastructure/rpc.md)：应用内部的 RPC 抽象。

@@ -81,7 +81,7 @@ Redis 还要求 ACL 用户名与 client 证书身份一致。外部 PostgreSQL �
 | Link ingress | `0.0.0.0:0` | Hub 调试工具、Portal 和远端 Link 实例 | 启用后台 mTLS；网络策略要求固定端口时设置固定地址 |
 | 业务应用 HTTP | `127.0.0.1:0` | 它对应的 Link sidecar | 让应用与 Link 位于同一主机和部署信任边界内 |
 | 普通 Hub 模式的内嵌 NATS | 随机 TCP 端口 | Hub 内部 publisher 与 Link 实例 | 启用后台 mTLS；运维需要固定 endpoint 时使用外部 NATS |
-| Portal 入口 | 各入口声明的 scheme、host 和 port | 外部客户端 | 只暴露预期的 listener，并在生产使用前替换临时自签证书 |
+| Portal 入口 | 各入口声明的协议、host、监听地址和端口 | 外部客户端 | 只暴露预期的 listener，并在生产使用前替换临时自签证书 |
 
 - [ ] 只允许表格中列出的调用方集合。
 - [ ] 准备一个 CA，以及分别标识 `vine.hub`、`vine.link`、`vine.portal` 且同时

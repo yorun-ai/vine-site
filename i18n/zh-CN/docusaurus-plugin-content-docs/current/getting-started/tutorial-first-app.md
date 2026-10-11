@@ -116,7 +116,7 @@ flowchart LR
 
 standalone 中 Hub 和 Link 的管理连接使用 inproc transport，除
 `--hub-admin-listen` 打开的 Hub Admin API 与 Dashboard 监听外不额外开放管理端口；Portal
-仍可根据入口规则监听业务 HTTP/HTTPS 端口。该模式不模拟 heartbeat、TTL 过期或网络断连，需要验证这些行为时改用 linked 模式。
+仍可根据入口与规则配置监听业务 HTTP/HTTPS 端口。该模式不模拟 heartbeat、TTL 过期或网络断连，需要验证这些行为时改用 linked 模式。
 
 ## 连接已有 Hub
 

@@ -111,9 +111,14 @@ Do not assume field injection is a live reference.
 
 ## Provide values
 
-Hub seed files identify a configuration by its fully qualified Skel name. The
-`value` field accepts a YAML mapping, which Hub converts to JSON; JSON encoded
-as a YAML string remains supported:
+Hub identifies a configuration by its fully qualified Skel name, including an
+optional `V` version suffix. `demo.checkout.CheckoutConfig` and
+`demo.checkout.CheckoutConfigV2` are separate configurations with independent
+values, and the Dashboard lists one row per name. The Dashboard accepts names of
+the form `NameConfig` or `NameConfigV<n>`, where the name body is not empty and
+`n` is a positive integer without leading zeroes. The `value` field accepts a YAML
+mapping, which Hub converts to JSON; JSON encoded as a YAML string remains
+supported:
 
 ```yaml title="seed.yaml"
 appConfigs:

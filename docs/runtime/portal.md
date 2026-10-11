@@ -18,7 +18,7 @@ flowchart LR
 
 ## Responsibilities
 
-- **Entry listeners**: maintains HTTP and HTTPS listeners from Portal rules.
+- **Entry listeners**: maintains HTTP and HTTPS listeners from Portal entries.
 - **Site routing**: creates RpcGW or WebGW gateways from Portal site
   configuration and matches requests within each site.
 - **Endpoint discovery**: continuously subscribes to Rpc and Web endpoint
@@ -86,11 +86,14 @@ browser-trusted; configure a public certificate before production use.
 Portal can load most gateway changes without restarting. It watches the following
 data in Hub Redis:
 
-- Rule changes: determine the scheme, port, and site that receives a request.
+- Entry changes: determine listener addresses, HTTP/HTTPS ports, and automatic
+  HTTPS redirects.
+- Rule changes: determine the site that receives a request.
 - Site changes: define Rpc or Web sites and their routing rules.
 - Endpoint registrations: determine which Link instances can receive a request.
-- Actor, service, Web, and resource descriptors: determine authentication and
-  authorization admission.
+- Domain, actor, service, Web, and resource descriptors: determine authentication
+  and authorization admission, and the contract catalog that API inspection and
+  MCP serve.
 - TLS certificates: provide SNI matching for HTTPS listeners.
 
 Published configuration changes take effect in Portal without a restart, and
@@ -154,18 +157,12 @@ forwarding, but it can't simulate independent process crashes, external network
 partitions, or unreachable TLS ports. Use separate processes to test those
 conditions.
 
-## Related Documentation
-
-- [Hub](./hub.md): manages Portal entries, rules, sites, and certificates.
-- [Link](./link.md): hosts target application ingress and endpoint registrations.
-- [Rpc](../infrastructure/rpc.md): the Rpc abstraction used inside applications.
-
 ## Portal entries
 
-An entry is the access Portal serves: its scheme, host, and port. Every rule
-belongs to one entry, and the entry owns that access, so changing an entry
-updates every rule it routes at once. The Dashboard lists entries beside sites
-and rules, and the rule editor selects one when it creates a rule.
+An entry defines the protocol, host, listener addresses, and ports Portal serves.
+Every rule belongs to one entry, and the entry owns that access, so changing an
+entry updates every rule it routes at once. The Dashboard lists entries beside
+sites and rules, and the rule editor selects one when it creates a rule.
 
 Seed YAML names entries in a `portalEntries` section, and rules in the same
 document reference them by `entryName`:
@@ -173,9 +170,15 @@ document reference them by `entryName`:
 ```yaml
 portalEntries:
   - name: web
-    scheme: https
+    protocol: http
     host: api.example.com
-    port: 8443
+    http:
+      httpEnabled: true
+      httpPort: 80
+      httpsEnabled: true
+      httpsPort: 443
+      autoHTTPS: true
+    listenIPs: ["0.0.0.0", "::"]
 
 portalRules:
   - name: internal-api
@@ -185,33 +188,73 @@ portalRules:
     routeSiteName: application-web
 ```
 
-A seed may instead declare the access on each rule with `matchScheme`,
-`matchHost`, and `matchPort`. Hub creates the entry each rule needs. The two styles cannot be mixed: every rule in one document either
-names an entry or declares an access, and a rule may reference only an entry that
-the same document declares. Hub derives the name `scheme:port`, or
-`scheme:host:port` when a host is set, for an entry it creates on its own. An
-entry may route no rule yet, which keeps it available while you add the rules
-that use it.
+`protocol` accepts `http`, which groups one HTTP listener and one HTTPS listener
+under the same entry. The `http` block is optional, and its fields default to
+`httpEnabled: true`, `httpPort: 80`, `httpsEnabled: true`, `httpsPort: 443`, and
+`autoHTTPS: true`. An entry must enable at least one transport; `autoHTTPS`
+requires both, and the two transports cannot share a port. A port accepts `0` for
+the transport default, or a value in `1–65535`. The `http` block requires
+`protocol`.
+
+With `autoHTTPS: true`, an HTTP request is redirected to HTTPS only when the
+request host matches a Portal TLS certificate that is currently valid. The
+redirect keeps the request method, escaped path, and query string, and it uses the
+concrete request host, including the host matched by a wildcard certificate and
+omitting the port when `httpsPort` is `443`. A request without a matching valid
+certificate follows the normal HTTP rules, or receives `404` when no rule matches.
+Certificate updates and expiry take effect without restarting Portal. Set
+`autoHTTPS: false` to serve the same rules over both transports, or when either
+transport is disabled.
+
+`listenIPs` selects the network addresses Portal binds for this entry; the
+Dashboard exposes the same list. Omitting it, or setting `[]`, keeps the default
+wildcard TCP listener, which serves IPv4 and IPv6 where the host supports both
+families. An explicit address binds only its own family, so `["0.0.0.0", "::"]`
+binds every interface in both families and `["127.0.0.1", "::1"]` binds loopback
+only. Explicit IPv6 listeners require IPv6 support on the Portal host. Vine
+normalizes and deduplicates the list, and rejects hostnames, ports, zone
+identifiers, and overlapping wildcard and specific addresses. The `host` field
+matches the request Host; it does not select a network interface.
+
+Enabled entries that share a scheme, address, and port share one listener. Two
+entries cannot bind the same port with different schemes, or combine a wildcard
+address with a specific address on the same port. Entries with the same host,
+scheme, and port must also use the same HTTP configuration; configure the
+transports on one entry instead. An enabled entry listens even without rules:
+requests that match no rule receive `404`, and automatic HTTPS redirects still
+apply.
+
+Listener changes are applied dynamically. If a new binding fails, Portal closes
+the listeners it just opened and restores the previous configuration; startup
+fails when the initial configuration cannot be bound. Changing a wildcard address
+to a specific one can briefly interrupt connections.
+
+Every seed rule references an entry declared in the same seed through
+`entryName`; a rule that names an undeclared entry is rejected. An entry may
+route no rule yet.
 
 ## Enabling and disabling configuration
 
 Portal sites, entries, rules, and certificates carry an enable switch that the
-Dashboard edits. A seed declares only what it turns off:
+Dashboard edits. Seed YAML uses `enabled`, which defaults to `true` when omitted;
+an explicit empty or `null` value is rejected:
 
 ```yaml
 portalRules:
   - name: legacy-api
-    disabled: true
+    entryName: application
+    enabled: false
     matchPathPrefix: /legacy
     routeType: SITE
     routeSiteName: application-web
 ```
 
-Everything is enabled when the seed omits the field, and an existing database
-keeps its configuration enabled. A disabled rule is not served, and neither are
-the rules of a disabled entry or the SITE rules of a disabled site. Redirect rules are not
-SITE rules, so they stay published when their site is disabled. A disabled
-certificate is not served.
+A disabled rule is not served, and neither are the rules of a disabled entry or
+the SITE rules of a disabled site. Redirect rules are not SITE rules, so they
+stay published when their site is disabled. A disabled certificate is not served,
+and may omit `certificate` and `privateKey` or carry incomplete PEM data; its
+name, YAML shape, and field types are still validated. Enabling a certificate
+requires a valid chain and a matching private key.
 
 ## Entry path mapping
 
@@ -261,11 +304,17 @@ Configure **Target path prefix** in the Dashboard rule editor or include it in
 Hub seed YAML:
 
 ```yaml
+portalEntries:
+  - name: application
+    protocol: http
+    host: api.example.com
+    http:
+      httpPort: 8080
+      httpsEnabled: false
+      autoHTTPS: false
 portalRules:
   - name: internal-api
-    matchScheme: http
-    matchHost: api.example.com
-    matchPort: 8080
+    entryName: application
     matchPathPrefix: /api
     routeType: SITE
     routeSiteName: application-web
@@ -281,14 +330,13 @@ Seed YAML is a complete rule value: omitting the field means empty.
 
 The following requirements apply to the Admin API and startup seed YAML.
 
-An entry requires a `scheme` of `http` or `https` and a `port` of `0` (the
-protocol default) or `1–65535`; its `host` may be empty, a hostname or IP
+An entry accepts `protocol: http` with the HTTP block described above. Its `host` may be empty, a hostname or IP
 address, or a wildcard such as `*.example.com`, and must not include a URL or
-port; only a leading `*.` is accepted for a wildcard. An entry created for a rule that declares
-access is named from that access. A rule requires a name, and its
+port; only a leading `*.` is accepted for a wildcard. A rule requires a name and an
+`entryName` that references an entry declared in the same seed, and its
 `matchPathPrefix`, when set, must start with `/` and cannot contain query or
 fragment delimiters, backslashes, whitespace, control characters, or dot
-segments. A rule created through the Admin API names its entry with `entryName`.
+segments.
 
 A wildcard host matches exactly one subdomain label, so `*.example.com` matches
 `shop.example.com` but not `example.com` or `a.b.example.com`. Every rule in a
@@ -345,9 +393,6 @@ saving. An Admin API update may omit `privateKey` to keep the stored key, which 
 also how an empty Dashboard key field behaves, and certificate read APIs never
 return private key contents.
 
-Hub converts existing stored certificates when it starts; a record it cannot
-convert stops startup and names the affected certificate.
-
 Issuer, domains, and validity dates are read automatically from the certificate;
 you do not need to fill them in. Certificate content takes precedence over any
 metadata supplied in YAML.
@@ -360,3 +405,199 @@ service](https://skel.yorun.ai/docs/services) (`ext service`) is not exposed to
 clients either, even when the declaration carries `for`, `auth`, or `require` rules.
 Backend authentication, permission, and resource-check services keep running
 behind Portal and are not client entry points.
+
+## Inspect API contracts
+
+Enable **Inspect** on an RPCGW site in the Hub Dashboard, or set
+`inspectEnabled: true` in its seed definition:
+
+```yaml
+portalSites:
+  - name: public-api
+    type: RPCGW
+    actorSkelName: demo.UserActor
+    inspectEnabled: true
+```
+
+The switch defaults to `false` and is supported only on RPCGW sites. Dashboard
+changes take effect without restarting Portal. Inspection is read-only and does
+not require credentials, so any client that can reach the site can read the
+catalog. Calling an API still applies its normal authentication and permission
+checks.
+
+If a Portal rule mounts the site at `/api`, the endpoints are:
+
+| GET path | Response body |
+| --- | --- |
+| `/api/inspect/_list` | `{ "services": [...] }` containing service summaries |
+| `/api/inspect/demo.UserService/_list` | `{ "service": {...}, "methods": [...] }` containing method summaries for that service |
+| `/api/inspect/demo.UserService/get` | Method metadata, `inputSchema`, and `outputSchema` |
+
+`/api/inspect` and `/api/inspect/` also return the service list. Replace service
+and method names with the `skelName` values returned by the lists, including any
+version suffix. The `/api` prefix depends on your entry rule's path mapping.
+
+Responses use `application/json`. Lists are returned in a `services` or `methods`
+field; method details are returned as objects directly. For example, a service list:
+
+```json
+{
+  "services": [
+    {"name": "UserService", "skelName": "demo.UserService"}
+  ]
+}
+```
+
+Method lists also include the same service summary as the catalog in `service`:
+
+```json
+{
+  "service": {
+    "name": "UserService",
+    "skelName": "demo.UserService"
+  },
+  "methods": [
+    {"name": "get", "skelName": "get", "authMode": "required"}
+  ]
+}
+```
+
+Only API services configured for this site and accepting its Actor appear;
+internal services and APIs belonging to other Actors are excluded. Summaries
+carry names, descriptions, and deprecation information when declared. Method
+summaries and details expose `authMode` and `require` as the effective invocation
+policy, and a detail also identifies its `service`. Lists are sorted by
+`skelName`, and an empty result returns an empty array in the corresponding
+field, such as `{ "services": [] }` or `{ "service": {...}, "methods": [] }`. A
+running backend instance is not required to inspect a registered contract.
+
+### JSON Schema format
+
+`inputSchema` and `outputSchema` are independent
+[JSON Schema Draft 2020-12](https://json-schema.org/specification) documents.
+The catalog and method metadata around them use Vine's inspect response shape.
+
+- `inputSchema` describes the named argument object inside vRPC `params`.
+  `outputSchema` describes the value inside `result`; a method without output
+  has a `null` schema. The envelopes themselves are not part of these schemas.
+- Each document contains its own `$schema` and the referenced Data/Enum
+  definitions in `$defs`. Local `$ref` values support generic specializations
+  and recursive structures; no other endpoint is needed to resolve them.
+- Non-nullable members appear in `required`. Nullable members may be omitted or
+  set to `null`. Unknown object members remain allowed for forward compatibility.
+- Enums describe declared values and the generated `UNSPECIFIED` fallback.
+  Lists are arrays, and maps are objects with key and value constraints.
+- Scalars follow their JSON wire representation: decimal is a string, binary is
+  a base64 string, and UUID, timestamp, and local date use the corresponding
+  standard formats. Duration uses Go duration strings such as `1h30m0s`;
+  local time and local date-time have no time zone. They do not use the JSON
+  Schema `duration` or time-zone-bearing `time`/`date-time` formats.
+- Descriptions, deprecation, and examples become schema annotations.
+  `x-skel-type`, `x-skel-sensitive`, and `x-skel-deprecatedReason` preserve
+  additional Skel metadata. Sensitivity is an annotation, not access control.
+
+For example, extract a method's input schema with:
+
+```bash
+curl -s http://localhost:8080/api/inspect/demo.UserService/get \
+  | jq '.inputSchema'
+```
+
+The schemas describe contracts; inspection does not add request validation to
+`invoke`. Standard validators and tooling can consume the extracted schemas.
+
+### Availability and errors
+
+Failures use the corresponding HTTP status code and a body containing `code`
+and `message` directly, for example:
+
+```json
+{
+  "code": "SERVICE_UNAVAILABLE",
+  "message": "inspect descriptors are syncing"
+}
+```
+
+Disabled inspection, unknown paths, and services or methods outside the visible
+catalog return HTTP 404. Methods other than GET return HTTP 400 with
+`INVALID_REQUEST`; OPTIONS provides the site's CORS preflight for GET.
+
+While descriptors are synchronizing, inspection returns HTTP 503 with
+`SERVICE_UNAVAILABLE` and `Retry-After: 1`. Method details also return 503 if a
+required type definition is missing or cannot be represented. Responses use
+`Cache-Control: no-store`.
+
+## MCP tools
+
+Enable **MCP** on an RPCGW site in Hub Dashboard, or set `mcpEnabled: true`:
+
+```yaml
+portalSites:
+  - name: api
+    type: RPCGW
+    actorSkelName: demo.UserActor
+    mcpEnabled: true
+```
+
+The switch defaults to `false`, updates without a restart, and is independent of
+Inspect. With an entry mapping `/api` to this site's root, configure an MCP
+client's Streamable HTTP URL as `https://api.example.com/api/mcp`.
+
+The endpoint implements MCP `2026-07-28`. Clients must send the
+`MCP-Protocol-Version` header with that revision; any other value, or a missing
+header, returns HTTP 400. Clients may call `server/discover` before listing or
+calling tools. Responses are JSON, and the server keeps no session state. The
+endpoint provides tools only, without prompts, resources, or tool-list change
+notifications. GET and DELETE return 405.
+
+### Discovery and calls
+
+`tools/list` returns tools for the site's configured API services that accept
+its Actor. Discovery requires neither credentials nor a live backend instance.
+Each API method is one tool, normally named `{serviceSkelName}.{methodSkelName}`,
+for example `demo.UserService.get`. Call tools by the returned `name`; a name
+outside the MCP tool-name grammar is replaced by a stable generated identifier,
+while `title` keeps the `Service/Method` wire path. Lists are sorted by tool name
+and contain up to 100 tools per page. Pass `nextCursor` back as `cursor` until it
+is absent.
+
+Tools expose JSON Schema 2020-12 `inputSchema` and `outputSchema`, including
+referenced Data and Enum definitions. A `tools/call` request supplies the tool
+name and named arguments, for example:
+
+```json
+{
+  "name": "demo.UserService.get",
+  "arguments": {"id": 42}
+}
+```
+
+This is the request's `params` content; the MCP client supplies the protocol
+framing and version metadata. Input and successful output are schema-validated.
+`structuredContent` contains the API value directly, with the same JSON in text
+`content`. `outputSchema` describes that value, whether it is a scalar, array,
+object, or `null`. Void methods return `"structuredContent": null`.
+
+### Authentication and availability
+
+Configure the client's HTTP `Authorization` header with the same Vine credential
+format used by `/api/invoke`. Calls use the site's Actor and each method's
+existing authentication and permission rules. Invalid credentials never fall
+back to anonymous access. Credentials do not reach the business service.
+This endpoint does not provide OAuth discovery or automatic login.
+
+Disabled MCP returns 404. Unknown tools and malformed requests produce protocol
+errors; API failures and invalid tool arguments produce a result with
+`isError: true`. Descriptor synchronization produces a protocol error with
+`Retry-After: 1`; unresolved schemas also fail until their contracts become
+available. Responses are not cacheable. Calls have a 30-second limit, and client
+cancellation or a shorter caller deadline cancels backend work.
+
+Browser requests must use the entry's own origin or an origin allowed by site
+CORS. A disallowed or malformed Origin returns 403, including preflight requests.
+
+## Related Documentation
+
+- [Hub](./hub.md): manages Portal entries, rules, sites, and certificates.
+- [Link](./link.md): hosts target application ingress and endpoint registrations.
+- [Rpc](../infrastructure/rpc.md): the Rpc abstraction used inside applications.

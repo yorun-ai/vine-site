@@ -141,8 +141,10 @@ source of truth after the import.
 
 `appConfigs[].value` accepts a YAML mapping, including nested maps and lists.
 Use the same field names as JSON, and write enum keys and values as their enum
-names. This format applies to startup seeding; later edits happen on the entity
-pages, which write one value at a time.
+names. Each entry is keyed by the full Skel name, so a versioned name such as
+`demo.CheckoutConfigV2` is a separate configuration with its own value. This
+format applies to startup seeding; later edits happen on the entity pages, which
+write one value at a time.
 
 ```yaml
 appConfigs:
@@ -239,6 +241,15 @@ removes it.
 If Link or a business application exits unexpectedly, Portal and other Link
 instances remove the corresponding endpoint after its registration expires
 instead of continuing to forward requests to a dead instance.
+
+## Descriptor publication
+
+Hub publishes the main descriptors of every registered domain through its watch
+API as individual keys: the domain contract, API services, Web declarations,
+actors, resources, and the Data, Enum, config, event, and task declarations they
+reference. A descriptor is republished only when its hash changes, and removing a
+declared contract deletes its key. Portal reads these keys, so descriptor changes
+reach admission and the API catalog it serves without restarting Portal.
 
 ## Hub Restart and Endpoint Changes
 

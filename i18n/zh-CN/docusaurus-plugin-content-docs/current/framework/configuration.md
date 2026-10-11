@@ -96,7 +96,12 @@ instant 更新不会修改已经注入的 Go 指针，后续 execution 会解析
 
 ## 提供配置值
 
-Hub seed 文件使用配置的完整 Skel 名；`value` 字段可以直接写 YAML 对象（Hub 会转换为 JSON），也支持在 YAML 字符串中编码 JSON：
+Hub 以配置的完整 Skel 名作为标识，名称可以带 `V` 版本后缀。
+`demo.checkout.CheckoutConfig` 与 `demo.checkout.CheckoutConfigV2` 是两份独立配置，
+各自的取值互不影响，Dashboard 会按名称各列一行。Dashboard 接受
+`NameConfig` 或 `NameConfigV<n>` 形式的名称，其中名称主体不能为空，`n` 为不带前导零的
+正整数。`value` 字段可以直接写 YAML 对象（Hub 会转换为 JSON），也支持在 YAML 字符串中
+编码 JSON：
 
 ```yaml title="seed.yaml"
 appConfigs:

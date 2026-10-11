@@ -168,7 +168,7 @@ application during shutdown.
 
 ### External entry: Portal
 
-Portal is northbound infrastructure. It watches Hub for entry rules, sites,
+Portal is northbound infrastructure. It watches Hub for entries, rules, sites,
 certificates, descriptors, and available endpoints, then accepts external HTTP or
 HTTPS traffic. Portal can authenticate and authorize a request according to the
 generated descriptors and site policy before forwarding it to a target Link.

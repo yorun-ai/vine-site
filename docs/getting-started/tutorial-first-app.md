@@ -133,9 +133,9 @@ flowchart LR
 In standalone mode, the management connections between Hub and Link use the
 inproc transport and don't open additional management ports, except the Hub Admin
 API and Dashboard listener `--hub-admin-listen` opens. Portal can still listen on
-business HTTP/HTTPS ports according to its entry rules. This mode does not
-simulate heartbeat, TTL expiration, or network disconnection. Switch to linked
-mode when you need to validate these behaviors.
+business HTTP/HTTPS ports according to its entry and rule configuration. This
+mode does not simulate heartbeat, TTL expiration, or network disconnection.
+Switch to linked mode when you need to validate these behaviors.
 
 ## Connect to an Existing Hub
 

@@ -11,7 +11,7 @@ Web 能力用于为应用注册 HTTP 路由、静态资源或开发服务器代�
 
 ```skel title="web.skel"
 web UserPortalWeb {
-    for ClientActor via client
+    for ClientActor
     auth required
 }
 ```
