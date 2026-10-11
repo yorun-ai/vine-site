@@ -149,7 +149,7 @@ Link 基于这些视图转发 RPC/Web 请求、提供配置、创建 Event/Task 
 
 ### 外部入口：Portal
 
-Portal 是北向基础设施。它从 Hub 监听 entry rule、site、certificate、descriptor
+Portal 是北向基础设施。它从 Hub 监听 entry、rule、site、certificate、descriptor
 与可用 endpoint，随后接收外部 HTTP/HTTPS 流量。Portal 可以根据生成 descriptor 和 site
 策略完成认证、授权，再把请求转发给目标 Link。
 

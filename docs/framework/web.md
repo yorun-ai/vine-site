@@ -11,7 +11,7 @@ The Web capability registers HTTP routes, static assets, or a development-server
 
 ```skel title="web.skel"
 web UserPortalWeb {
-    for ClientActor via client
+    for ClientActor
     auth required
 }
 ```

@@ -135,7 +135,7 @@ variable declarations, substitution syntax, and defaults.
   API and Dashboard listener configured by `--hub-admin-listen` or
   `Option.HubAdminListen`.
   Portal can still listen on business HTTP/HTTPS ports according to its entry
-  rules.
+  and rule configuration.
 - This mode doesn't cover cross-process networking or independent service
   restarts.
 

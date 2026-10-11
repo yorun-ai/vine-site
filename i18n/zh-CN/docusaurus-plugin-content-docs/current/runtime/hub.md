@@ -118,7 +118,8 @@ Hub 默认使用 `--mq-mode=embedded`。连接外部 NATS 时，必须同时提�
 可用 `--seed-data-file ./seed.yaml` 在启动时导入初始配置、Portal 入口、站点、规则和证书。使用数据库时，导入后仍由数据库作为配置真源。
 
 `appConfigs[].value` 可以直接使用 YAML 对象，内部支持嵌套 map 和列表。
-字段名与 JSON 保持一致，枚举 key 和 value 使用枚举名称。
+字段名与 JSON 保持一致，枚举 key 和 value 使用枚举名称。每项按完整 Skel 名区分，
+因此 `demo.CheckoutConfigV2` 这样的版本化名称是一份独立配置，拥有自己的取值。
 这种格式用于启动 seed；后续修改在实体页面上逐个字段完成。
 
 ```yaml
@@ -199,6 +200,13 @@ Redis Component 并自行管理 endpoint，则使用 [Redis 指南](../framework
 实例停止发送心跳后，其注册信息即失效，Hub 随后将其移除。
 
 当 Link 或业务应用异常停止时，Portal 和其他 Link 会在注册失效后移除对应 endpoint，而不是持续转发到失效实例。
+
+## Descriptor 发布
+
+Hub 通过 watch API 按单个 key 发布每个已注册 domain 的主要 descriptor：domain 契约、
+API service、Web 声明、actor、resource，以及它们引用的 Data、Enum、config、event 和
+task 声明。只有哈希发生变化时才会重新发布；声明被移除时对应 key 会被删除。Portal 读取
+这些 key，因此 descriptor 变更无需重启 Portal 即可作用于准入判断和它提供的 API 目录。
 
 ## Hub 重启与端点变化
 
