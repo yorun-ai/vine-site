@@ -69,11 +69,11 @@ same host and within the same deployment trust boundary. A non-loopback Link
 API remains available for unusual deployments, but Link emits a warning and adds
 no transport authentication; that cross-host traffic requires deployment-level
 protection. Portal public listeners use separately configured public
-certificates; with mTLS enabled, a missing match falls back
-to a process-local self-signed Web certificate for encrypted bootstrap access.
-That temporary certificate is not browser-trusted and is not a production
-certificate. Keep any other plaintext path on loopback or a trusted private
-network.
+certificates; with mTLS enabled, a host that matches an HTTPS entry but has no
+matching configured certificate falls back to a process-local self-signed Web
+certificate for encrypted bootstrap access. That temporary certificate is not
+browser-trusted and is not a production certificate. Keep any other plaintext
+path on loopback or a trusted private network.
 
 The embedded Redis ACL keeps each component identity separate. With mTLS, Redis
 also requires the ACL username to match the client certificate identity.

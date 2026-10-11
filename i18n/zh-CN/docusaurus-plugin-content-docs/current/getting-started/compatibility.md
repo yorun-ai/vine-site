@@ -142,8 +142,9 @@ go -C ./src/server test ./...
 例如 `1.2.3`，可带 `v` 前缀；链接了不可用的名称或版本时，进程启动阶段就会失败。链接项见
 [上下文与身份](../framework/meta.md#构建身份)。
 
-生成的 Go 包由 skelc v0.32.0 或更高版本产生，并依赖 Vine v0.29.0 或更高版本。重新生成这些包可以让生成的 descriptor 与 handler 形态与所安装的 Vine 保持一致。生成器的产物以及应用代码复制生成 bean 的方式，见
-[Go 生成](https://skel.yorun.ai/docs/generation/go)。
+skelc v0.32.0 生成的后端 Go 包在 module 中声明依赖 Vine v0.29.0 或更高版本。重新生成这些包
+可以让生成的 descriptor 与 handler 形态与部署的 Vine 保持一致。生成器的产物以及应用代码复制
+生成 bean 的方式，见 [Go 生成](https://skel.yorun.ai/docs/generation/go)。
 
 提升到生产环境之前，完成
 [生产就绪清单](../operations/production-readiness.md)。Skel 语言和 generator 的详细

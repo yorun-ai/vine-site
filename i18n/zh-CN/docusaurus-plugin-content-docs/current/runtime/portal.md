@@ -57,13 +57,15 @@ vine portal serve \
   --mtls-key-file /run/vine/portal-key.pem
 ```
 
-Portal 会把该证书用于 Hub Rpc 与 Redis client，以及到 Hub Admin 和 Link ingress
-的调用。它的精确 X.509-SVID 是
+Portal 会把该证书用于启动时及运行期间的 Hub Control Rpc 调用（`InfoService` 发现，
+以及通过 `PortalRegistryService` 完成的注册、心跳与退出注销）、用于通过 Redis 协议
+加载并订阅 Hub 配置的 watch 连接，以及到 Link ingress 的调用。它的精确 X.509-SVID 是
 `spiffe://<trust-domain>/vine/daemon/vine.portal`，并与 Hub、Link 使用相同 trust domain。
-浏览器侧 HTTPS listener 永远不会直接提供这些后台身份文件。启用 mTLS 且没有配置证书
-匹配请求的 SNI host 时，Portal 会在内存中单独生成一个短期自签 Web 证书。Hub 中配置的
-精确域名和通配证书始终优先。临时证书不会被持久化，并在 Portal 停止时消失；它能加密引导
-流量，但不会被浏览器信任，生产使用前仍应配置公开证书。
+浏览器侧 HTTPS listener 永远不会直接提供这些后台身份文件。启用 mTLS 后，当 SNI 匹配当前
+监听器上的 HTTPS 入口、且没有配置证书匹配该 host 时，Portal 会在内存中单独签发一个短期自签
+Web 证书；握手阶段会先拒绝无法匹配入口的 SNI，再选择证书。Hub 中配置的精确域名和通配证书
+始终优先。临时证书不会被持久化，并在 Portal 停止时消失；它能加密引导流量，但不会被浏览器
+信任，生产使用前仍应配置公开证书。
 
 ## 配置如何生效
 
@@ -137,13 +139,13 @@ Seed YAML 用 `portalEntries` 段声明入口，同一文档中的规则通过 `
 portalEntries:
   - name: web
     protocol: http
-    host: api.example.com
     http:
-      httpEnabled: true
+      host: api.example.com
+      http: ENABLED
       httpPort: 80
-      httpsEnabled: true
+      https: ENABLED
       httpsPort: 443
-      autoHTTPS: true
+      autohttps: ENABLED
     listenIPs: ["0.0.0.0", "::"]
 
 portalRules:
@@ -154,30 +156,64 @@ portalRules:
     routeSiteName: application-web
 ```
 
-`protocol` 目前接受 `http`，把一条 HTTP 监听和一条 HTTPS 监听归入同一个入口。`http`
-块可以省略，未填写的字段默认为 `httpEnabled: true`、`httpPort: 80`、
-`httpsEnabled: true`、`httpsPort: 443` 和 `autoHTTPS: true`。入口必须至少启用一种传输协议；
-`autoHTTPS` 要求两种都启用，且两者不能使用同一端口。端口使用 `0` 表示协议默认端口，
-或填写 `1–65535`。`http` 块必须与 `protocol` 一起使用。
+`protocol` 接受 `http`，把 HTTP 和 HTTPS 归入同一入口。`http` 块可选但必须与
+`protocol` 一起使用，包含请求 host 和三个传输开关。在 seed YAML 中 null 块会被拒绝：
 
-`autoHTTPS: true` 时，只有请求 host 匹配到当前有效的 Portal TLS 证书，HTTP 请求才会
-被跳转到 HTTPS。跳转保留请求方法、转义路径和查询参数，使用具体的请求 host（包括通配符
-证书匹配到的具体域名），并在 `httpsPort` 为 `443` 时省略端口。没有匹配的有效证书时，
-请求继续按普通 HTTP 规则处理；没有匹配规则则返回 `404`。证书更新和过期即时影响跳转，
-无需重启 Portal。设置 `autoHTTPS: false` 可让两种协议服务同一组规则，关闭任一协议时也需要
-关闭它。
+| 字段 | 取值 |
+| --- | --- |
+| `host` | 要匹配的请求 Host；留空表示仅支持通过 HTTP 的 IP 访问 |
+| `http` | HTTP 传输：`ENABLED`、`DISABLED` 或 `AUTO` |
+| `httpPort` | HTTP 监听端口；`0` 或省略使用 `80`，否则为 `1–65535` |
+| `https` | HTTPS 传输模式 |
+| `httpsPort` | HTTPS 监听端口；`0` 或省略使用 `443`，否则为 `1–65535` |
+| `autohttps` | HTTP 跳转 HTTPS（`308`）模式 |
+
+开关只接受上表中的大写取值，布尔值、null 及其它取值都会被拒绝。省略的开关为 `AUTO`，
+由 Hub 结合入口 host 和匹配证书解析：
+
+- 除非显式关闭，HTTP 均开启。
+- HTTPS 仅当 host 是域名且存在已启用的匹配证书时开启；该判断不考虑证书有效期。通配符
+  入口需要覆盖整个通配符范围的证书。
+- 仅当 host 是域名且两种传输都开启时，跳转才开启。
+
+Hub 把开关解析为 `effectiveHTTP` 并发布生效结果。Dashboard 和 Admin API 同时返回配置的
+模式与生效状态：`httpEnabled`、`httpsEnabled`、`autohttpsEnabled`、`httpsReason` 及解析后的
+端口。Admin 更新只要带上 `http` 就会整块替换，块内省略的开关恢复 `AUTO`；不带该块则保持
+当前配置。
+
+Hub 在校验入口时会预留潜在传输，因此 HTTPS 尚在等待证书的入口也会占用对应 HTTPS 端口参与
+冲突检查：HTTP 和 HTTPS 不能使用同一端口，至少要启用一种传输；两个已启用入口只有在地址不重叠，
+或使用相同地址和相同协议时，才能共用同一端口。Portal 只为已生效的传输打开监听，因此这类入口
+会在匹配证书出现后开始提供 HTTPS。
+
+显式开关在保存时必须已经满足条件：
+
+- `https: ENABLED` 需要域名 host 和已启用的匹配证书。
+- `autohttps: ENABLED` 需要域名 host、两种传输均已开启，以及已启用的匹配证书。
+- 如果证书变更会让这类入口失去最后一张匹配证书，变更会被拒绝。请先把入口改为 `AUTO` 或
+  `DISABLED` 再删除证书。
+
+`AUTO` 开关可以等待证书：上传证书后 Hub 会自动启用对应传输，无需修改入口。证书和入口也
+可以在同一份 seed 中声明。
+
+生效配置中的 HTTP、HTTPS 和跳转都开启时，只有请求 host 匹配到当前有效的 Portal TLS 证书，
+HTTP 请求才会被跳转到 HTTPS。跳转保留请求方法、转义路径和查询参数，使用具体的请求 host
+（包括通配符证书匹配到的具体域名），并在 `httpsPort` 为 `443` 时省略端口。没有匹配的有效
+证书时，请求继续按普通 HTTP 规则处理；没有匹配规则则返回 `404`。证书更新和过期即时影响
+跳转，无需重启 Portal。IP 请求不会被自动跳转。设置 `autohttps: DISABLED` 可让两种协议服务
+同一组规则。
 
 `listenIPs` 指定此入口绑定的网络地址，Dashboard 中展示同一份列表。省略或使用 `[]` 会保留
 默认的全网卡 TCP 监听，在主机支持时同时服务 IPv4 和 IPv6。显式地址只绑定所属地址族，
 因此 `["0.0.0.0", "::"]` 绑定两个地址族的所有网卡，`["127.0.0.1", "::1"]` 只绑定回环地址。
 显式 IPv6 监听要求 Portal 所在主机支持 IPv6。Vine 会对列表做规范化与去重，并拒绝域名、
-端口、zone 标识，以及列表中重叠的通配地址与具体地址。`host` 字段匹配请求 Host，不用于
+端口、zone 标识，以及列表中重叠的通配地址与具体地址。`http.host` 字段匹配请求 Host，不用于
 选择网络接口。
 
-已启用的入口在协议、地址和端口都相同时共享同一个监听器。两个入口不能在同一端口使用不同
-协议，也不能在同一端口上混用通配地址和具体地址。host、协议和端口都相同的入口还必须使用
-相同的 HTTP 配置，此时应把传输配置合并到一个入口中。已启用的入口即使没有规则也会监听：
-没有匹配规则的请求返回 `404`，自动 HTTPS 跳转照常生效。
+已启用的入口在协议、地址和端口都相同时共享同一个监听器。两个入口只有在地址不重叠，或使用
+相同地址和相同协议时，才能共用同一端口，因此同一端口上的通配地址与具体地址会冲突。host、
+协议和端口都相同的入口还必须使用相同的 HTTP 配置，此时应把传输配置合并到一个入口中。已启用
+的入口即使没有规则也会监听：没有匹配规则的请求返回 `404`，自动 HTTPS 跳转照常生效。
 
 监听变更动态生效。新增绑定失败时，Portal 会关闭刚打开的监听器并恢复原有配置；初始配置
 无法绑定时启动失败。从通配地址切换到具体地址可能短暂中断连接。
@@ -249,11 +285,11 @@ URL 或重定向地址。
 portalEntries:
   - name: application
     protocol: http
-    host: api.example.com
     http:
+      host: api.example.com
       httpPort: 8080
-      httpsEnabled: false
-      autoHTTPS: false
+      https: DISABLED
+      autohttps: DISABLED
 portalRules:
   - name: internal-api
     entryName: application
@@ -272,18 +308,25 @@ API 更新时不传 `routePathPrefix` 表示不修改，传空字符串表示清
 
 以下要求适用于 Admin API 和启动 seed YAML。
 
-入口支持 `protocol: http` 及上面说明的 HTTP 配置块；`host` 可以为空、填写主机名/IP，或使用 `*.example.com` 这样的通配符域名，
-不能带完整 URL 或端口；通配符只允许开头的 `*.`。规则必须填写名称和引用同一文档所声明入口的 `entryName`；
-`matchPathPrefix` 非空时必须以 `/` 开头，不包含查询参数
-或片段分隔符、反斜杠、空白、控制字符及 `.` / `..` 路径段。
+入口支持 `protocol: http` 及上面说明的 HTTP 配置块；`http.host` 可以为空、填写主机名、IP，或使用
+`*.example.com` 这样的通配符域名，不能带完整 URL 或端口，通配符只允许开头的 `*.`。保存前 Vine
+会去掉 host 两端空白、转为小写并去掉一个末尾点号。规则必须填写名称和 `entryName`：seed 必须
+引用同一文档内声明的入口，Admin API 则要求该入口已存在于 Hub。`matchPathPrefix` 非空时必须以
+`/` 开头，不包含查询参数或片段分隔符、反斜杠、空白、控制字符及 `.` / `..` 路径段。
 
 通配符只匹配一级子域名：`*.example.com` 匹配 `shop.example.com`，不匹配 `example.com`
 或 `a.b.example.com`。通配符入口下的每条规则都必须指向 Web 站点，且该站点必须已存在：
 不允许 Rpc 目标和重定向；目标站点之后被删除或改为非 Web 类型时，该规则停止服务。还需将
 DNS 泛解析指向 Portal；使用 HTTPS 时提供匹配的证书。
 
-同一个入口内的规则按域名精确程度排序：精确域名优先于通配符域名，两者都优先于空 Host
-兜底规则；同一组内优先匹配更长的 `matchPathPrefix`。
+HTTPS 每次握手先按 SNI 匹配当前监听器上的入口，再选择证书。精确域名入口优先于通配符入口；
+仅有通配符证书不会放行额外域名。缺少 SNI、SNI 为 IP 或无法匹配入口时拒绝握手，TLS 会话恢复也
+执行同样的校验。HTTP 请求 Host 在忽略端口、大小写和末尾点号后必须与握手 SNI 一致，否则返回 `421`。
+仅在匹配到的入口域名内选择规则；路径未匹配时不会回退到通配符入口。
+
+HTTP 先按 Host 选择入口，精确 Host 优先于通配符；随后仅使用该入口的规则和自动 HTTPS 跳转。
+如果入口没有匹配的规则或跳转，请求返回 `404`，不会回退到通配符入口。空 Host 入口仅匹配
+HTTP IP 访问，且精确 IP 入口优先。在选中的入口内，优先匹配更长的 `matchPathPrefix`。
 
 `SITE` 必须填写 `routeSiteName`，不能设置 `routeRedirectionPattern`。
 `PERMANENT_REDIRECT` 和 `TEMPORARY_REDIRECT` 必须填写 `routeRedirectionPattern`，
@@ -323,7 +366,8 @@ Hub 在保存前校验证书链，以及证书与私钥是否配对。Admin API 
 不返回私钥内容。
 
 证书签发者、域名和有效期自动从证书内容解析，无需手填。YAML 中即使填写了
-这些元数据，也以证书内容为准。
+这些元数据，也以证书内容为准。证书覆盖的域名决定哪些入口 host 可以启用 HTTPS
+和自动跳转；证书集合变化时，Hub 会重新计算受影响的入口。
 
 ## API 服务边界
 

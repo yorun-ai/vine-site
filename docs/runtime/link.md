@@ -75,8 +75,11 @@ vine link serve \
   --mtls-key-file /run/vine/link-key.pem
 ```
 
-Link then uses this certificate for Hub Rpc, Redis, and embedded NATS clients,
-and as the server identity on Link ingress. Its exact X.509-SVID is
+Link uses this certificate for its Hub Control Rpc calls (discovery through
+`InfoService`, application registration and heartbeats through `RegistryService`,
+and lock operations through `LockService`), for the Redis-protocol watch
+connection that loads and subscribes to Hub configuration, for the embedded NATS
+client, and as the server identity on Link ingress. Its exact X.509-SVID is
 `spiffe://<trust-domain>/vine/daemon/vine.link`, using the same trust domain as Hub and
 Portal. Remote Link and Portal proxy traffic must use HTTPS and authenticate
 that SPIFFE ID. The Link API remains unauthenticated h2c because Link is the
