@@ -71,14 +71,19 @@ vine portal serve \
   --mtls-key-file /run/vine/portal-key.pem
 ```
 
-Portal uses this certificate for Hub Rpc and Redis clients and for calls to Hub
-Admin and Link ingress. Its exact X.509-SVID is
+Portal uses this certificate for the Hub Control Rpc calls it makes at startup
+and while running — `InfoService` discovery plus registration, heartbeats, and
+shutdown unregistration through `PortalRegistryService` — for the
+Redis-protocol watch connection that loads and subscribes to Hub configuration,
+and for calls to Link ingress. Its exact X.509-SVID is
 `spiffe://<trust-domain>/vine/daemon/vine.portal`, using the same trust domain as Hub and
 Link. These backend identity files are never served directly by browser-facing
-HTTPS listeners. When mTLS is enabled and no configured certificate matches an
-SNI host, Portal generates a separate, short-lived self-signed Web certificate
-in memory. Exact and wildcard certificates from Hub always take precedence.
-Temporary certificates are not persisted and disappear when Portal stops. They encrypt bootstrap traffic but are not
+HTTPS listeners. With mTLS enabled, Portal issues a separate, short-lived
+self-signed Web certificate in memory when the SNI matches an HTTPS entry on the
+listener and no configured certificate matches that host; the handshake rejects
+unmatched SNI before certificate selection. Exact and wildcard certificates from
+Hub always take precedence. Temporary certificates are not persisted and
+disappear when Portal stops. They encrypt bootstrap traffic but are not
 browser-trusted; configure a public certificate before production use.
 
 ## How Configuration Takes Effect
@@ -171,13 +176,13 @@ document reference them by `entryName`:
 portalEntries:
   - name: web
     protocol: http
-    host: api.example.com
     http:
-      httpEnabled: true
+      host: api.example.com
+      http: ENABLED
       httpPort: 80
-      httpsEnabled: true
+      https: ENABLED
       httpsPort: 443
-      autoHTTPS: true
+      autohttps: ENABLED
     listenIPs: ["0.0.0.0", "::"]
 
 portalRules:
@@ -188,23 +193,67 @@ portalRules:
     routeSiteName: application-web
 ```
 
-`protocol` accepts `http`, which groups one HTTP listener and one HTTPS listener
-under the same entry. The `http` block is optional, and its fields default to
-`httpEnabled: true`, `httpPort: 80`, `httpsEnabled: true`, `httpsPort: 443`, and
-`autoHTTPS: true`. An entry must enable at least one transport; `autoHTTPS`
-requires both, and the two transports cannot share a port. A port accepts `0` for
-the transport default, or a value in `1–65535`. The `http` block requires
-`protocol`.
+`protocol` accepts `http` and groups HTTP and HTTPS under one entry. The `http`
+block is optional and requires `protocol`; it holds the request host and three
+transport switches. In seed YAML a null block is rejected:
 
-With `autoHTTPS: true`, an HTTP request is redirected to HTTPS only when the
-request host matches a Portal TLS certificate that is currently valid. The
-redirect keeps the request method, escaped path, and query string, and it uses the
-concrete request host, including the host matched by a wildcard certificate and
-omitting the port when `httpsPort` is `443`. A request without a matching valid
-certificate follows the normal HTTP rules, or receives `404` when no rule matches.
-Certificate updates and expiry take effect without restarting Portal. Set
-`autoHTTPS: false` to serve the same rules over both transports, or when either
-transport is disabled.
+| Field | Value |
+| --- | --- |
+| `host` | Request Host to match; empty means IP access over HTTP only |
+| `http` | HTTP transport: `ENABLED`, `DISABLED`, or `AUTO` |
+| `httpPort` | HTTP listener port; `0` or omitted uses `80`, otherwise `1–65535` |
+| `https` | HTTPS transport mode |
+| `httpsPort` | HTTPS listener port; `0` or omitted uses `443`, otherwise `1–65535` |
+| `autohttps` | HTTP-to-HTTPS redirect (`308`) mode |
+
+Switch values are the exact upper-case words shown above; booleans, null, and
+other values are rejected. An omitted switch is `AUTO`, which Hub resolves
+against the entry host and its matching certificates:
+
+- HTTP is enabled unless it is explicitly disabled.
+- HTTPS is enabled only when the host is a domain with an enabled matching
+  certificate. Certificate validity dates do not affect this decision, and a
+  wildcard entry needs a certificate covering its whole wildcard namespace.
+- The redirect is enabled only when the host is a domain and both transports
+  are enabled.
+
+Hub resolves the switches into `effectiveHTTP` and publishes the effective
+result. The Dashboard and Admin API return both the configured modes and the
+effective state: `httpEnabled`, `httpsEnabled`, `autohttpsEnabled`, `httpsReason`,
+and the resolved ports. An Admin update replaces the whole block when it sends
+`http`, so omitted switches reset to `AUTO`; omitting the block keeps the current
+configuration.
+
+Hub reserves the potential transports when it validates an entry, so an entry
+whose HTTPS is still waiting for a certificate already occupies its HTTPS port
+for conflict checks. HTTP and HTTPS cannot use the same port, at least one
+transport must be enabled, and two enabled entries may share a port only when
+their addresses do not overlap or when they use the same address and scheme.
+Portal opens listeners only for transports that are effective, so such an entry
+starts serving HTTPS once a matching certificate appears.
+
+Explicit settings must be satisfiable when they are saved:
+
+- `https: ENABLED` requires a domain host and an enabled matching certificate.
+- `autohttps: ENABLED` requires a domain host, both transports enabled, and an
+  enabled matching certificate.
+- A certificate change that would remove the last match for such an entry is
+  rejected. Set the entry to `AUTO` or `DISABLED` before removing the
+  certificate.
+
+`AUTO` settings may wait for a certificate: upload it and Hub enables the
+transport without an entry change. A seed can declare the certificate and the
+entry in the same document.
+
+With effective HTTP, HTTPS, and redirects all enabled, an HTTP request is
+redirected to HTTPS only when its host matches a currently valid Portal TLS
+certificate. The redirect keeps the request method, escaped path, and query
+string, uses the concrete request host, including the host matched by a wildcard
+certificate, and omits the port when `httpsPort` is `443`. Without a matching
+valid certificate the request follows the normal HTTP rules, or receives `404`
+when no rule matches. Certificate updates and expiry take effect without
+restarting Portal. IP requests are never redirected. Set `autohttps: DISABLED` to
+serve the same rules over both transports.
 
 `listenIPs` selects the network addresses Portal binds for this entry; the
 Dashboard exposes the same list. Omitting it, or setting `[]`, keeps the default
@@ -213,16 +262,16 @@ families. An explicit address binds only its own family, so `["0.0.0.0", "::"]`
 binds every interface in both families and `["127.0.0.1", "::1"]` binds loopback
 only. Explicit IPv6 listeners require IPv6 support on the Portal host. Vine
 normalizes and deduplicates the list, and rejects hostnames, ports, zone
-identifiers, and overlapping wildcard and specific addresses. The `host` field
+identifiers, and overlapping wildcard and specific addresses. The `http.host` field
 matches the request Host; it does not select a network interface.
 
 Enabled entries that share a scheme, address, and port share one listener. Two
-entries cannot bind the same port with different schemes, or combine a wildcard
-address with a specific address on the same port. Entries with the same host,
-scheme, and port must also use the same HTTP configuration; configure the
-transports on one entry instead. An enabled entry listens even without rules:
-requests that match no rule receive `404`, and automatic HTTPS redirects still
-apply.
+entries may share a port only when their addresses do not overlap or when they
+use the same address and scheme, so a wildcard address and a specific address on
+the same port conflict. Entries with the same host, scheme, and port must also
+use the same HTTP configuration; configure the transports on one entry instead.
+An enabled entry listens even without rules: requests that match no rule receive
+`404`, and automatic HTTPS redirects still apply.
 
 Listener changes are applied dynamically. If a new binding fails, Portal closes
 the listeners it just opened and restores the previous configuration; startup
@@ -307,11 +356,11 @@ Hub seed YAML:
 portalEntries:
   - name: application
     protocol: http
-    host: api.example.com
     http:
+      host: api.example.com
       httpPort: 8080
-      httpsEnabled: false
-      autoHTTPS: false
+      https: DISABLED
+      autohttps: DISABLED
 portalRules:
   - name: internal-api
     entryName: application
@@ -330,13 +379,15 @@ Seed YAML is a complete rule value: omitting the field means empty.
 
 The following requirements apply to the Admin API and startup seed YAML.
 
-An entry accepts `protocol: http` with the HTTP block described above. Its `host` may be empty, a hostname or IP
-address, or a wildcard such as `*.example.com`, and must not include a URL or
-port; only a leading `*.` is accepted for a wildcard. A rule requires a name and an
-`entryName` that references an entry declared in the same seed, and its
-`matchPathPrefix`, when set, must start with `/` and cannot contain query or
-fragment delimiters, backslashes, whitespace, control characters, or dot
-segments.
+An entry accepts `protocol: http` with the HTTP block described above. Its
+`http.host` may be empty, a hostname, an IP address, or a wildcard such as
+`*.example.com`; it must not include a URL or port, and only a leading `*.` is
+accepted for a wildcard. Vine trims the host, lowercases it, and strips one
+trailing dot before storing it. A rule requires a name and an `entryName`: a seed
+must declare that entry in the same document, and the Admin API requires an entry
+Hub already stores. The rule's `matchPathPrefix`, when set, must start with `/`
+and cannot contain query or fragment delimiters, backslashes, whitespace, control
+characters, or dot segments.
 
 A wildcard host matches exactly one subdomain label, so `*.example.com` matches
 `shop.example.com` but not `example.com` or `a.b.example.com`. Every rule in a
@@ -345,9 +396,20 @@ targets and redirects are rejected, and the rule stops serving if its target sit
 is later removed or becomes a non-Web type. Point wildcard DNS at Portal and
 provide a matching certificate for HTTPS.
 
-Rules in one entry are ordered by host specificity: an exact host wins over a
-wildcard host, and both win over an empty-host fallback rule. Within one group,
-the longest `matchPathPrefix` wins.
+For HTTPS, each TLS handshake first matches SNI against the entries on that
+listener and then selects a certificate. An exact entry host wins over a wildcard
+entry, and a wildcard certificate alone does not admit other hosts. Missing, IP,
+or unmatched SNI is rejected, including on session resumption. The request Host
+must match the handshake SNI after ignoring the port, letter case, and a trailing
+dot; otherwise the request receives `421`. Rules are then selected only from the
+matched entry host, without falling back to a wildcard entry when no path matches.
+
+For HTTP, Portal selects the entry by Host, preferring an exact host over a
+wildcard, and uses only that entry's rules and automatic redirect. If neither
+matches, the request receives `404` rather than falling back to a wildcard entry.
+An empty host matches only requests whose Host is an IP address, and an exact IP
+entry wins over it. Within the selected entry, the longest `matchPathPrefix`
+wins.
 
 `SITE` requires `routeSiteName` and rejects `routeRedirectionPattern`.
 `PERMANENT_REDIRECT` and `TEMPORARY_REDIRECT` require `routeRedirectionPattern`
@@ -395,7 +457,9 @@ return private key contents.
 
 Issuer, domains, and validity dates are read automatically from the certificate;
 you do not need to fill them in. Certificate content takes precedence over any
-metadata supplied in YAML.
+metadata supplied in YAML. The domains a certificate covers decide which entry
+hosts can enable HTTPS and automatic redirects, and Hub recomputes the affected
+entries when the certificate set changes.
 
 ## API Service Boundaries
 

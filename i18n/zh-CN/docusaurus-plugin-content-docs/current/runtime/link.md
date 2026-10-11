@@ -61,8 +61,10 @@ vine link serve \
   --mtls-key-file /run/vine/link-key.pem
 ```
 
-Link 会把该证书用于 Hub Rpc、Redis 与内嵌 NATS client，并作为 Link ingress 的
-server 身份。它的精确 X.509-SVID 是
+Link 会把该证书用于 Hub Control Rpc 调用（通过 `InfoService` 发现、通过 `RegistryService`
+注册应用并发送心跳、通过 `LockService` 执行锁操作）、用于通过 Redis 协议加载并订阅 Hub
+配置的 watch 连接、用于内嵌 NATS client，并作为 Link ingress 的 server 身份。它的精确
+X.509-SVID 是
 `spiffe://<trust-domain>/vine/daemon/vine.link`，并与 Hub、Portal 使用相同 trust domain。
 远端 Link 与 Portal 代理流量必须使用 HTTPS 并认证该 SPIFFE ID。Link API 仍使用
 未经认证的 h2c，因为 Link 是应用的 sidecar。应用与 Link 通常位于同一主机和部署
