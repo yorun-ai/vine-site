@@ -129,13 +129,23 @@ portalSites:
           total: 15m
 ```
 
-`total` is a positive Go duration. The first matching path rule wins over the
+`total` is a positive Go duration. The most specific matching path rule wins over the
 default; matching uses the decoded path after entry rewriting, without the query
 string. A pattern without wildcards is exact, `*` matches within one segment, and
 `**` occupies a whole segment and matches across segments, so `/go/**` covers
 `/go`, `/go/`, and descendants but not `/gopher`. Patterns must start with `/`;
 query strings, fragments, `.`/`..` segments, and other wildcard syntax are
 rejected.
+
+Exact paths take priority over wildcard patterns. Wildcard patterns compare
+segments from left to right: literal segments take priority over segments with
+`*`, which take priority over `**`. Within a segment containing `*`, more literal
+characters take priority. Ending a pattern takes priority over an additional
+`**`; an additional literal or `*` segment takes priority over ending it.
+Equally specific rules retain configuration order. For example,
+`/files/download/**` overrides `/files/**` regardless of their order.
+Existing overlapping rules that relied on the first match may select a different
+timeout under this precedence; review their totals when upgrading.
 
 A configured policy is both the budget and its maximum: `vweb-options` may
 shorten it, and a larger or absent request timeout uses the policy total. The
