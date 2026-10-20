@@ -280,3 +280,15 @@ standalone 通过进程内连接以同样的方式解析。
 
 语言规则见 [Skel 配置语法](https://skel.yorun.ai/docs/syntax)，binding 与 scope
 细节见[依赖注入](./di.md)。
+
+## 抽象配置契约
+
+Skel 的 [`abs config` 和 `=` 语法](https://skel.yorun.ai/docs/types-and-data)允许
+多个具体配置共享一份契约。应用应注入生成的具体配置类型：每个具体 Skel 名称都有独立的
+配置值，并遵循抽象契约声明的生命周期。
+
+抽象配置不是应用配置：不能被注入、作为配置读取、在 Hub 中赋值，也不能通过 testkit 覆盖，
+Hub 不会为它创建应用槽位。应用配置详情页和 Skeleton 详情页会把采用方链接到对应的抽象契约，
+Skeleton 用 `abs` 标记抽象声明。
+
+生成的 `As<ContractName>()` 方法以指针方式暴露共享契约而不复制配置值，也可供泛型消费者使用。

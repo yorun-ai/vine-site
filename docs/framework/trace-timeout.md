@@ -119,9 +119,35 @@ If auth/check uses 2 seconds, the target service will not receive `timeout=30s`;
 
 Ordinary Web requests use the same rule for `vweb-options`. Web auth is included in the same budget, and the remaining timeout is refreshed before forwarding to the backend Web application. SSE and WebSocket requests without an explicit timeout don't receive a total-duration deadline; bidirectional traffic and the idle timeout control their lifecycle instead.
 
-For ordinary Rpc/Web requests, Portal separates external client disconnects from internal execution timeout. After a request enters the gateway and its execution context is created, client-side cancellation such as a mobile network drop or a closed browser tab doesn't cancel auth/check, the handler, or downstream calls by default. Execution is controlled by timeout, Portal shutdown, and other server-side signals. SSE and WebSocket connections respond to client disconnect, upstream disconnect, idle timeout, and Portal shutdown.
+## Client Cancellation and Business Execution {#client-cancellation}
 
-If the request body has not been fully received, Portal or the downstream service can still fail while reading the body. That case is not treated as a complete business execution that has already started.
+For ordinary Web requests, Rpc calls, and MCP tool calls, Portal keeps executing
+after the client disconnects: cancellation or an earlier caller deadline does not
+cancel authentication, permission checks, handlers, or downstream calls. Trace,
+actor, and initiator propagation continue as usual.
+
+| Entry | Execution budget | Client cancellation |
+| --- | --- | --- |
+| Ordinary Web | Site `webTimeout` policy; otherwise 30 seconds default with request options up to 120 seconds | Does not cancel accepted execution |
+| Rpc `/invoke` | 30 seconds default; `vrpc-options` up to 120 seconds | Does not cancel accepted execution |
+| MCP `/mcp` | 30 seconds default; `params._meta["vmcp-options"]` up to 120 seconds | HTTP and MCP SDK cancellation do not cancel accepted backend execution |
+| SSE / WebSocket without an explicit timeout | No total-duration deadline; stream idle limits apply | Client disconnects cancel the connection's work |
+
+An options-header timeout requests an execution budget; it is not a deadline on
+the client's own connection. See [WebGW timeout policies](../runtime/portal.md#web-timeout)
+for Site defaults and path overrides, where client options can only shorten the policy.
+
+This is not a completion, transaction, or rollback guarantee. Portal's timeout and
+shutdown still stop the work, and downstream failures or process crashes can
+interrupt it. Cancellation is cooperative: code and I/O must observe the context,
+and completed writes are not rolled back. Use transactions where applicable,
+idempotency or status checks for retried writes, and a persistent Task workflow for
+durable execution.
+
+A disconnected client cannot keep a broken connection usable: reading an
+incomplete request body or writing the response can still fail, and a proxy may
+close the upstream body. SSE and WebSocket connections without an explicit
+timeout remain tied to the client because their work serves that live connection.
 
 ## Calling Downstream From Handlers
 

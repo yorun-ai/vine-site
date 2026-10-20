@@ -262,6 +262,61 @@ Field injection:
 - Supports exported fields.
 - Supports anonymous embedded fields.
 
+### Generic fields and embedded types
+
+A generic field is resolved using its instantiated type. For example, `Config C`
+becomes `*PrimaryConfig` in `ConfiguredClient[*PrimaryConfig]`. Different type
+arguments resolve their own dependencies, even when they share the same generic
+struct definition.
+
+```go
+package main
+
+import (
+    "fmt"
+
+    "go.yorun.ai/vine/core/di"
+)
+
+type PrimaryConfig struct{ Endpoint string }
+type ReplicaConfig struct{ Endpoint string }
+
+type ConfiguredClient[C any] struct {
+    Config C `inject:""`
+}
+
+type PrimaryClient struct {
+    ConfiguredClient[*PrimaryConfig]
+}
+
+type ReplicaClient struct {
+    ConfiguredClient[*ReplicaConfig]
+}
+
+func main() {
+    injector := di.NewInjector(func(b *di.Binder) {
+        b.BindInstance(&PrimaryConfig{Endpoint: "primary"})
+        b.BindInstance(&ReplicaConfig{Endpoint: "replica"})
+        b.Bind(di.T[*PrimaryClient]())
+        b.Bind(di.T[*ReplicaClient]())
+    })
+
+    var primary *PrimaryClient
+    var replica *ReplicaClient
+    injector.Resolve(&primary)
+    injector.Resolve(&replica)
+    fmt.Println(primary.Config.Endpoint, replica.Config.Endpoint)
+    // Output: primary replica
+}
+```
+
+Use an exported generic struct embedded by value, and put `inject:""` on its
+exported dependency fields. Do not tag the embedded field itself. Pointer
+embedding is not supported when the embedded struct contains injected fields.
+Dependencies are assigned before the consumer's `DIInit` runs.
+
+These are application-defined Go types; no special generic binding API is needed.
+
 ## Resolve, Invoke, and Get
 
 ### `Resolve`

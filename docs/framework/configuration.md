@@ -327,3 +327,19 @@ When diagnosing a missing value:
 See the [Skel configuration syntax](https://skel.yorun.ai/docs/syntax) for
 language rules and [Dependency injection](./di.md) for binding and scope
 details.
+
+## Abstract configuration contracts
+
+Skel's [`abs config` and `=` syntax](https://skel.yorun.ai/docs/types-and-data)
+lets several concrete configurations share one contract. Inject the generated
+concrete type: each concrete Skel name owns an independent value and follows the
+lifecycle declared by its abstract contract.
+
+An abstract config is not an application config: it cannot be injected, read,
+assigned a Hub value, or overridden through testkit, and Hub creates no
+application slot for it. The application config and Skeleton detail pages link an
+adopter to its abstract contract, and Skeleton marks abstract declarations with
+an **abs** badge.
+
+Generated `As<ContractName>()` methods expose the shared contract as a pointer
+without copying the value, including for generic consumers.
