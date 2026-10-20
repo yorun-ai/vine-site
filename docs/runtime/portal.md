@@ -108,6 +108,51 @@ A Hub restart needs no action on Portal: Portal reconnects to the running Hub an
 continues serving without a restart. See
 [Hub Restart and Endpoint Changes](./hub.md#hub-restart-and-endpoint-changes).
 
+## WebGW timeout policies {#web-timeout}
+
+A WEBGW Site can set `webTimeout` beside `cors` to give a Web site a total
+execution budget, for example for package downloads:
+
+```yaml
+portalSites:
+  - name: packages
+    type: WEBGW
+    actorSkelName: demo.UserActor
+    webName: demo.PackageWeb
+    cors:
+      mode: SAME_DOMAIN
+    webTimeout:
+      default:
+        total: 30s
+      paths:
+        - path: /go/**
+          total: 15m
+```
+
+`total` is a positive Go duration. The first matching path rule wins over the
+default; matching uses the decoded path after entry rewriting, without the query
+string. A pattern without wildcards is exact, `*` matches within one segment, and
+`**` occupies a whole segment and matches across segments, so `/go/**` covers
+`/go`, `/go/`, and descendants but not `/gopher`. Patterns must start with `/`;
+query strings, fragments, `.`/`..` segments, and other wildcard syntax are
+rejected.
+
+A configured policy is both the budget and its maximum: `vweb-options` may
+shorten it, and a larger or absent request timeout uses the policy total. The
+budget starts at WebGW admission and includes authentication and response
+transfer; only the remaining time reaches the backend. SSE and WebSocket
+connections also follow the policy and the ordinary Web
+[cancellation rules](../framework/trace-timeout.md#client-cancellation).
+
+Without a matching policy, ordinary Web requests default to 30 seconds and accept
+a request option up to 120 seconds; SSE and WebSocket connections without a
+request timeout keep their long-connection behavior.
+
+The Dashboard edits the default and the ordered path list; saved changes apply to
+new requests, while in-flight requests keep their deadline. An Admin update
+replaces the whole block when present and clears it with an empty object;
+omitting the field preserves it. The policy applies to WEBGW Sites only.
+
 ## Authentication modes
 
 A service method inherits the service authentication mode when it declares none;
@@ -136,8 +181,8 @@ without one is treated as `required`. Such a Web endpoint needs valid credential
 and an actor with authentication configured. Select `optional` or `off` for
 anonymous access or handler-owned authentication.
 
-The mode travels in the descriptor Hub publishes, so run Hub, Link, and Portal on
-the same version.
+Run Hub, Link, and Portal on the same version so authentication modes stay
+consistent.
 
 ## Optional credentials
 
@@ -217,16 +262,13 @@ against the entry host and its matching certificates:
 - The redirect is enabled only when the host is a domain and both transports
   are enabled.
 
-Hub resolves the switches into `effectiveHTTP` and publishes the effective
-result. The Dashboard and Admin API return both the configured modes and the
-effective state: `httpEnabled`, `httpsEnabled`, `autohttpsEnabled`, `httpsReason`,
-and the resolved ports. An Admin update replaces the whole block when it sends
-`http`, so omitted switches reset to `AUTO`; omitting the block keeps the current
-configuration.
+An entry reports both the configured modes and an `effectiveHTTP` object with
+`httpEnabled`, `httpsEnabled`, `autohttpsEnabled`, `httpsReason`, and the resolved
+ports. An Admin update replaces the whole block when it sends `http`, so omitted
+switches reset to `AUTO`; omitting the block keeps the current configuration.
 
-Hub reserves the potential transports when it validates an entry, so an entry
-whose HTTPS is still waiting for a certificate already occupies its HTTPS port
-for conflict checks. HTTP and HTTPS cannot use the same port, at least one
+An entry whose HTTPS is still waiting for a certificate still occupies its HTTPS
+port for conflict checks. HTTP and HTTPS cannot use the same port, at least one
 transport must be enabled, and two enabled entries may share a port only when
 their addresses do not overlap or when they use the same address and scheme.
 Portal opens listeners only for transports that are effective, so such an entry
@@ -470,6 +512,21 @@ clients either, even when the declaration carries `for`, `auth`, or `require` ru
 Backend authentication, permission, and resource-check services keep running
 behind Portal and are not client entry points.
 
+## RpcGW backend requests
+
+`/invoke` and MCP forward a fixed set of headers to the backend: `Accept`,
+`Content-Type`, `vrpc-client`, `vrpc-trace`, `vrpc-initiator`, `vrpc-actor`, and
+`vrpc-options`, with trace, initiator, actor, and the remaining timeout filled in
+by Portal. Cookies, arbitrary custom headers, forwarding headers, MCP headers,
+and response-only vRPC headers are not forwarded; the User-Agent and client IP
+remain available only as initiator metadata. Business identity belongs in
+admitted actor information and per-call input in method parameters, so there is
+no configurable header passthrough.
+
+A request body must be uncompressed: only an absent or a single `identity`
+`Content-Encoding` is accepted. Other or malformed encodings are rejected before
+admission.
+
 ## Inspect API contracts
 
 Enable **Inspect** on an RPCGW site in the Hub Dashboard, or set
@@ -654,8 +711,16 @@ Disabled MCP returns 404. Unknown tools and malformed requests produce protocol
 errors; API failures and invalid tool arguments produce a result with
 `isError: true`. Descriptor synchronization produces a protocol error with
 `Retry-After: 1`; unresolved schemas also fail until their contracts become
-available. Responses are not cacheable. Calls have a 30-second limit, and client
-cancellation or a shorter caller deadline cancels backend work.
+available. Responses are not cacheable.
+
+Tool calls default to a server-controlled 30-second limit.
+`params._meta["vmcp-options"]` accepts an options string such as
+`"timeout=60s"`, up to 120 seconds, with the same syntax and validation as
+`vrpc-options`; invalid values produce JSON-RPC Invalid Params, and unknown
+options are ignored. The option is a Vine extension rather than a standard MCP
+field, and it does not change the client SDK's own wait. Accepted calls are not
+cancelled by client disconnects, caller deadlines, or MCP SDK cancellation; see
+[client cancellation](../framework/trace-timeout.md#client-cancellation).
 
 Browser requests must use the entry's own origin or an origin allowed by site
 CORS. A disallowed or malformed Origin returns 403, including preflight requests.

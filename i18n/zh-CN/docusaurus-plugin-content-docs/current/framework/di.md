@@ -263,6 +263,59 @@ type UserService struct {
 - 支持导出字段
 - 支持匿名嵌入字段
 
+### 泛型字段与嵌入类型
+
+泛型字段按实例化后的类型解析。例如，`ConfiguredClient[*PrimaryConfig]` 中的
+`Config C` 实际类型是 `*PrimaryConfig`。即使使用同一个泛型结构体定义，不同类型参数
+也会分别解析各自的依赖。
+
+```go
+package main
+
+import (
+    "fmt"
+
+    "go.yorun.ai/vine/core/di"
+)
+
+type PrimaryConfig struct{ Endpoint string }
+type ReplicaConfig struct{ Endpoint string }
+
+type ConfiguredClient[C any] struct {
+    Config C `inject:""`
+}
+
+type PrimaryClient struct {
+    ConfiguredClient[*PrimaryConfig]
+}
+
+type ReplicaClient struct {
+    ConfiguredClient[*ReplicaConfig]
+}
+
+func main() {
+    injector := di.NewInjector(func(b *di.Binder) {
+        b.BindInstance(&PrimaryConfig{Endpoint: "primary"})
+        b.BindInstance(&ReplicaConfig{Endpoint: "replica"})
+        b.Bind(di.T[*PrimaryClient]())
+        b.Bind(di.T[*ReplicaClient]())
+    })
+
+    var primary *PrimaryClient
+    var replica *ReplicaClient
+    injector.Resolve(&primary)
+    injector.Resolve(&replica)
+    fmt.Println(primary.Config.Endpoint, replica.Config.Endpoint)
+    // Output: primary replica
+}
+```
+
+使用导出的泛型结构体，并以值方式嵌入，在其导出的依赖字段上标注 `inject:""`。
+不要给嵌入字段本身加注入标记。包含注入字段的结构体不支持指针嵌入。
+依赖会在消费者的 `DIInit` 执行前完成赋值。
+
+示例中的类型都是应用自行定义的 Go 类型，不需要专门的泛型绑定 API。
+
 ## Resolve / Invoke / Get
 
 ### `Resolve`

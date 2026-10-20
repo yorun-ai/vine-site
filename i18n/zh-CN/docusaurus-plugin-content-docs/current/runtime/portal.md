@@ -83,6 +83,43 @@ Hub 发布配置变更后，Portal 无需重启即可使其生效；业务实例
 
 Hub 重启无需对 Portal 做任何操作：Portal 会重新连接运行中的 Hub，并在不重启的情况下继续提供服务。详见 [Hub 重启与端点变化](./hub.md#hub-重启与端点变化)。
 
+## WebGW 超时策略 {#web-timeout}
+
+WEBGW Site 可以添加与 `cors` 平级的 `webTimeout`，为 Web 站点设置总的执行预算，例如用于包下载：
+
+```yaml
+portalSites:
+  - name: packages
+    type: WEBGW
+    actorSkelName: demo.UserActor
+    webName: demo.PackageWeb
+    cors:
+      mode: SAME_DOMAIN
+    webTimeout:
+      default:
+        total: 30s
+      paths:
+        - path: /go/**
+          total: 15m
+```
+
+`total` 使用正的 Go 时长。按配置顺序取第一条匹配的路径规则，覆盖默认值；匹配 Entry
+重写后的已解码路径，不包含 query。无通配符时精确匹配，`*` 只匹配单个路径段内的字符，
+`**` 独占路径段并可跨段匹配，因此 `/go/**` 匹配 `/go`、`/go/` 及其下级路径，不匹配
+`/gopher`。路径必须以 `/` 开头，不接受 query、fragment、`.` / `..` 路径段或其他通配语法。
+
+策略同时是预算和上限：`vweb-options` 可以缩短它，更大或未指定的请求时限按策略总时限执行。
+预算从 WebGW 受理开始，包括认证和响应传输，下游收到的始终是剩余时间。SSE 和 WebSocket
+连接同样受策略约束，并遵循普通 Web 的
+[取消规则](../framework/trace-timeout.md#client-cancellation)。
+
+没有匹配策略时，普通 Web 请求默认 30 秒，可通过请求选项指定最多 120 秒；没有请求超时的
+SSE 和 WebSocket 连接保留原有长连接行为。
+
+Dashboard 可编辑默认值和有序的路径规则；保存后的修改只影响新请求，正在执行的请求保留原
+截止时间。Admin 更新只要提供该块就整块替换，空对象清空策略，省略字段则保持不变。该策略只
+适用于 WEBGW Site。
+
 ## 认证模式
 
 method 未声明模式时继承 service 的认证模式；service 与 Web 声明不能使用 `inherit`。
@@ -108,7 +145,7 @@ RPC method 未声明模式时使用 service 模式；service 或 Web 声明未�
 处理。这类 Web 需要有效凭证，且 actor 必须配置认证。需要匿名访问或由应用自行认证时，
 选择 `optional` 或 `off`。
 
-模式随 Hub 发布的 descriptor 传递，因此 Hub、Link、Portal 必须使用同一版本。
+Hub、Link、Portal 应使用同一版本，以保证认证模式一致。
 
 ## 可选凭据字段
 
@@ -176,15 +213,14 @@ portalRules:
   入口需要覆盖整个通配符范围的证书。
 - 仅当 host 是域名且两种传输都开启时，跳转才开启。
 
-Hub 把开关解析为 `effectiveHTTP` 并发布生效结果。Dashboard 和 Admin API 同时返回配置的
-模式与生效状态：`httpEnabled`、`httpsEnabled`、`autohttpsEnabled`、`httpsReason` 及解析后的
-端口。Admin 更新只要带上 `http` 就会整块替换，块内省略的开关恢复 `AUTO`；不带该块则保持
-当前配置。
+入口同时报告配置的模式和 `effectiveHTTP` 对象，其中包含 `httpEnabled`、`httpsEnabled`、
+`autohttpsEnabled`、`httpsReason` 及解析后的端口。Admin 更新只要带上 `http` 就会整块
+替换，块内省略的开关恢复 `AUTO`；不带该块则保持当前配置。
 
-Hub 在校验入口时会预留潜在传输，因此 HTTPS 尚在等待证书的入口也会占用对应 HTTPS 端口参与
-冲突检查：HTTP 和 HTTPS 不能使用同一端口，至少要启用一种传输；两个已启用入口只有在地址不重叠，
-或使用相同地址和相同协议时，才能共用同一端口。Portal 只为已生效的传输打开监听，因此这类入口
-会在匹配证书出现后开始提供 HTTPS。
+HTTPS 尚在等待证书的入口同样会占用对应 HTTPS 端口参与冲突检查：HTTP 和 HTTPS 不能使用
+同一端口，至少要启用一种传输；两个已启用入口只有在地址不重叠，或使用相同地址和相同协议时，
+才能共用同一端口。Portal 只为已生效的传输打开监听，因此这类入口会在匹配证书出现后开始
+提供 HTTPS。
 
 显式开关在保存时必须已经满足条件：
 
@@ -376,6 +412,18 @@ Hub 在保存前校验证书链，以及证书与私钥是否配对。Admin API 
 即使声明中带有 `for`、`auth` 或 `require` 规则。后端认证、权限和资源检查等服务仍在 Portal
 背后运行，不作为客户端入口。
 
+## RpcGW 后端请求
+
+`/invoke` 和 MCP 向后端转发固定的头部集合：`Accept`、`Content-Type`、
+`vrpc-client`、`vrpc-trace`、`vrpc-initiator`、`vrpc-actor` 和 `vrpc-options`，
+其中 trace、initiator、actor 和剩余超时由 Portal 填写。Cookie、任意自定义头部、转发类
+头部、MCP 头部以及只用于响应的 vRPC 头部都不会转发；User-Agent 和客户端 IP 只保留在
+initiator 元数据中。业务身份应放在受理后的 actor 信息里，调用参数放在 method 入参中，
+不提供可配置的头部透传。
+
+请求体必须未压缩：只接受缺失或单个 `identity` 的 `Content-Encoding`，其他或格式错误的
+编码在准入前就会被拒绝。
+
 ## Inspect API 契约
 
 在 Hub Dashboard 的 RPCGW 站点上开启 **Inspect**，或在 seed 中设置
@@ -535,8 +583,14 @@ Data 和 Enum 定义。`tools/call` 指定工具名及命名参数，例如：
 
 MCP 关闭时返回 404。未知工具和协议格式错误返回协议错误；API 执行失败或工具参数
 不合法时返回 `isError: true` 的工具结果。Descriptor 同步期间返回协议错误，并携带
-`Retry-After: 1`；无法解析的 schema 也会报错，直到契约就绪。响应禁止缓存。调用
-最多执行 30 秒，客户端取消或更短的调用方 deadline 会取消后端任务。
+`Retry-After: 1`；无法解析的 schema 也会报错，直到契约就绪。响应禁止缓存。
+
+工具调用默认总时限为 30 秒，由服务端控制。`params._meta["vmcp-options"]` 接受
+`"timeout=60s"` 这样的 options 字符串，最多 120 秒，语法和校验与 `vrpc-options`
+一致；非法值返回 JSON-RPC Invalid Params，未知选项忽略。该选项是 Vine 扩展而非
+MCP 标准字段，也不会修改客户端 SDK 自身的等待超时。请求受理后，客户端断连、调用方
+deadline 和 MCP SDK 取消都不会取消后端执行；详见
+[客户端取消](../framework/trace-timeout.md#client-cancellation)。
 
 浏览器请求必须来自 Entry 自身的 Origin 或本站点 CORS 允许的 Origin。不允许或格式
 错误的 Origin 返回 403，预检请求同样执行此校验。

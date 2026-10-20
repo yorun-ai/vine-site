@@ -118,9 +118,30 @@ rpcgw 入口
 
 普通 Web 请求的 `vweb-options` 也是同样机制。Web 认证会计入总耗时，最终转发到后端 Web 应用前也会刷新剩余超时时间。未显式指定 timeout 的 SSE 和 WebSocket 不创建总时长 deadline，而由双向流量的 idle timeout 控制生命周期。
 
-对于普通 RPC/Web 请求，Portal 会把外部客户端连接断开和内部执行 timeout 分开处理。请求进入 gateway 并创建执行上下文后，移动端断线、浏览器关闭页面这类客户端取消不会默认取消 auth/check、Handler 或下游调用；执行仍由 timeout、Portal 停止等服务端侧信号控制。SSE 和 WebSocket 长连接会响应客户端断开、上游断开、idle timeout 和 Portal 停止。
+## 客户端取消与业务执行 {#client-cancellation}
 
-如果请求体还没有传完整，Portal 或下游读取 body 时仍会失败。这类情况不会被当作已经开始的完整业务执行。
+对普通 Web 请求、RPC 调用和 MCP 工具调用，客户端断连后 Portal 仍会继续执行：取消或调用方
+更早的 deadline 不会取消鉴权、权限检查、Handler 或下游调用。Trace、actor 和 initiator
+照常传播。
+
+| 入口 | 执行预算 | 客户端取消行为 |
+| --- | --- | --- |
+| 普通 Web | 匹配 Site 的 `webTimeout` 策略；没有策略时默认 30 秒，请求选项最多 120 秒 | 不取消已受理的执行 |
+| RPC `/invoke` | 默认 30 秒；`vrpc-options` 最多 120 秒 | 不取消已受理的执行 |
+| MCP `/mcp` | 默认 30 秒；`params._meta["vmcp-options"]` 最多 120 秒 | HTTP 取消和 MCP SDK 取消均不取消已受理的后端执行 |
+| 未显式指定 timeout 的 SSE / WebSocket | 无总时长 deadline，保留流空闲限制 | 客户端断连会取消连接对应的工作 |
+
+options 请求头中的 timeout 表示执行预算，不是客户端连接自身的截止时间。Site 默认值与路径
+覆盖规则见 [WebGW 超时策略](../runtime/portal.md#web-timeout)，请求选项只能缩短策略时限。
+
+这不是执行完成、事务或回滚保证。Portal 的超时和停止仍会中止工作，下游故障和进程崩溃也
+可能中断执行。取消是协作式的：代码和 I/O 需要响应 context，已经完成的写入不会回滚。
+适用时使用事务；重试写操作时使用幂等或状态查询；需要持久化执行保障的工作交给持久化
+Task 流程。
+
+屏蔽取消不会让已断开的连接继续可用：请求体尚未接收完整时读取仍可能失败，向断开的客户端
+写响应也可能失败，代理随后可能关闭上游响应体。未显式指定 timeout 的 SSE 和 WebSocket
+仍与客户端连接绑定，因为其持续工作服务于该连接本身。
 
 ## Handler 里调用下游要注意什么
 
