@@ -132,8 +132,8 @@ func (h *UserPortal) Serve() {
 该函数通过代理的 `Rewrite` 或 `Director` 转发当前请求，并支持 WebSocket 升级。响应仍会经过
 你的 `ModifyResponse`，非取消失败会调用你的 `ErrorHandler`。代理失败日志由该函数写出，因此
 配置的 `ErrorLog` 不会被使用。确认由客户端取消导致的失败会直接中止请求，不调用错误处理
-钩子，也不生成 502 响应。在请求完成日志中，成功透传的上游 5xx 响应记为 Debug 而不是 Error；
-直接调用 `ReverseProxy.ServeHTTP` 仍按状态码分级。独立 Gin router 调用该函数不会获得
-Vine 的请求完成日志。
+钩子，也不生成 502 响应。成功透传的上游 5xx 响应记为 Debug 而不是 Error（见
+[框架请求日志](./logging-testing.md#框架请求日志)）；直接调用 `ReverseProxy.ServeHTTP`
+仍按状态码分级。独立 Gin router 调用该函数不会获得 Vine 的请求完成日志。
 
 Portal 配置见 [Portal](../runtime/portal.md)，Actor 与 Web 语法见 [Skel 语法](https://skel.yorun.ai/docs/syntax)。

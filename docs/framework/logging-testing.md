@@ -104,6 +104,18 @@ auditLog := logger.New("app:demo.user:audit", logger.WithOption{
 
 Output from the standard library `log` package is bridged through a logger named `vine:stdlog`. Call `logger.SetDefault(customLogger)` when you need to replace the package-level default logger.
 
+## Framework request logs
+
+Vine writes one completion record per Web request, at a level that reflects the outcome:
+
+| Outcome | Level |
+| --- | --- |
+| Ordinary response, including 4xx and a successfully forwarded upstream 5xx | Debug |
+| Request errors registered by a handler | Warn |
+| Local 5xx response, including a proxy that cannot reach its backend | Error |
+
+A confirmed client cancellation aborts the request without a completion record; canceled proxy transfers are logged at Debug. The same levels cover streaming, compressed, and reverse-proxied responses, while local transport failures, deadlines, and failures on active requests keep error logging.
+
 ## Sensitive fields and binary values
 
 Skel fields can be marked with `@sensitive`. skelc adds `skel:"sensitive"`
