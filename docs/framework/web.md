@@ -142,7 +142,27 @@ server does not answer is reported as `502`, because the Web has no content of i
 own to serve. The path the Web received reaches the development server with the
 escaping the client sent.
 
-For a backend that is not a development server, register a route that forwards the
-request itself.
+### Custom reverse proxy
 
-See [Portal](../runtime/portal.md) for Portal configuration and [Skel Syntax](https://skel.yorun.ai/docs/syntax) for Actor and Web syntax.
+For another backend, call `web.ServeReverseProxy` from your registered Web handler
+with a configured `net/http/httputil.ReverseProxy`, the injected `*gin.Context`,
+and a `*logger.Logger` from `go.yorun.ai/vine/core/logger`:
+
+```go
+func (h *UserPortal) Serve() {
+    web.ServeReverseProxy(h.Proxy, h.GinCtx, h.Logger)
+}
+```
+
+The helper forwards the current request through the proxy's `Rewrite` or
+`Director` and supports WebSocket upgrades. Responses still pass through your
+`ModifyResponse`, and non-cancellation failures call your `ErrorHandler`. The
+helper writes proxy failure logs itself, so a configured `ErrorLog` is not used.
+A confirmed client cancellation aborts the request without the error hook or a
+`502`. In the request completion log, a forwarded upstream 5xx response is
+recorded at Debug instead of Error; calling `ReverseProxy.ServeHTTP` directly
+keeps the status-based level. An independent Gin router does not gain Vine's
+request completion log by calling this helper.
+
+See [Portal](../runtime/portal.md) for Portal configuration and
+[Skel Syntax](https://skel.yorun.ai/docs/syntax) for Actor and Web syntax.

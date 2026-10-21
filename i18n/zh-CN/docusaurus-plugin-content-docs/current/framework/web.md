@@ -119,6 +119,21 @@ func (h *UserPortal) Routes(router *web.Router) {
 
 状态文件以 JSON 记录开发服务器监听的 `host` 与 `port`；`host` 为空表示应用所在的机器。文件路径可自行选择，启动前端的进程必须写入同一个文件。文件最多每秒重新读取一次，因此前端更换端口重启后，无需重启应用即可跟随。状态文件读取失败时继续使用已经跟随的开发服务器；开发服务器未响应的请求返回 `502`，因为 Web 自身没有内容可提供。Web 收到的路径会保持客户端发送时的转义形式转发给开发服务器。
 
-如果目标不是开发服务器，直接注册一个自行转发请求的路由。
+### 自定义反向代理
+
+对于其他后端，可以在已注册的 Web handler 中调用 `web.ServeReverseProxy`，传入配置好的 `net/http/httputil.ReverseProxy`、注入的 `*gin.Context`，以及来自 `go.yorun.ai/vine/core/logger` 的 `*logger.Logger`：
+
+```go
+func (h *UserPortal) Serve() {
+    web.ServeReverseProxy(h.Proxy, h.GinCtx, h.Logger)
+}
+```
+
+该函数通过代理的 `Rewrite` 或 `Director` 转发当前请求，并支持 WebSocket 升级。响应仍会经过
+你的 `ModifyResponse`，非取消失败会调用你的 `ErrorHandler`。代理失败日志由该函数写出，因此
+配置的 `ErrorLog` 不会被使用。确认由客户端取消导致的失败会直接中止请求，不调用错误处理
+钩子，也不生成 502 响应。在请求完成日志中，成功透传的上游 5xx 响应记为 Debug 而不是 Error；
+直接调用 `ReverseProxy.ServeHTTP` 仍按状态码分级。独立 Gin router 调用该函数不会获得
+Vine 的请求完成日志。
 
 Portal 配置见 [Portal](../runtime/portal.md)，Actor 与 Web 语法见 [Skel 语法](https://skel.yorun.ai/docs/syntax)。
