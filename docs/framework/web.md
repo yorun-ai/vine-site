@@ -159,10 +159,11 @@ The helper forwards the current request through the proxy's `Rewrite` or
 `ModifyResponse`, and non-cancellation failures call your `ErrorHandler`. The
 helper writes proxy failure logs itself, so a configured `ErrorLog` is not used.
 A confirmed client cancellation aborts the request without the error hook or a
-`502`. In the request completion log, a forwarded upstream 5xx response is
-recorded at Debug instead of Error; calling `ReverseProxy.ServeHTTP` directly
-keeps the status-based level. An independent Gin router does not gain Vine's
-request completion log by calling this helper.
+`502`. A forwarded upstream 5xx response is logged at Debug rather than Error
+(see [framework request logs](./logging-testing.md#framework-request-logs));
+calling `ReverseProxy.ServeHTTP` directly keeps the status-based level. An
+independent Gin router does not gain Vine's request completion log by calling
+this helper.
 
 See [Portal](../runtime/portal.md) for Portal configuration and
 [Skel Syntax](https://skel.yorun.ai/docs/syntax) for Actor and Web syntax.

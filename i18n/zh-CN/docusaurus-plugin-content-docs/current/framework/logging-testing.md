@@ -103,6 +103,19 @@ auditLog := logger.New("app:demo.user:audit", logger.WithOption{
 
 标准库 `log` 的输出会由名称为 `vine:stdlog` 的 logger 接管。需要替换包级默认 logger 时，调用 `logger.SetDefault(customLogger)` 即可。
 
+## 框架请求日志
+
+每个完成的 Web 请求，Vine 会写一条完成日志，级别取决于结果：
+
+| 结果 | 级别 |
+| --- | --- |
+| 普通响应，包括 4xx 和成功透传的上游 5xx | Debug |
+| handler 显式登记的请求错误 | Warn |
+| 本地 5xx 响应，包括代理无法连接后端 | Error |
+
+确认的客户端取消会中止请求，不产生完成日志；被取消的代理传输记为 Debug。流式、压缩和反向
+代理响应遵循同样的分级；本地传输失败、超时以及活跃请求上的失败仍记为错误。
+
 ## 敏感字段与二进制
 
 Skel 字段使用 `@sensitive` 标记。skelc 会在对应的 Go 字段上生成 `skel:"sensitive"`，RPC、Event 和 Task payload 日志会通过 `core/redact` 将其替换为 `<redacted>`。字段名称本身不会触发隐式遮蔽；动态 map 或 JSON 中的敏感内容需要由调用方使用 `RootSensitive` 或 `Sanitizer` 显式处理。
