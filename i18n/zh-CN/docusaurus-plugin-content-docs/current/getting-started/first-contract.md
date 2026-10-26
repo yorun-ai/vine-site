@@ -12,7 +12,7 @@ sidebar_label: 第一个契约
 ## 安装 skelc
 
 ```bash
-go install go.yorun.ai/skelc/cmd/skelc@main
+go install go.yorun.ai/skel/cmd/skelc@main
 skelc version
 ```
 
