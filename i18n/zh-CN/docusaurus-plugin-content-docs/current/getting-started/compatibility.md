@@ -63,7 +63,7 @@ go -C ./src/server mod edit -go=1.27.0 -toolchain=go1.27.0
 go -C ./src/server get go.yorun.ai/vine@"$VINE_REVISION"
 
 go install go.yorun.ai/vine/cmd/vine@"$VINE_REVISION"
-go install go.yorun.ai/skelc/cmd/skelc@"$SKELC_REVISION"
+go install go.yorun.ai/skel/cmd/skelc@"$SKELC_REVISION"
 ```
 
 `go` directive 记录预期的语言版本，`toolchain` directive 请求使用指定

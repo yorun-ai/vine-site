@@ -13,7 +13,7 @@ handler.
 ## Install skelc
 
 ```bash
-go install go.yorun.ai/skelc/cmd/skelc@main
+go install go.yorun.ai/skel/cmd/skelc@main
 skelc version
 ```
 
