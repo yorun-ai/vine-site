@@ -140,9 +140,12 @@ type Actor interface {
     Type() ActorType
     IsAnonymous() bool
     IsAuthenticated() bool
+    IsImpersonated() bool
+    Impersonator() Actor
     Realm() string
     Identifier() string
     RawInfo() string
+    LogFields() []slog.Attr
 }
 ```
 
@@ -168,6 +171,35 @@ identifier := actor.Identifier()
 
 声明标识符需要使用支持 `@identifier` 的 skelc，并重新生成契约。未声明标记的 Actor 返回空标识符；absent、anonymous、authenticating
 状态的 realm 和 identifier 均为空字符串。重命名 actor 或其 domain 会改变 realm。
+
+### 代登录
+
+代登录 Actor 仍满足 `IsAuthenticated()`。其 `Realm()`、`Identifier()` 和
+`GetActorInfo[T]` 描述用于服务访问与权限检查的有效身份。
+`IsImpersonated()` 表示是否附带操作者；`Impersonator()` 返回操作者，普通认证时返回 `nil`。
+
+```go
+actor := ctx.Actor()
+if operator := actor.Impersonator(); operator != nil {
+    operatorRealm := operator.Realm()
+    operatorID := operator.Identifier()
+    // 审计时同时记录有效身份和操作者。
+    _, _ = operatorRealm, operatorID
+}
+```
+
+Portal 同时接受生成的 AuthResult 和 ActorInfo 返回值，依据认证方法的 descriptor
+选择格式。AuthResult 中的 `info` 必填；普通认证省略 `impersonatorInfo` 或返回 null，
+代登录时则恰好填充一个已声明的操作者 info 字段。session 存储、代登录授权和结束代登录
+由业务认证服务负责，客户端可以继续使用同一个 session 凭证。
+
+Vine 透传完整的操作者身份。下游无需注册操作者的 Go info 类型，即可读取其 realm、
+identifier、原始 info 并继续透传；类型化的 `GetActorInfo[T]` 需要注册对应类型。
+也可以使用 `meta.NewImpersonatedActor(effective, operator)` 从两个普通已认证 Actor 构造
+这份元信息；该方法本身不执行授权。只支持一层直接操作者：构造时拒绝已经处于代登录
+状态的有效 actor 或操作者，解码时拒绝嵌套的 impersonator。
+
+skelc v0.35.0 或更新版本生成的契约包含这里使用的认证结果与操作者类型。
 
 ### `Context`
 
@@ -270,4 +302,8 @@ decoded, err := meta.DecodeActorFromBase64(encoded)
 - 统一表示“调用来自哪个 app”
 - 把 Actor 和 Initiator 作为运行时上下文对象往下传
 
-`meta` 只负责数据模型，不负责日志字段格式化。
+Vine 使用当前 actor 元信息，为业务上下文日志和 RPC client/server 调用日志附加身份字段。
+
+这些日志使用同一套身份字段规则：始终记录 `actorType`；`actorRealm` 和 `actorIdentifier` 仅在非空时记录；存在直接操作者时，同样只记录非空的 `impersonatorActorRealm`、`impersonatorActorIdentifier`。这些都是顶层日志字段，没有值的字段直接省略。logger 不会自动记录 actor info 内容。
+
+`actor.LogFields()` 以标准库 `[]slog.Attr` 返回这些身份字段，供结构化 logger 使用。调用前应确认 actor 非 nil。

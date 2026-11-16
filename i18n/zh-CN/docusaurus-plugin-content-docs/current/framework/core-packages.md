@@ -95,7 +95,7 @@ Listener 或 Runner，而不是手工构造 `ServiceSpec`、`WebSpec`、`EventSp
 | Package | 用途 |
 | --- | --- |
 | [`util/vbean`](https://pkg.go.dev/go.yorun.ai/vine/util/vbean) | 深度复制生成的数据 bean，使其引用字段与源值隔离 |
-| [`util/vcode`](https://pkg.go.dev/go.yorun.ai/vine/util/vcode) | JSON、CBOR、YAML、压缩与 Base58 辅助 |
+| [`util/vcode`](https://pkg.go.dev/go.yorun.ai/vine/util/vcode) | 通用 JSON、YAML、压缩与 Base58 辅助。Skel payload 使用 [`types/codec`](https://skel.yorun.ai/zh-CN/docs/runtime-types#payload-编解码) |
 | [`util/vfile`](https://pkg.go.dev/go.yorun.ai/vine/util/vfile) | 文件路径、读写辅助 |
 | [`util/vmap`](https://pkg.go.dev/go.yorun.ai/vine/util/vmap) | Map collection、查找、stream 与并发 map |
 | [`util/vmath`](https://pkg.go.dev/go.yorun.ai/vine/util/vmath) | 图与数值辅助 |

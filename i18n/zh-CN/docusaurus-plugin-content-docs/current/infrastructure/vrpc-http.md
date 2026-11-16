@@ -93,6 +93,8 @@ JSON 请求体是一个只包含 `params` 的信封：
 
 CBOR 使用相同的数据模型，只把整个信封和 `params` 改为 CBOR 编码。当请求参数包含 binary 类型时，生成的客户端会选择 `application/vrpc+cbor`；其他请求默认使用 JSON。
 
+完整的编码请求体上限为 JSON 32 MiB、CBOR 128 MiB；响应体上限为 128 MiB。上限包含整个信封及其开销。
+
 ## 响应 Header 与响应体
 
 每个可解码的 vRPC 响应至少包含：
