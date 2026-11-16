@@ -104,7 +104,7 @@ The `util/*` packages are public, framework-independent helpers:
 | Package | Purpose |
 | --- | --- |
 | [`util/vbean`](https://pkg.go.dev/go.yorun.ai/vine/util/vbean) | Deep-clone a generated data bean so its reference fields are isolated from the source |
-| [`util/vcode`](https://pkg.go.dev/go.yorun.ai/vine/util/vcode) | JSON, CBOR, YAML, compression, and Base58 helpers |
+| [`util/vcode`](https://pkg.go.dev/go.yorun.ai/vine/util/vcode) | General-purpose JSON, YAML, compression, and Base58 helpers. Skel payloads use [`types/codec`](https://skel.yorun.ai/docs/runtime-types#payload-codec) |
 | [`util/vfile`](https://pkg.go.dev/go.yorun.ai/vine/util/vfile) | File path, read, and write helpers |
 | [`util/vmap`](https://pkg.go.dev/go.yorun.ai/vine/util/vmap) | Map collection, search, stream, and concurrent-map helpers |
 | [`util/vmath`](https://pkg.go.dev/go.yorun.ai/vine/util/vmath) | Graph and numeric helpers |

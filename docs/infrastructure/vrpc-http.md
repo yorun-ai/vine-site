@@ -113,6 +113,10 @@ CBOR uses the same data model, with the envelope and `params` encoded as CBOR.
 Generated clients select `application/vrpc+cbor` when request arguments contain a
 binary type; other requests default to JSON.
 
+The complete encoded request body may be up to 32 MiB for JSON and 128 MiB for
+CBOR; responses may be up to 128 MiB. Limits include the envelope and its
+overhead.
+
 ## Response Headers and Body
 
 Every decodable vRPC response contains at least:

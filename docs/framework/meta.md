@@ -153,9 +153,12 @@ type Actor interface {
     Type() ActorType
     IsAnonymous() bool
     IsAuthenticated() bool
+    IsImpersonated() bool
+    Impersonator() Actor
     Realm() string
     Identifier() string
     RawInfo() string
+    LogFields() []slog.Attr
 }
 ```
 
@@ -184,6 +187,41 @@ contracts. An actor without the
 marker returns an empty identifier. Absent, anonymous, and authenticating actors
 return empty realm and identifier values. Renaming the actor or its domain changes
 its realm.
+
+### Impersonation
+
+An impersonated actor remains authenticated. Its `Realm()`, `Identifier()`, and
+`GetActorInfo[T]` describe the effective identity used for service access and
+permission checks. `IsImpersonated()` reports whether an operator is attached;
+`Impersonator()` returns that operator, or `nil` for ordinary authentication.
+
+```go
+actor := ctx.Actor()
+if operator := actor.Impersonator(); operator != nil {
+    operatorRealm := operator.Realm()
+    operatorID := operator.Identifier()
+    // Record both the effective identity and the operator in your audit trail.
+    _, _ = operatorRealm, operatorID
+}
+```
+
+Portal accepts both the generated AuthResult contract and ActorInfo responses,
+selecting the format from the authentication method descriptor. With
+AuthResult, `info` is required. Omit `impersonatorInfo` or return null for ordinary
+authentication; otherwise populate exactly one declared operator info field.
+Session storage, impersonation authorization, and ending impersonation belong to
+your authentication service. Clients can keep using the same session credential.
+
+Vine forwards the complete operator identity. A downstream service does not need
+to register the operator's Go info type to read its realm, identifier, or raw info
+and forward it again. Typed `GetActorInfo[T]` requires that type's registration.
+`meta.NewImpersonatedActor(effective, operator)` also constructs this metadata
+from two ordinarily authenticated actors; it does not perform authorization.
+Only one direct operator is supported. Construction rejects an already
+impersonated effective actor or operator, and decoding rejects nested impersonators.
+
+Contracts generated with skelc v0.35.0 or later include the authentication-result
+and impersonator types used here.
 
 ### `Context`
 
@@ -286,4 +324,8 @@ Typical use cases include:
 - Representing which application initiated a call consistently.
 - Passing the Actor and Initiator down through runtime context.
 
-`meta` provides the data model; it doesn't format log fields.
+Vine uses the current actor metadata to attach identity fields to business context logs and Rpc client/server lifecycle logs.
+
+These loggers share the same identity field rules: `actorType` is always recorded, while `actorRealm` and `actorIdentifier` appear only when non-empty. For a direct impersonator, non-empty `impersonatorActorRealm` and `impersonatorActorIdentifier` are added. These are top-level log fields; unavailable values are omitted. The logger does not automatically include actor info payloads.
+
+`actor.LogFields()` returns these identity fields as standard-library `[]slog.Attr` for use with structured loggers. Check that the actor is non-nil before calling it.

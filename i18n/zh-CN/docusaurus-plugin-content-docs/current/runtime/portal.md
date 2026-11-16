@@ -596,7 +596,8 @@ MCP 关闭时返回 404。未知工具和协议格式错误返回协议错误；
 一致；非法值返回 JSON-RPC Invalid Params，未知选项忽略。该选项是 Vine 扩展而非
 MCP 标准字段，也不会修改客户端 SDK 自身的等待超时。请求受理后，客户端断连、调用方
 deadline 和 MCP SDK 取消都不会取消后端执行；详见
-[客户端取消](../framework/trace-timeout.md#client-cancellation)。
+[客户端取消](../framework/trace-timeout.md#client-cancellation)。MCP 请求体上限为 32 MiB，
+响应体上限为 128 MiB。
 
 浏览器请求必须来自 Entry 自身的 Origin 或本站点 CORS 允许的 Origin。不允许或格式
 错误的 Origin 返回 403，预检请求同样执行此校验。

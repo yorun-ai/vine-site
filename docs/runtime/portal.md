@@ -730,7 +730,8 @@ Tool calls default to a server-controlled 30-second limit.
 options are ignored. The option is a Vine extension rather than a standard MCP
 field, and it does not change the client SDK's own wait. Accepted calls are not
 cancelled by client disconnects, caller deadlines, or MCP SDK cancellation; see
-[client cancellation](../framework/trace-timeout.md#client-cancellation).
+[client cancellation](../framework/trace-timeout.md#client-cancellation). The
+MCP request body is limited to 32 MiB, and the response body to 128 MiB.
 
 Browser requests must use the entry's own origin or an origin allowed by site
 CORS. A disallowed or malformed Origin returns 403, including preflight requests.
