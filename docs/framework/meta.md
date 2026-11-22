@@ -23,7 +23,7 @@ Vine creates and propagates these objects at request boundaries. Business code n
 type App interface {
     Name() string
     Version() string
-    InstanceId() string
+    InstanceId() uuid.UUID
 }
 ```
 
@@ -33,7 +33,7 @@ Create one with:
 appInfo, err := meta.NewApp(
     "demo.service",
     "1.2.3",
-    "123e4567-e89b-12d3-a456-426614174000",
+    uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 )
 ```
 
@@ -41,12 +41,10 @@ Constraints:
 
 - `name` uses lowercase letters and digits in dot-separated segments that start
   with a letter, such as `demo.service` or `user2`.
-- `version` must be a full semantic version, such as `1.2.3` or `0.0.0-dev`. A
-  leading `v` from the Go module form is accepted; an incomplete version such as
-  `1.2` or `01.2.3` is rejected.
-- `instanceId` must be a valid UUID. Vine generates a UUID v7 for each
-  application instance; `meta.MustNewAppWithRandomId(name, version)` creates an
-  identity that way.
+- `version` must be a full semantic version, such as `1.2.3` or `0.0.0-dev`;
+  the Go module form `v1.2.3` is also accepted.
+
+`meta.MustNewAppWithRandomId(name, version)` generates a UUID v7 instance ID.
 
 ### `CurrentApp`
 
@@ -57,7 +55,7 @@ is injected into. It carries the same fields as `App`:
 type CurrentApp interface {
     Name() string
     Version() string
-    InstanceId() string
+    InstanceId() uuid.UUID
 }
 ```
 
@@ -138,7 +136,7 @@ An Initiator represents who initiated a call.
 initiator, err := meta.NewInitiator(
     "gateway.api",
     "1.2.3",
-    "123e4567-e89b-12d3-a456-426614174000",
+    uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
     "gateway.api/1.2.3",
     "127.0.0.1",
 )

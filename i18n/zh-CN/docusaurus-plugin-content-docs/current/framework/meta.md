@@ -23,7 +23,7 @@ Vine 会在请求边界创建并传递这些对象；业务代码只需从执行
 type App interface {
     Name() string
     Version() string
-    InstanceId() string
+    InstanceId() uuid.UUID
 }
 ```
 
@@ -33,17 +33,16 @@ type App interface {
 appInfo, err := meta.NewApp(
     "demo.service",
     "1.2.3",
-    "123e4567-e89b-12d3-a456-426614174000",
+    uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 )
 ```
 
 约束：
 
 - `name` 由点号分隔的片段组成，片段以字母开头，可包含小写字母和数字，例如 `demo.service`、`user2`
-- `version` 必须是完整的 semver，例如 `1.2.3` 或 `0.0.0-dev`。允许 Go module 形式的
-  `v` 前缀；`1.2`、`01.2.3` 之类不完整的版本会被拒绝
-- `instanceId` 必须是合法 UUID。Vine 会为每个应用实例生成 UUID v7，
-  `meta.MustNewAppWithRandomId(name, version)` 即按此方式创建身份
+- `version` 必须是完整的语义版本，例如 `1.2.3`、`0.0.0-dev`；也接受 Go module 形式的 `v1.2.3`。
+
+`meta.MustNewAppWithRandomId(name, version)` 会生成 UUID v7 实例 ID。
 
 ### `CurrentApp`
 
@@ -53,7 +52,7 @@ appInfo, err := meta.NewApp(
 type CurrentApp interface {
     Name() string
     Version() string
-    InstanceId() string
+    InstanceId() uuid.UUID
 }
 ```
 
@@ -125,7 +124,7 @@ type Initiator interface {
 initiator, err := meta.NewInitiator(
     "gateway.api",
     "1.2.3",
-    "123e4567-e89b-12d3-a456-426614174000",
+    uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
     "gateway.api/1.2.3",
     "127.0.0.1",
 )
